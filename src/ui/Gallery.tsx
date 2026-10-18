@@ -23,6 +23,7 @@ import { Home } from './Home.tsx';
 import { Parent } from './Parent.tsx';
 import { PLACES, placeStyle, Prop } from './pictures.tsx';
 import { RewardScreen } from './Reward.tsx';
+import { SkipButton } from './SkipButton.tsx';
 import { buildAdventure } from '../stories/adventure.ts';
 import { appendPuzzlePage, bookByPlace } from '../stories/books.ts';
 import { BookReader, rememberStory, StoryOffer, StoryReader, StoryShelf } from './StoryTime.tsx';
@@ -366,6 +367,7 @@ function Activity({
           <button type="button" className="btn quiet">
             I don't know
           </button>
+          <SkipButton />
           <button type="button" className="btn gold xl">
             Cast the spell
           </button>

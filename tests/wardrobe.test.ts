@@ -33,6 +33,7 @@ describe('crystal shop', () => {
         topicIds: ['topic-1'],
         correct: 3,
         incorrect: 1,
+        skips: 0,
         rewardId: 'moth',
       },
     ];

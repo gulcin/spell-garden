@@ -24,7 +24,10 @@ export function About({ onHome }: { onHome: () => void }) {
         Progress stays on this device under the localStorage key <code>{PROGRESS_KEY}</code>. Nothing is sent over the network
         while you play. Add the garden to the home screen and it keeps working on a plane.
       </p>
-      <p>Hints are read aloud in an English voice. Tap “Hear it again” any time. “I don't know” walks through the idea, then offers a fresh try.</p>
+      <p>
+        Hints are read aloud in an English voice. Tap “Hear it again” any time. “I don't know” walks through the idea, then offers a
+        fresh try. “Skip” hops to the next spell, with no lost crystals, and the next one of that kind is a little gentler.
+      </p>
     </article>
   );
 }

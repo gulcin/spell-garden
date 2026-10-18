@@ -170,6 +170,12 @@ function Journal({
       .sort((a, b) => a.domain.localeCompare(b.domain) || a.ageRangeStart - b.ageRangeStart || a.name.localeCompare(b.name));
   }, [query, domain]);
   const focus = allTopics().find((topic) => topic.id === picked) ?? null;
+  const hopped = useMemo(() => {
+    return allTopics()
+      .map((topic) => ({ topic, skips: progress.topics[topic.id]?.skips ?? 0 }))
+      .filter((row) => row.skips > 0)
+      .sort((a, b) => b.skips - a.skips || a.topic.name.localeCompare(b.topic.name));
+  }, [progress]);
 
   function download() {
     const blob = new Blob([JSON.stringify(progress, null, 2)], { type: 'application/json' });
@@ -220,6 +226,18 @@ function Journal({
             ))}
           </ul>
         </div>
+      ) : null}
+      {hopped.length > 0 ? (
+        <section className="banner" data-testid="skipped-skills">
+          <strong>Spells she hopped past</strong>
+          <ul>
+            {hopped.map(({ topic, skips }) => (
+              <li key={topic.id}>
+                {topic.name} · {skips} skipped · the next one is a little gentler
+              </li>
+            ))}
+          </ul>
+        </section>
       ) : null}
       <div className="journal-tools">
         <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search spells" aria-label="Search spells" />
@@ -273,6 +291,7 @@ function Journal({
                 </span>
                 <span className="counts" data-testid="success-count">
                   {state?.correct ?? 0} correct · {state?.incorrect ?? 0} missed
+                  {(state?.skips ?? 0) > 0 ? ` · ${state?.skips} skipped` : ''}
                   {state?.via === 'placement' && state.masteredAt ? ' · placed' : ''}
                 </span>
               </button>
@@ -285,6 +304,12 @@ function Journal({
         <aside className="detail">
           <h2>{focus.name}</h2>
           <p>{focus.description}</p>
+          {(progress.topics[focus.id]?.skips ?? 0) > 0 ? (
+            <p>
+              She hopped past this spell {progress.topics[focus.id]?.skips}{' '}
+              {(progress.topics[focus.id]?.skips ?? 0) === 1 ? 'time' : 'times'}. The next one waits a little gentler.
+            </p>
+          ) : null}
           <h3>Builds on</h3>
           {allPrereqs(focus.id).length === 0 ? <p>This spell can be a starting place.</p> : null}
           <ul>
@@ -337,6 +362,7 @@ function Journal({
               <strong>{session.chapterTitle}</strong>
               <span>
                 {new Date(session.startedAt).toLocaleString()} · {session.correct} kind spells · {session.incorrect} soft misses
+                {(session.skips ?? 0) > 0 ? ` · ${session.skips} skipped` : ''}
                 {session.endedAt ? '' : ' · still open'}
               </span>
             </li>

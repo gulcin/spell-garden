@@ -36,6 +36,10 @@ export type TopicState = {
   nextReviewAt: number | null;
   reviewStage: number;
   reviewFails: number;
+  /** Times she hopped past this skill. Not a miss. */
+  skips: number;
+  /** 0–2. How many steps gentler the next puzzle of this skill should be. */
+  ease: number;
 };
 
 export type SessionRecord = {
@@ -46,6 +50,8 @@ export type SessionRecord = {
   topicIds: string[];
   correct: number;
   incorrect: number;
+  /** Hops past a spell. Not a miss, and not a crystal. */
+  skips: number;
   rewardId: string | null;
 };
 
@@ -107,6 +113,8 @@ export function emptyTopicState(): TopicState {
     nextReviewAt: null,
     reviewStage: 0,
     reviewFails: 0,
+    skips: 0,
+    ease: 0,
   };
 }
 

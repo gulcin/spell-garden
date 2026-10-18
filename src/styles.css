@@ -502,7 +502,16 @@ code { font-size: 0.86em; background: #fff; padding: 0.1em 0.35em; border-radius
   background: linear-gradient(180deg, rgba(255, 248, 241, 0), rgba(244, 236, 223, 0.94) 36%);
   z-index: 5;
 }
+.dock:has(.skip) { grid-template-columns: 1fr 1fr 1fr 1.45fr; }
 .dock .btn { width: 100%; min-width: 0; padding-inline: 10px; }
+.btn.skip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.hop { display: inline-flex; width: 28px; height: 18px; flex: 0 0 auto; }
+.hop svg { width: 100%; height: 100%; display: block; }
 .note {
   background: #fff;
   border-radius: 16px;
@@ -1027,6 +1036,12 @@ code { font-size: 0.86em; background: #fff; padding: 0.1em 0.35em; border-radius
   .counts { grid-column: 2; }
   .dock { grid-template-columns: 1fr 1fr; }
   .dock .btn.gold { grid-column: 1 / -1; }
+  .dock:has(.skip) { grid-template-columns: 1fr 1.25fr 0.95fr; }
+  .dock:has(.skip) .btn.gold { grid-column: 1 / -1; }
+  .dock:has(.skip) .btn.quiet { font-size: 0.92rem; padding-inline: 6px; }
+  .dock:has(.skip) .hop { width: 22px; height: 14px; }
+  .quest:has(.skip) > .place-book { bottom: 146px; width: 64px; }
+  .quest:has(.skip) > .place-book span { display: none; }
   .hotspot span { font-size: 0.82rem; padding: 3px 8px; }
 }
 

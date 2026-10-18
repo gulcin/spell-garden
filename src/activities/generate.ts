@@ -42,11 +42,18 @@ function hints(a: string, b: string, c: string): [string, string, string] {
   return [a, b, c];
 }
 
-function band(topic: Topic): number {
+/** How many steps gentler the puzzle in progress should be. Set only inside generateItem. */
+let gentle = 0;
+
+function rawBand(topic: Topic): number {
   if (topic.ageRangeStart <= 6) return 0;
   if (topic.ageRangeStart <= 8) return 1;
   if (topic.ageRangeStart <= 10) return 2;
   return 3;
+}
+
+function band(topic: Topic): number {
+  return Math.max(0, rawBand(topic) - gentle);
 }
 
 type Built = Omit<Item, 'key' | 'topicId' | 'topicName' | 'template'>;
@@ -89,7 +96,17 @@ export function sampleItem(template: TemplateId): Item {
   return generateItem(topic, `art-preview-${template}`);
 }
 
-export function generateItem(topic: Topic, salt: string): Item {
+export function generateItem(topic: Topic, salt: string, ease = 0): Item {
+  const previous = gentle;
+  gentle = Number.isFinite(ease) ? Math.max(0, Math.min(2, Math.floor(ease))) : 0;
+  try {
+    return generateItemAtEase(topic, salt);
+  } finally {
+    gentle = previous;
+  }
+}
+
+function generateItemAtEase(topic: Topic, salt: string): Item {
   if (salt.includes('placement-count')) return placeCount(topic, salt);
   if (salt.includes('placement-add')) return placeAdd(topic, salt);
   if (salt.includes('placement-line')) return placeLine(topic, salt);
@@ -197,8 +214,10 @@ function placeHalf(topic: Topic, salt: string): Item {
 function tenFrame(topic: Topic, rand: () => number, salt: string): Item {
   const name = topic.name.toLowerCase();
   const b = band(topic);
-  const wide = b >= 1 && /20/.test(name);
+  const wide = gentle === 0 && b >= 1 && /20/.test(name);
   const slotCount = wide ? 20 : 10;
+  const mixCap = gentle > 0 ? Math.max(2, 4 - gentle) : b === 0 ? 4 : 6;
+  const countCap = gentle > 0 ? Math.max(3, 6 - gentle) : b === 0 ? 7 : 10;
   const zones = slots(slotCount, 'slot', 'slot');
   const subtract = /subtract|taking away|separat/.test(name) && (!/add/.test(name) || rand() < 0.45);
   if (/bond|pairs/.test(name) || (/make/.test(name) && rand() < 0.5)) {
@@ -230,7 +249,7 @@ function tenFrame(topic: Topic, rand: () => number, salt: string): Item {
     });
   }
   if (subtract) {
-    const start = int(rand, 4, Math.min(9, slotCount));
+    const start = int(rand, gentle > 0 ? 3 : 4, Math.min(gentle > 0 ? 6 : 9, slotCount));
     const take = int(rand, 1, start - 1);
     const pieces: Piece[] = Array.from({ length: start }, (_, i) => ({ id: `p${i}`, art: 'spark', tone: 2 }));
     const initial: Record<string, string> = {};
@@ -255,7 +274,7 @@ function tenFrame(topic: Topic, rand: () => number, salt: string): Item {
     });
   }
   if (/how many|one-to-one|representing numbers with objects|count/.test(name) && !/add|subtract/.test(name)) {
-    const n = int(rand, 3, b === 0 ? 7 : 10);
+    const n = int(rand, 3, countCap);
     const pieces: Piece[] = Array.from({ length: n + 2 }, (_, i) => ({ id: `p${i}`, art: 'spark', tone: i % 3 }));
     return pack(topic, 'ten-frame', salt, {
       prompt: `Count out ${n} sparks and tuck them into the ten-frame.`,
@@ -268,8 +287,8 @@ function tenFrame(topic: Topic, rand: () => number, salt: string): Item {
       solution: pieces.slice(0, n).map((piece, i) => ({ op: 'move' as const, pieceId: piece.id, zoneId: `slot${i}` })),
     });
   }
-  const a = int(rand, 1, b === 0 ? 4 : 6);
-  let c = int(rand, 1, b === 0 ? 4 : 6);
+  const a = int(rand, 1, mixCap);
+  let c = int(rand, 1, mixCap);
   if (a + c > slotCount) c = slotCount - a;
   const pieces: Piece[] = [
     ...Array.from({ length: a }, (_, i) => ({ id: `b${i}`, art: 'spark' as const, group: 'blue', tone: 0 })),
@@ -336,7 +355,7 @@ function numberLine(topic: Topic, rand: () => number, salt: string): Item {
   }
   if (/skip|counting in|2s|4s|6s|8s|50s|100s/.test(name)) {
     const step = /100/.test(name) ? 100 : /50/.test(name) ? 50 : /8s/.test(name) ? 8 : /6s/.test(name) ? 6 : /4s/.test(name) ? 4 : 2;
-    const hops = int(rand, 2, 4);
+    const hops = int(rand, 2, gentle > 0 ? 2 : 4);
     const zones: Zone[] = [];
     for (let i = 0; i <= 5; i++) zones.push({ id: padId(i * step), role: 'lily', label: String(i * step), capacity: 1 });
     const end = hops * step;
@@ -355,16 +374,16 @@ function numberLine(topic: Topic, rand: () => number, salt: string): Item {
       solution: [{ op: 'move', pieceId: 'frog', zoneId: padId(end) }],
     });
   }
-  if (/1000|large|within 1,000|to 100/.test(name) || band(topic) >= 2) {
-    const start = int(rand, 0, 6) * 10;
-    const add = int(rand, 1, 3) * 10;
+  if ((/1000|large|within 1,000|to 100/.test(name) || band(topic) >= 2) && gentle < 2) {
+    const start = int(rand, 0, gentle > 0 ? 4 : 6) * 10;
+    const add = int(rand, 1, gentle > 0 ? 1 : 3) * 10;
     const end = Math.min(100, start + add);
     const landing = end === start ? start + 10 : end;
     return hop(topic, salt, range(0, 100, 10), start, landing, `The frog sits on ${start}. Hop to the lily that is ${landing - start} more.`);
   }
   const max = 10;
   const start = int(rand, 0, 6);
-  const add = int(rand, 1, Math.min(4, max - start));
+  const add = int(rand, 1, Math.min(gentle > 0 ? Math.max(1, 3 - gentle) : 4, max - start));
   return hop(topic, salt, range(0, max), start, start + add, `The frog sits on ${start}. Hop to the lily that is ${add} more.`);
 }
 
@@ -372,8 +391,8 @@ function baseTen(topic: Topic, rand: () => number, salt: string): Item {
   const name = topic.name.toLowerCase();
   const useHundreds = band(topic) >= 2 && /1000|hundred|three-digit|large/.test(name);
   if (/add|subtract|strategies|mental|written|two-digit/.test(name) && rand() < 0.55 && !/reading|writing|ordering|comparing/.test(name)) {
-    const ones = int(rand, 11, 16);
-    const tens = int(rand, 1, 3);
+    const ones = int(rand, gentle > 0 ? 10 : 11, gentle > 0 ? 12 : 16);
+    const tens = int(rand, 1, gentle > 0 ? 2 : 3);
     const total = tens * 10 + ones;
     const pieces: Piece[] = [];
     const initial: Record<string, string> = {};
@@ -473,8 +492,8 @@ function shareExact(topic: Topic, salt: string, gems: number, jars: number, rem:
 function sharing(topic: Topic, rand: () => number, salt: string): Item {
   const name = topic.name.toLowerCase();
   const b = band(topic);
-  const jars = int(rand, 2, b >= 2 ? 5 : 3);
-  const each = int(rand, 2, b === 0 ? 4 : 6);
+  const jars = int(rand, 2, gentle > 0 ? 2 : b >= 2 ? 5 : 3);
+  const each = int(rand, 2, gentle > 0 ? Math.max(2, 4 - gentle) : b === 0 ? 4 : 6);
   const rem = /remainder/.test(name) ? int(rand, 1, jars - 1) : 0;
   const gems = jars * each + rem;
   const prompt = rem
@@ -486,8 +505,8 @@ function sharing(topic: Topic, rand: () => number, salt: string): Item {
 function array(topic: Topic, rand: () => number, salt: string): Item {
   const name = topic.name.toLowerCase();
   const b = band(topic);
-  let rows = int(rand, 2, b === 0 ? 3 : 4);
-  let cols = int(rand, 2, b === 0 ? 4 : 6);
+  let rows = int(rand, 2, gentle > 0 ? 2 : b === 0 ? 3 : 4);
+  let cols = int(rand, 2, gentle > 0 ? Math.max(2, 4 - gentle) : b === 0 ? 4 : 6);
   if (/square|cube/.test(name)) {
     rows = int(rand, 2, 4);
     cols = rows;
@@ -549,8 +568,9 @@ function shade(topic: Topic, salt: string, num: number, den: number, layout: 'pi
 function fraction(topic: Topic, rand: () => number, salt: string): Item {
   const name = topic.name.toLowerCase();
   if (/compar/.test(name)) {
-    const d1 = pick(rand, [2, 3, 4, 5, 6, 8]);
-    const d2 = pick(rand, [2, 3, 4, 5, 6, 8]);
+    const dens = gentle > 0 ? [2, 3, 4] : [2, 3, 4, 5, 6, 8];
+    const d1 = pick(rand, dens);
+    const d2 = pick(rand, dens);
     const n1 = int(rand, 1, d1 - 1);
     const n2 = int(rand, 1, d2 - 1);
     const left = n1 / d1;
@@ -586,7 +606,7 @@ function fraction(topic: Topic, rand: () => number, salt: string): Item {
     return shade(topic, salt, n, 10, 'bar', `Shade ${n} tenths of the potion bar.`);
   }
   if (/add|sum/.test(name)) {
-    const den = pick(rand, [4, 5, 6, 8]);
+    const den = pick(rand, gentle > 0 ? [4] : [4, 5, 6, 8]);
     const a = int(rand, 1, Math.max(1, den - 3));
     const c = int(rand, 1, den - a - 1);
     return shade(topic, salt, a + c, den, den > 6 ? 'bar' : 'pie', `Shade the sum of ${a}/${den} and ${c}/${den}.`);
@@ -596,7 +616,7 @@ function fraction(topic: Topic, rand: () => number, salt: string): Item {
     const k = pick(rand, [2, 3]);
     return shade(topic, salt, k, base * k, 'bar', `Shade the amount that matches 1/${base}. The bar is split into ${base * k}, so colour ${k} pieces.`);
   }
-  const den = /half/.test(name) ? 2 : /quarter/.test(name) ? 4 : pick(rand, [2, 3, 4, 6, 8]);
+  const den = /half/.test(name) ? 2 : /quarter/.test(name) ? 4 : pick(rand, gentle >= 2 ? [2, 4] : gentle > 0 ? [2, 3, 4] : [2, 3, 4, 6, 8]);
   const num = /half/.test(name) ? 1 : /quarter/.test(name) && rand() < 0.5 ? 1 : int(rand, 1, den - 1);
   const word = num === 1 && den === 2 ? ' That is a half.' : num === 1 && den === 4 ? ' That is a quarter.' : '';
   return shade(topic, salt, num, den, den <= 6 ? 'pie' : 'bar', `Colour ${num} of the ${den} equal parts.${word}`);
@@ -636,11 +656,11 @@ function pay(pieces: Piece[], total: number): Action[] {
 function coins(topic: Topic, rand: () => number, salt: string): Item {
   const name = topic.name.toLowerCase();
   const pieces = coinBank();
-  const b = band(topic);
-  let total = int(rand, 6, b >= 2 ? 36 : 22);
+  const coinHi = Math.max(8, (rawBand(topic) >= 2 ? 36 : 22) - gentle * (rawBand(topic) >= 2 ? 8 : 4));
+  let total = int(rand, gentle > 0 ? 4 : 6, coinHi);
   let prompt = `The star cake costs ${total} sparks. Drag coins that pay exactly.`;
   if (/change/.test(name)) {
-    const cost = int(rand, 4, 16);
+    const cost = int(rand, 4, gentle > 0 ? 9 : 16);
     const paid = cost <= 9 ? 10 : 20;
     total = paid - cost;
     prompt = `The lantern costs ${cost} sparks. You paid ${paid}. Drag the change the shopkeeper should hand back.`;
@@ -666,8 +686,10 @@ function clock(topic: Topic, rand: () => number, salt: string): Item {
   const b = band(topic);
   let hour = int(rand, 1, 12);
   let minute = 0;
-  if (/half/.test(name) || (b === 0 && rand() < 0.5)) minute = rand() < 0.5 ? 30 : 0;
-  else if (b === 0) minute = 0;
+  const easyClock = gentle > 0 || b === 0;
+  if (gentle >= 2 && !/half/.test(name)) minute = 0;
+  else if (/half/.test(name) || (easyClock && rand() < 0.5)) minute = rand() < 0.5 ? 30 : 0;
+  else if (easyClock) minute = 0;
   else minute = pick(rand, [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55]);
   if (/duration|sequence intervals|comparing time/.test(name)) {
     hour = int(rand, 1, 10);
@@ -725,7 +747,7 @@ function clockItem(topic: Topic, salt: string, hour: number, minute: number, pro
 function balance(topic: Topic, rand: () => number, salt: string): Item {
   const name = topic.name.toLowerCase();
   if (/mass|weight/.test(name) || topic.domain === 'Measurement') {
-    const n = int(rand, 3, 8);
+    const n = int(rand, 3, gentle > 0 ? Math.max(4, 6 - gentle) : 8);
     const pieces: Piece[] = [];
     const solution: Action[] = [];
     for (let i = 0; i < n; i++) {
@@ -749,8 +771,8 @@ function balance(topic: Topic, rand: () => number, salt: string): Item {
       solution,
     });
   }
-  const known = int(rand, 1, 7);
-  const missing = int(rand, 1, 8);
+  const known = int(rand, 1, gentle > 0 ? 4 : 7);
+  const missing = int(rand, 1, gentle > 0 ? Math.max(2, 5 - gentle) : 8);
   const total = known + missing;
   const pieces: Piece[] = Array.from({ length: 9 }, (_, i) => ({
     id: `t${i + 1}`,
@@ -776,7 +798,7 @@ function balance(topic: Topic, rand: () => number, salt: string): Item {
 }
 
 function measure(topic: Topic, rand: () => number, salt: string): Item {
-  const length = int(rand, 3, band(topic) >= 2 ? 8 : 6);
+  const length = int(rand, 3, Math.max(3, (rawBand(topic) >= 2 ? 8 : 6) - gentle));
   const zones: Zone[] = [];
   const counts: Record<string, number> = {};
   for (let i = 0; i < length; i++) {
@@ -1029,7 +1051,7 @@ function barModel(topic: Topic, rand: () => number, salt: string): Item {
       solution: pieces.filter((piece) => piece.group !== 'spare').map((piece) => ({ op: 'move' as const, pieceId: piece.id, zoneId: 'bar' })),
     });
   }
-  const total = int(rand, 6, 10);
+  const total = int(rand, gentle > 0 ? 4 : 6, gentle > 0 ? 8 : 10);
   const known = int(rand, 2, total - 2);
   const unknown = total - known;
   const pieces: Piece[] = Array.from({ length: total + 1 }, (_, i) => ({ id: `b${i}`, art: 'block', tone: i < known ? 0 : 1 }));
@@ -1059,9 +1081,9 @@ function barModel(topic: Topic, rand: () => number, salt: string): Item {
 function graph(topic: Topic, rand: () => number, salt: string): Item {
   const name = topic.name.toLowerCase();
   const cats: { id: string; art: Art; label: string; n: number }[] = [
-    { id: 'moth', art: 'moth', label: 'Moths', n: int(rand, 1, 5) },
-    { id: 'frog', art: 'frog', label: 'Frogs', n: int(rand, 1, 5) },
-    { id: 'owl', art: 'owl', label: 'Owls', n: int(rand, 1, 4) },
+    { id: 'moth', art: 'moth', label: 'Moths', n: int(rand, 1, gentle > 0 ? 3 : 5) },
+    { id: 'frog', art: 'frog', label: 'Frogs', n: int(rand, 1, gentle > 0 ? 3 : 5) },
+    { id: 'owl', art: 'owl', label: 'Owls', n: int(rand, 1, gentle > 0 ? 2 : 4) },
   ];
   if (/reading|comparing bar|tables/.test(name)) {
     const ask = pick(rand, cats);
@@ -1099,8 +1121,8 @@ function graph(topic: Topic, rand: () => number, salt: string): Item {
 }
 
 function coordinate(topic: Topic, rand: () => number, salt: string): Item {
-  let x = int(rand, 0, 5);
-  let y = int(rand, 0, 5);
+  let x = int(rand, 0, gentle > 0 ? 3 : 5);
+  let y = int(rand, 0, gentle > 0 ? 3 : 5);
   if (x === 0 && y === 0) x = 2;
   const zones: Zone[] = [];
   for (let row = 0; row <= 5; row++) {
@@ -1327,8 +1349,8 @@ function fallback(topic: Topic, rand: () => number, salt: string): Item {
       ['The idea is about sense-making, not speed.', 'The matching habit is the one in the example.'],
     );
   }
-  const a = int(rand, 2, 9);
-  const c = int(rand, 2, 9);
+  const a = int(rand, gentle > 0 ? 1 : 2, gentle > 0 ? 5 : 9);
+  const c = int(rand, gentle > 0 ? 1 : 2, gentle > 0 ? Math.max(1, 4 - gentle) : 9);
   const sum = a + c;
   return choice(
     topic,

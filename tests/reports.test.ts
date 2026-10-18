@@ -44,6 +44,7 @@ describe('map stars and notes', () => {
       topicIds: [],
       correct: 1,
       incorrect: 0,
+      skips: 0,
       rewardId: null,
     }));
     const raw = { ...saved } as Partial<typeof saved>;

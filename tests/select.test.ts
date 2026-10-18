@@ -5,21 +5,10 @@ import { allPrereqs } from '../src/curriculum/data.ts';
 import { effectiveFrontier, isStuck, masteredIds, recordAttempt, statusOf } from '../src/progress/mastery.ts';
 import { applyPlacement, applyStartAge, placementBand } from '../src/progress/placement.ts';
 import { planChapter } from '../src/progress/select.ts';
-import { freshProgress, type Progress, type TopicState } from '../src/progress/types.ts';
+import { emptyTopicState, freshProgress, type Progress, type TopicState } from '../src/progress/types.ts';
 
 function withTopic(progress: Progress, id: string, patch: Partial<TopicState>): Progress {
-  const prev = progress.topics[id] ?? {
-    correct: 0,
-    incorrect: 0,
-    streak: 0,
-    attempts: [],
-    masteredAt: null,
-    via: null,
-    lastAt: null,
-    nextReviewAt: null,
-    reviewStage: 0,
-    reviewFails: 0,
-  };
+  const prev = progress.topics[id] ?? emptyTopicState();
   return { ...progress, topics: { ...progress.topics, [id]: { ...prev, ...patch } } };
 }
 

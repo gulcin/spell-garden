@@ -55,6 +55,7 @@ export function recordAttempt(
   }
 
   return {
+    ...base,
     correct: correctN,
     incorrect: incorrectN,
     streak,
@@ -65,6 +66,29 @@ export function recordAttempt(
     nextReviewAt,
     reviewStage,
     reviewFails,
+    skips: base.skips ?? 0,
+    ease: correct ? Math.max(0, (base.ease ?? 0) - 1) : (base.ease ?? 0),
+  };
+}
+
+/** A hop past this skill. Crystals, streak, mastery, and the miss count stay as they are. */
+export function recordSkip(prev: TopicState | undefined, now: number): TopicState {
+  const base = prev ?? emptyTopicState();
+  return {
+    ...base,
+    skips: (base.skips ?? 0) + 1,
+    ease: Math.min(2, (base.ease ?? 0) + 1),
+    lastAt: now,
+  };
+}
+
+export function applySkip(progress: Progress, topicId: string, sessionId: string, now: number): Progress {
+  return {
+    ...progress,
+    topics: { ...progress.topics, [topicId]: recordSkip(progress.topics[topicId], now) },
+    sessions: progress.sessions.map((session) =>
+      session.id === sessionId ? { ...session, skips: (session.skips ?? 0) + 1 } : session,
+    ),
   };
 }
 

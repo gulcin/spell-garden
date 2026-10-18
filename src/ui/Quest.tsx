@@ -3,7 +3,7 @@ import { Board, type BoardHandle } from '../activities/Board.tsx';
 import { generateItem, placementPlan } from '../activities/generate.ts';
 import { isSolved } from '../activities/logic.ts';
 import type { Item } from '../activities/types.ts';
-import { recordAttempt } from '../progress/mastery.ts';
+import { applySkip, recordAttempt } from '../progress/mastery.ts';
 import { planChapter, type ChapterSlot } from '../progress/select.ts';
 import type { Progress } from '../progress/types.ts';
 import { DEMO_LINE, type Chapter } from '../story.ts';
@@ -17,6 +17,7 @@ import { DressedApprentice } from './DressedApprentice.tsx';
 import { PLACES, placeStyle, Prop } from './pictures.tsx';
 import { deedLine, visitIntro } from '../stories/adventure.ts';
 import { appendPuzzlePage } from '../stories/books.ts';
+import { SkipButton } from './SkipButton.tsx';
 import { PlaceBookButton, StoryButton } from './StoryTime.tsx';
 
 type Mode = 'placement' | 'chapter';
@@ -80,14 +81,20 @@ export function Quest({
   const [correct, setCorrect] = useState(0);
   const [asked, setAsked] = useState(0);
   const api = useRef<BoardHandle | null>(null);
+  const moving = useRef(false);
   const { setLive } = useReportLive();
   const progressRef = useRef(progress);
   progressRef.current = progress;
   const slot = slots[index];
   const item = useMemo(() => {
     if (!slot) return null;
-    return generateItem(slot.topic, retry ? `${slot.salt}:retry${retry}` : slot.salt);
-  }, [slot, retry]);
+    const ease = progress.topics[slot.topic.id]?.ease ?? 0;
+    return generateItem(slot.topic, retry ? `${slot.salt}:retry${retry}` : slot.salt, ease);
+  }, [slot, retry, progress.topics]);
+
+  useEffect(() => {
+    moving.current = false;
+  }, [index, phase]);
 
   useEffect(() => {
     if (!item || phase === 'intro' || phase === 'demo') return;
@@ -148,6 +155,7 @@ export function Quest({
             topicIds: [],
             correct: 0,
             incorrect: 0,
+            skips: 0,
             rewardId: null,
           },
         ],
@@ -256,18 +264,21 @@ export function Quest({
     setHintLevel(0);
     setNote(null);
     setPhase('play');
-    const fresh = generateItem(slot.topic, `${slot.salt}:retry${nextRetry}`);
+    const ease = progressRef.current.topics[slot.topic.id]?.ease ?? 0;
+    const fresh = generateItem(slot.topic, `${slot.salt}:retry${nextRetry}`, ease);
     speak(fresh.prompt);
   }
 
-  function next() {
+  function next(skippedTopicId?: string) {
     if (index + 1 >= slots.length) {
       onFinish(correct, asked, deeds.current, chapterId.current);
       return;
     }
     const upcoming = slots[index + 1];
     if (!upcoming) return;
-    const upcomingItem = generateItem(upcoming.topic, upcoming.salt);
+    const stored = progressRef.current.topics[upcoming.topic.id]?.ease ?? 0;
+    const ease = skippedTopicId === upcoming.topic.id ? Math.min(2, stored + 1) : stored;
+    const upcomingItem = generateItem(upcoming.topic, upcoming.salt, ease);
     const showDemo = !progressRef.current.seenTemplates.includes(upcomingItem.template);
     setIndex(index + 1);
     setRetry(0);
@@ -280,6 +291,19 @@ export function Quest({
       setPhase('play');
       speak(upcomingItem.prompt);
     }
+  }
+
+  function hopPast() {
+    if (!item || moving.current) return;
+    moving.current = true;
+    const board = api.current?.getState();
+    setLive({
+      lastAnswer: board ? `She hopped past this spell. ${describeBoard(item, board)}` : 'She hopped past this spell.',
+    });
+    const topicId = item.topicId;
+    update((current) => applySkip(current, topicId, sessionId.current, Date.now()));
+    speak('On we hop. A gentler spell is waiting.');
+    next(topicId);
   }
 
   const star = `${import.meta.env.BASE_URL}art/star.webp`;
@@ -363,12 +387,13 @@ export function Quest({
                 <button type="button" className="btn quiet" data-testid="idk" onClick={idk}>
                   I don't know
                 </button>
+                <SkipButton onClick={hopPast} />
                 <button type="button" className="btn gold xl" data-testid="cast" onClick={cast}>
                   Cast the spell
                 </button>
               </>
             ) : (
-              <button type="button" className="btn primary xl" data-testid="next" onClick={next}>
+              <button type="button" className="btn primary xl" data-testid="next" onClick={() => next()}>
                 {index + 1 >= slots.length ? 'See what woke up' : 'On we go'}
               </button>
             )}

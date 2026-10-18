@@ -2,7 +2,16 @@ import { normalizeHouse } from '../house/layout.ts';
 import { isAdventure } from '../stories/adventure.ts';
 import { normalizeBooks } from '../stories/books.ts';
 import { normalizeCrystals, normalizeWardrobe } from '../wardrobe/economy.ts';
-import { freshProgress, learnerNameFrom, PROGRESS_FORMAT, PROGRESS_KEY, type Progress } from './types.ts';
+import {
+  emptyTopicState,
+  freshProgress,
+  learnerNameFrom,
+  PROGRESS_FORMAT,
+  PROGRESS_KEY,
+  type Progress,
+  type SessionRecord,
+  type TopicState,
+} from './types.ts';
 
 const PLACE_TRAIL = [
   'lantern-grove',
@@ -32,6 +41,37 @@ function stringList(value: unknown): string[] {
   return value.filter((item): item is string => typeof item === 'string' && item.length > 0);
 }
 
+function whole(value: unknown, fallback = 0): number {
+  return typeof value === 'number' && Number.isFinite(value) ? Math.max(0, Math.floor(value)) : fallback;
+}
+
+/** Older saves have no skip log. A hop is never invented, and ease stays inside 0–2. */
+export function normalizeTopic(value: unknown): TopicState | null {
+  if (!value || typeof value !== 'object') return null;
+  const topic = value as Partial<TopicState>;
+  const via = topic.via === 'practice' || topic.via === 'placement' || topic.via === 'parent' ? topic.via : null;
+  return {
+    ...emptyTopicState(),
+    ...topic,
+    correct: whole(topic.correct),
+    incorrect: whole(topic.incorrect),
+    streak: whole(topic.streak),
+    attempts: Array.isArray(topic.attempts) ? topic.attempts.slice(-24) : [],
+    masteredAt: typeof topic.masteredAt === 'number' ? topic.masteredAt : null,
+    via,
+    lastAt: typeof topic.lastAt === 'number' ? topic.lastAt : null,
+    nextReviewAt: typeof topic.nextReviewAt === 'number' ? topic.nextReviewAt : null,
+    reviewStage: whole(topic.reviewStage),
+    reviewFails: whole(topic.reviewFails),
+    skips: whole(topic.skips),
+    ease: Math.min(2, whole(topic.ease)),
+  };
+}
+
+function normalizeSession(session: SessionRecord): SessionRecord {
+  return { ...session, skips: whole(session.skips) };
+}
+
 /** Fills crystals, the wardrobe, and story lists without dropping an older save. */
 export function withWardrobe(parsed: Progress): Progress {
   const learnerName = learnerNameFrom(parsed.learnerName);
@@ -41,8 +81,13 @@ export function withWardrobe(parsed: Progress): Progress {
     learnerName,
     seenTemplates: parsed.seenTemplates ?? [],
     rewards: parsed.rewards ?? [],
-    sessions: parsed.sessions ?? [],
-    topics: parsed.topics ?? {},
+    sessions: (parsed.sessions ?? []).map(normalizeSession),
+    topics: Object.fromEntries(
+      Object.entries(parsed.topics ?? {}).flatMap(([id, value]) => {
+        const topic = normalizeTopic(value);
+        return topic ? [[id, topic] as const] : [];
+      }),
+    ),
     crystals: normalizeCrystals(parsed.crystals),
     wardrobe: normalizeWardrobe(parsed.wardrobe),
     visitedPlaces: normalizeVisited(parsed.visitedPlaces, parsed.sessions?.length ?? 0),
