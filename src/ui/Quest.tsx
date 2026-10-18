@@ -19,6 +19,7 @@ import { CrystalCounter } from './CrystalCounter.tsx';
 import { TalkDock } from './TalkDock.tsx';
 import { DressedApprentice } from './DressedApprentice.tsx';
 import { PLACES, placeStyle, Prop } from './pictures.tsx';
+import { companionTitle } from '../pets/state.ts';
 import { deedLine, visitIntro } from '../stories/adventure.ts';
 import { appendPuzzlePage } from '../stories/books.ts';
 import { SkipButton } from './SkipButton.tsx';
@@ -259,7 +260,7 @@ export function Quest({
           placeId,
           chapterId: chapterId.current,
           at,
-          intro: { id: `${chapterId.current}:intro`, text: visitIntro(placeId, current.wardrobe) },
+          intro: { id: `${chapterId.current}:intro`, text: visitIntro(placeId, current.wardrobe, companionTitle(current.pets)) },
           deed: { id: pageId, text: deed },
         }),
       };

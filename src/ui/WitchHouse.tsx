@@ -11,8 +11,11 @@ import {
   type HouseState,
   type PlacedItem,
 } from '../house/layout.ts';
+import { petById } from '../pets/catalog.ts';
+import { callHome, ownedPet, restPet } from '../pets/state.ts';
 import type { Progress } from '../progress/types.ts';
 import { CrystalCounter } from './CrystalCounter.tsx';
+import { PetArt } from './PetShop.tsx';
 import { TalkDock } from './TalkDock.tsx';
 import { DressedApprentice } from './DressedApprentice.tsx';
 import { PlaceBookButton } from './StoryTime.tsx';
@@ -35,6 +38,7 @@ export function WitchHouse({
   const house = progress.house;
   const paper = wallpaperById(house.wallpaper);
   const [selected, setSelected] = useState<string | null>(null);
+  const [petPage, setPetPage] = useState(0);
   const [drag, setDrag] = useState<Drag | null>(null);
   const base = import.meta.env.BASE_URL;
   const roomArt = `${base}art/house/${paper.file}`;
@@ -139,6 +143,16 @@ export function WitchHouse({
   }
 
   const pieces = [...house.placed].sort((a, b) => a.z - b.z);
+  const housePets = progress.pets.home;
+  const restingIds = new Set(housePets.map((pet) => pet.id));
+  const waitingPets = progress.pets.owned
+    .filter((pet) => !restingIds.has(pet.id))
+    .sort((a, b) => {
+      if (a.id === progress.pets.companionId) return -1;
+      if (b.id === progress.pets.companionId) return 1;
+      return b.at - a.at;
+    });
+  const companionHere = progress.pets.companionId && !restingIds.has(progress.pets.companionId) ? progress.pets.companionId : null;
 
   return (
     <section className="witch-house" data-testid="witch-house">
@@ -209,7 +223,56 @@ export function WitchHouse({
             </button>
           );
         })}
+        {housePets.map((resting) => {
+          const pet = petById(resting.id);
+          const owned = ownedPet(progress.pets, resting.id);
+          if (!pet) return null;
+          return (
+            <button
+              key={resting.id}
+              type="button"
+              className={`house-piece floor house-pet${resting.flip ? ' flip' : ''}`}
+              style={{ left: `${resting.x}%`, top: `${resting.y}%`, width: '16%', zIndex: 30 }}
+              data-testid={`home-pet-${resting.id}`}
+              aria-label={`Call ${owned?.name ?? pet.name} back`}
+              onClick={() => update((current) => ({ ...current, pets: callHome(current.pets, resting.id) }))}
+            >
+              <PetArt id={resting.id} alt="" />
+            </button>
+          );
+        })}
+        {waitingPets.length > 0 ? (
+          <div className="house-pets" data-testid="house-pets">
+            {petPage > 0 ? (
+              <button type="button" data-testid="pet-rest-prev" onClick={() => setPetPage(petPage - 1)} aria-label="Previous friends">
+                ‹
+              </button>
+            ) : null}
+            {waitingPets.slice(petPage, petPage + 2).map((owned) => {
+              const pet = petById(owned.id);
+              if (!pet) return null;
+              return (
+                <button
+                  key={owned.id}
+                  type="button"
+                  className="house-chip"
+                  data-testid={`rest-pet-${owned.id}`}
+                  onClick={() => update((current) => ({ ...current, pets: restPet(current.pets, current.house, owned.id) }))}
+                >
+                  <PetArt id={owned.id} alt="" />
+                  <span>{owned.name.trim() || pet.name}</span>
+                </button>
+              );
+            })}
+            {petPage + 2 < waitingPets.length ? (
+              <button type="button" data-testid="pet-rest-next" onClick={() => setPetPage(petPage + 1)} aria-label="More friends">
+                ›
+              </button>
+            ) : null}
+          </div>
+        ) : null}
         <DressedApprentice className="house-girl" alt="Aida standing in her witch's house" />
+        {companionHere ? <PetArt id={companionHere} className="house-companion" alt="" /> : null}
         <img className="story-moth house-nim" data-testid="house-nim" src={`${base}art/moth.webp`} alt="" />
         {drag?.kind === 'new' && drag.moved ? (
           <img

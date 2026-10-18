@@ -158,7 +158,7 @@ export function Gallery() {
         <TellUsButton onOpen={() => setTelling(true)} />
       </div>
       {screen === 'home' ? (
-        <Home progress={progress} onStart={() => undefined} onVisit={() => undefined} onShop={() => undefined} onHouse={() => undefined} onColour={() => undefined} onStories={() => undefined} onGarden={() => undefined} onAbout={() => undefined} onParent={() => undefined} onRename={() => undefined} />
+        <Home progress={progress} onStart={() => undefined} onVisit={() => undefined} onShop={() => undefined} onPets={() => undefined} onHouse={() => undefined} onColour={() => undefined} onStories={() => undefined} onGarden={() => undefined} onAbout={() => undefined} onParent={() => undefined} onRename={() => undefined} />
       ) : null}
       {screen === 'shop' ? (
         <CrystalShop progress={progress} update={update} category={category} onWardrobe={() => undefined} onHouse={() => undefined} onStory={() => undefined} onOpenBook={() => undefined} />
