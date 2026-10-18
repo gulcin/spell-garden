@@ -29,16 +29,16 @@ export const PLACES = [
 ] as const;
 
 export const REWARD_ART: Record<string, string> = {
-  moth: 'lantern',
+  moth: 'moth',
   'lantern-glow': 'lantern',
   frog: 'frog',
   vine: 'sprout',
-  owl: 'book',
+  owl: 'owl',
   'bridge-mend': 'star',
-  bunny: 'flower',
+  bunny: 'bunny',
   rug: 'coin',
-  beetle: 'lantern',
+  beetle: 'beetle',
   kettle: 'potion',
-  kitten: 'flower',
+  kitten: 'kitten',
   banner: 'book',
 };

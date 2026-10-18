@@ -386,12 +386,7 @@ function ZoneBox({
       }}
     >
       {backdrop === 'jar' ? <Prop name="jar" className="jar-art" /> : null}
-      {backdrop === 'pad' ? (
-        <svg className="lily-pad" viewBox="0 0 64 64" preserveAspectRatio="none" aria-hidden>
-          <ellipse cx="32" cy="36" rx="26" ry="18" fill="#b7dd9a" stroke="#5f8f58" strokeWidth="2" />
-          <path d="M32 22 L32 50" stroke="#5f8f58" strokeWidth="2" />
-        </svg>
-      ) : null}
+      {backdrop === 'pad' ? <Prop name="lily" className="lily-pad" alt="" /> : null}
       {zone.label ? <span className="zone-label">{zone.label}</span> : null}
       <div className="zone-pieces">{children}</div>
     </div>
@@ -453,10 +448,7 @@ function Stage({
   if (item.template === 'number-line') {
     return (
       <div className="stage line">
-        <svg className="lily-water" viewBox="0 0 600 80" preserveAspectRatio="none" aria-hidden>
-          <path d="M0 48 C 80 20 140 70 220 42 C 300 14 380 68 460 40 C 520 22 560 58 600 36 L 600 80 L 0 80 Z" fill="#8ec8d8" opacity="0.85" />
-          <path d="M0 58 C 90 36 160 72 250 50 C 340 28 420 70 600 46 L 600 80 L 0 80 Z" fill="#c5e7ef" />
-        </svg>
+        <img className="pond-scene" src={`${import.meta.env.BASE_URL}art/pond.webp`} alt="" />
         {item.zones.map((zone) => (
           <ZoneBox key={zone.id} zone={zone} onUp={onZoneUp} backdrop="pad">
             {renderPieces(zone.id)}
