@@ -23,6 +23,7 @@ import { deedLine, visitIntro } from '../stories/adventure.ts';
 import { appendPuzzlePage } from '../stories/books.ts';
 import { SkipButton } from './SkipButton.tsx';
 import { PlaceBookButton, StoryButton } from './StoryTime.tsx';
+import { kidSpellName } from './spellList.ts';
 
 type Mode = 'placement' | 'chapter' | 'practice';
 
@@ -358,7 +359,7 @@ export function Quest({
     <section className="quest place-scene" data-place={placeId} style={placeStyle(placeId)}>
       {onOpenBook ? <PlaceBookButton placeId={placeId} books={progress.books} onOpen={onOpenBook} /> : null}
       <header className="quest-top">
-        <p className="kicker">{mode === 'placement' ? 'Finding your path' : mode === 'practice' ? slot?.topic.name : chapter?.title}</p>
+        <p className="kicker">{mode === 'placement' ? 'Finding your path' : mode === 'practice' ? kidSpellName(slot?.topic.name ?? '') : chapter?.title}</p>
         <div className="quest-meta">
           {onStory ? <StoryButton onClick={onStory} /> : null}
           <CrystalCounter count={progress.crystals} />

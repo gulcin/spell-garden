@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { askHer } from '../curriculum/ask.ts';
 import { TEMPLATE_LABEL, classify } from '../curriculum/classify.ts';
-import { allPrereqs, allTopics, domains } from '../curriculum/data.ts';
+import { allPrereqs, allTopics, clustersFor, domains } from '../curriculum/data.ts';
 import { markMastered, masteredIds, statusOf } from '../progress/mastery.ts';
 import { applyStartAge, gradeLabel, startAgeChoices } from '../progress/placement.ts';
 import { PROGRESS_KEY, freshProgress, type Progress, type Status } from '../progress/types.ts';
@@ -15,7 +15,7 @@ const STATUS_WORD: Record<Status, string> = {
   mastered: 'Mastered',
   practicing: 'Practising',
   ready: 'Ready',
-  locked: 'Locked',
+  locked: 'Open',
 };
 
 export function Parent({
@@ -196,6 +196,13 @@ function Journal({
       .filter((topic) => !q || `${topic.name} ${topic.domain} ${topic.description}`.toLowerCase().includes(q))
       .sort((a, b) => a.domain.localeCompare(b.domain) || a.ageRangeStart - b.ageRangeStart || a.name.localeCompare(b.name));
   }, [query, domain]);
+  const grownupNote = useMemo(() => {
+    if (domain === 'All') return '';
+    const age = progress.placement.frontierAge || 8;
+    const clusters = clustersFor(domain);
+    const fit = [...clusters].reverse().find((cluster) => cluster.ageRangeStart <= age) ?? clusters[0];
+    return fit?.summary ?? '';
+  }, [domain, progress.placement.frontierAge]);
   const focus = allTopics().find((topic) => topic.id === picked) ?? null;
   const hopped = useMemo(() => {
     return allTopics()
@@ -221,7 +228,7 @@ function Journal({
         Back to the tower
       </button>
       <h1>{progress.learnerName}'s journal</h1>
-      <p className="lede">Mastered, practising, ready, or locked. Success counts stay on this device.</p>
+      <p className="lede">Mastered, practising, or ready. Ages and the notes for grown-ups stay on this screen.</p>
       <ReportList />
       <label className="start-level">
         Starting level
@@ -300,6 +307,11 @@ function Journal({
       <p className="fine">
         Stored at <code>{PROGRESS_KEY}</code>. {rows.length} spells shown.
       </p>
+      {grownupNote ? (
+        <p className="summary" data-testid="grownup-summary">
+          {grownupNote}
+        </p>
+      ) : null}
       <ul className="journal-list">
         {rows.map((topic) => {
           const status = statusOf(topic, progress, mastered);

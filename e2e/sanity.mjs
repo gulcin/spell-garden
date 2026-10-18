@@ -413,7 +413,7 @@ async function main() {
   const notes = await page.locator('[data-testid="report-list"]').innerText();
   if (!notes.includes('The robe was sitting')) record('grown-ups notes', 'still broken', notes.slice(0, 160));
   else record('grown-ups notes', 'pass');
-  if (!(await page.locator('[data-testid="app-version"]').innerText()).includes('1.1.1')) record('grown-ups version', 'still broken');
+  if (!(await page.locator('[data-testid="app-version"]').innerText()).includes('1.1.2')) record('grown-ups version', 'still broken');
   else record('grown-ups version', 'pass');
   await page.locator('[data-testid="check-updates"]').click();
   await page.waitForSelector('[data-testid="update-status"]');

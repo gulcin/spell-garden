@@ -836,6 +836,32 @@ function measure(topic: Topic, rand: () => number, salt: string): Item {
 
 function shapes(topic: Topic, rand: () => number, salt: string): Item {
   const name = topic.name.toLowerCase();
+  if (/positional|position, direction/.test(name)) {
+    return choice(
+      topic,
+      'shapes',
+      salt,
+      'The frog sits on the lily. Where is the frog?',
+      ['On means right there.', 'Under means below. Beside means next to it.'],
+      'On the lily',
+      ['Under the lily', 'Beside the pond', 'Above the clouds'],
+      hints('Look at the word on.', 'The frog is not under the lily.', 'On means sitting right there.'),
+      ['The frog sits on the lily.', 'So the place is on the lily.'],
+    );
+  }
+  if (/turns & direction|describing movement/.test(name)) {
+    return choice(
+      topic,
+      'shapes',
+      salt,
+      'Which way is a quarter turn to the right?',
+      ['Clock hands move to the right.', 'A quarter turn is one corner of a square.'],
+      'The same way clock hands go',
+      ['The other way from clock hands', 'Straight up', 'Backwards'],
+      hints('Think of the garden clock.', 'The minute hand moves to the right.', 'A quarter turn follows that same way.'),
+      ['Clock hands travel to the right.', 'A quarter turn to the right follows them.'],
+    );
+  }
   const pool: { shape: ShapeName; label: string }[] = [
     { shape: 'triangle', label: 'Triangle' },
     { shape: 'square', label: 'Square' },

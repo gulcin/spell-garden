@@ -2,12 +2,9 @@ import { useMemo, useState } from 'react';
 import { allTopics, domains } from '../curriculum/data.ts';
 import type { Progress } from '../progress/types.ts';
 import { PageBanner } from './pictures.tsx';
+import { GRADE_3_AGE, kidDomainLede, kidDomainTitle, kidSpellBlurb, kidSpellName, sortSpells } from './spellList.ts';
 
 const PAGE = 3;
-
-function kidSpellName(name: string): string {
-  return name.replace(/\s*\(ages?[^)]*\)/i, '').trim();
-}
 
 /** Kid-facing spell list. Every spell is open. No ages, no locks. */
 export function Garden({
@@ -21,10 +18,8 @@ export function Garden({
 }) {
   const [domain, setDomain] = useState(domains()[0] ?? '');
   const [page, setPage] = useState(0);
-  const topics = useMemo(
-    () => allTopics().filter((topic) => topic.domain === domain).sort((a, b) => a.name.localeCompare(b.name)),
-    [domain],
-  );
+  const age = progress.placement.frontierAge || GRADE_3_AGE;
+  const topics = useMemo(() => sortSpells(allTopics().filter((topic) => topic.domain === domain), age), [domain, age]);
   const pages = Math.max(1, Math.ceil(topics.length / PAGE));
   const safePage = Math.min(page, pages - 1);
   const shown = topics.slice(safePage * PAGE, safePage * PAGE + PAGE);
@@ -36,14 +31,15 @@ export function Garden({
       <button type="button" className="text-link" onClick={onHome}>
         Back to the tower
       </button>
-      <h1>Spell beds</h1>
-      <p className="lede">Pick a spell and try it, {name}. Every spell is open.</p>
-      <div className="chips">
+      <h1>{kidDomainTitle(domain)}</h1>
+      <p className="lede">{kidDomainLede(domain, name)}</p>
+      <div className="chips" data-testid="spell-domains">
         {domains().map((entry) => (
           <button
             key={entry}
             type="button"
             className={entry === domain ? 'chip on' : 'chip'}
+            aria-pressed={entry === domain}
             onClick={() => {
               setDomain(entry);
               setPage(0);
@@ -58,7 +54,7 @@ export function Garden({
           <li key={topic.id}>
             <button type="button" className="spell-row" data-testid={`spell-${topic.id}`} onClick={() => onTry(topic.id)}>
               <strong>{kidSpellName(topic.name)}</strong>
-              <span>Try this spell</span>
+              <span>{kidSpellBlurb(topic)}</span>
             </button>
           </li>
         ))}

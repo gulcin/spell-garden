@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.2] - 2026-10-18
+
+The shapes list is Aida's, and every spell on it can be played.
+
+### Fixed
+
+- Tapping anywhere on a spell card starts the activity, on iPhone and iPad.
+- Spell beds open at grade 3. Age labels and Locked rows stay off her list. The “Your child is…” note lives in the grown-ups’ journal.
+- The list sits below the Garden map pill, including on a narrow phone.
+
 ## [1.1.1] - 2026-10-18
 
 Every spell can be missed, hinted, skipped, and then cast correctly, including with a finger on the iPad.
@@ -35,5 +45,6 @@ Outfits, notes, puzzles, and the spell beds fit the way Aida uses them, and a ne
 - An update note that waits until she is on the garden map, and Check for updates for grown-ups.
 - The app version on every bug report.
 
+[1.1.2]: https://github.com/gulcin/spell-garden/releases/tag/v1.1.2
 [1.1.1]: https://github.com/gulcin/spell-garden/releases/tag/v1.1.1
 [1.1.0]: https://github.com/gulcin/spell-garden/releases/tag/v1.1.0

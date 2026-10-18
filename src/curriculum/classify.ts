@@ -138,7 +138,7 @@ export function classify(topic: Topic): TemplateId {
   if (has(n, /mass|weight/)) return 'balance';
   if (has(n, /perimeter|area|volume|capacity|liquid|length|height|measuring & plotting|unit cube/)) return 'measure';
 
-  if (has(n, /positional language|position, direction/)) return 'fallback';
+  if (has(n, /positional language|position, direction|turns & direction|describing movement/)) return 'shapes';
   if (has(n, /shape|polygon|circle|triangle|quadrilateral|3-d|2-d|faces|edges, vertices|parallel|perpendicular|nets|flat vs solid|composing|combining simple/)) {
     return 'shapes';
   }
