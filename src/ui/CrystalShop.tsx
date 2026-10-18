@@ -6,7 +6,6 @@ import { speak } from '../speech.ts';
 import { CrystalCounter } from './CrystalCounter.tsx';
 import { DressedApprentice } from './DressedApprentice.tsx';
 import { placeStyle, Prop } from './pictures.tsx';
-import type { PlaceBook } from '../stories/books.ts';
 import { PlaceBookButton, StoryButton } from './StoryTime.tsx';
 
 export function CrystalShop({
