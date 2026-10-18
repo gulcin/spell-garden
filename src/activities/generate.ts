@@ -693,6 +693,17 @@ function clock(topic: Topic, rand: () => number, salt: string): Item {
   return clockItem(topic, salt, hour, minute, `Set the garden clock to ${label}.`);
 }
 
+/** A neutral time whose hands sit well apart, and never the time the spell is asking for. */
+function openingClock(hour: number, minute: number): { hour: number; minute: number } {
+  const openings = [
+    { hour: 10, minute: 20 },
+    { hour: 2, minute: 40 },
+    { hour: 7, minute: 35 },
+    { hour: 4, minute: 50 },
+  ];
+  return openings.find((start) => start.hour % 12 !== hour % 12 || start.minute !== minute) ?? { hour: 8, minute: 10 };
+}
+
 function clockItem(topic: Topic, salt: string, hour: number, minute: number, prompt: string): Item {
   return pack(topic, 'clock', salt, {
     prompt,
@@ -705,7 +716,7 @@ function clockItem(topic: Topic, salt: string, hour: number, minute: number, pro
     pieces: [],
     zones: [],
     initial: {},
-    clockStart: { hour: 12, minute: 0 },
+    clockStart: openingClock(hour, minute),
     goal: { kind: 'clock', hour, minute },
     solution: [{ op: 'clock', hour, minute }],
   });
@@ -999,7 +1010,7 @@ function barModel(topic: Topic, rand: () => number, salt: string): Item {
     const a = unit;
     const c = unit * 2;
     const pieces: Piece[] = [
-      ...Array.from({ length: a }, (_, i) => ({ id: `p${i}`, art: 'gem' as const, group: 'pink', tone: 0 })),
+      ...Array.from({ length: a }, (_, i) => ({ id: `p${i}`, art: 'gem' as const, group: 'pink', tone: 5 })),
       ...Array.from({ length: c }, (_, i) => ({ id: `g${i}`, art: 'gem' as const, group: 'gold', tone: 1 })),
       { id: 'spare', art: 'gem', group: 'spare', tone: 3 },
     ];

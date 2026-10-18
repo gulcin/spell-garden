@@ -1,7 +1,9 @@
 import { useEffect, useRef } from 'react';
 import { Board, type BoardHandle } from '../activities/Board.tsx';
-import { sampleItem } from '../activities/generate.ts';
-import { TEMPLATE_LABEL, type TemplateId } from '../curriculum/classify.ts';
+import { generateItem, sampleItem } from '../activities/generate.ts';
+import type { Item } from '../activities/types.ts';
+import { classify, TEMPLATE_LABEL, type TemplateId } from '../curriculum/classify.ts';
+import { allTopics } from '../curriculum/data.ts';
 import { freshProgress } from '../progress/types.ts';
 import { REWARDS } from '../story.ts';
 import { About } from './About.tsx';
@@ -70,22 +72,26 @@ export function Gallery() {
       ) : null}
       {screen === 'intro' ? <Intro place={params.get('place') ?? place} /> : null}
       {screen === 'demo' || screen === 'play' || screen === 'ok' || screen === 'hint' || screen === 'walk' || screen === 'example' ? (
-        <Activity screen={screen} template={screen === 'example' ? 'fallback' : template} />
+        <Activity screen={screen} template={screen === 'example' ? 'fallback' : template} named={params.get('named') === 'colours'} />
       ) : null}
     </main>
   );
 }
 
 function Intro({ place }: { place: string }) {
+  const spot = PLACES.find((entry) => entry.id === place) ?? PLACES[0];
   return (
-    <section className="quest place-scene" style={placeStyle(place)}>
+    <section className="quest place-scene" style={placeStyle(spot.id)}>
       <header className="quest-top">
-        <p className="kicker">The sleepy lanterns</p>
+        <p className="kicker">{spot.name}</p>
       </header>
       <div className="panel story">
-        <Prop name="apprentice" className="guide guide-small" alt="" />
-        <h2>A quiet beginning</h2>
-        <p>Five tiny spells, Aida. They are not a test you can fail. They only show the garden where to open the gate.</p>
+        <div className="intro-cast">
+          <Prop name="apprentice" className="guide guide-small" alt="" />
+          <Prop name={spot.prop} className="place-vignette" alt="" />
+        </div>
+        <h2>{spot.heading}</h2>
+        <p>{spot.line}</p>
         <button type="button" className="btn gold xl">
           I'm ready
         </button>
@@ -94,8 +100,16 @@ function Intro({ place }: { place: string }) {
   );
 }
 
-function Activity({ screen, template }: { screen: string; template: TemplateId }) {
-  const item = sampleItem(template);
+function previewItem(template: TemplateId, named: boolean): Item {
+  if (named) {
+    const topic = allTopics().find((entry) => classify(entry) === template && /blue|pink|cloudy/.test(generateItem(entry, 'colour-check').prompt));
+    if (topic) return generateItem(topic, 'colour-check');
+  }
+  return sampleItem(template);
+}
+
+function Activity({ screen, template, named }: { screen: string; template: TemplateId; named: boolean }) {
+  const item = previewItem(template, named);
   const place = PLACE_OF[item.template] ?? 'lantern-grove';
   const api = useRef<BoardHandle | null>(null);
   useEffect(() => {

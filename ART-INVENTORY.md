@@ -7,7 +7,7 @@ Status words: **painted** (watercolor scene or cutout), **clear** (geometry kept
 | Screen | Status |
 | --- | --- |
 | Home / garden map | painted map, apprentice, cream place pills |
-| Placement and chapter intro | painted place scene behind the card, apprentice |
+| Placement and chapter intro | painted place scene, a short line and a creature or prop for each place |
 | Watch-first demo | painted place scene, apprentice |
 | Play (every activity) | painted place scene, apprentice, cream trays |
 | Hint | cream note on the place scene |
@@ -28,14 +28,14 @@ Every screen except the home map has a cream **Garden map** pill (painted map th
 
 | Template | Place scene | Pieces | Status |
 | --- | --- | --- | --- |
-| Ten-frame | Lantern grove | tinted sparks (blue, gold, green, cloudy) | painted |
+| Ten-frame | Lantern grove | tinted sparks (clear blue, gold, green, cloudy white) | painted |
 | Number line | Lily pond | painted pond, lily pads, frog | painted |
 | Base-ten | Wizard tower | wooden unit, ten-rod, hundred flat | painted |
 | Sharing | Potion cottage | crystal gems, glass jars | painted |
 | Array | Greenhouse | crystals | painted |
 | Fraction | Potion cottage | pie and potion bar | clear wedges, painted cottage behind |
 | Coins | Observatory | numbered spark-coins | painted |
-| Clock | Observatory | moon-dial, readable numerals and hands | painted dial |
+| Clock | Observatory | moon-dial; short thick hour hand, long thin minute hand; opens away from 12 | painted dial |
 | Balance | Potion cottage | coins or stones, beam and pans | painted coins, clear beam |
 | Measure | Wizard tower | wooden planks, bridge spaces | painted planks |
 | Shapes | Crystal cave | named shapes | clear geometry, soft fills |
@@ -62,7 +62,7 @@ Every screen except the home map has a cream **Garden map** pill (painted map th
 | Wizard tower | `art/places/wizard-tower.webp` | painted |
 | Mushroom ring | `art/places/mushroom-ring.webp` | painted |
 
-Place scenes are WebP at 1x and 2x. The service worker does not precache them; they load with the chapter and are cached after that. Cache name: `spell-garden-v4`.
+Place scenes are WebP at 1x and 2x. The service worker does not precache them; they load with the chapter and are cached after that. Cache name: `spell-garden-v5`.
 
 ## Rewards and creatures
 

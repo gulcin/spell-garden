@@ -66,7 +66,7 @@ function spellGardenPwa(): Plugin {
         .filter((file) => file !== 'sw.js' && !file.startsWith('art/places/') && !file.startsWith('splash-'));
       const assets = files.map((file) => `${prefix}${file}`);
       const home = `${prefix}index.html`;
-      const source = `const CACHE='spell-garden-v4';
+      const source = `const CACHE='spell-garden-v5';
 const ASSETS=${JSON.stringify(assets)};
 const HOME=${JSON.stringify(home)};
 self.addEventListener('install',(event)=>{event.waitUntil(caches.open(CACHE).then((cache)=>cache.addAll(ASSETS)).then(()=>self.skipWaiting()))});

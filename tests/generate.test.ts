@@ -49,6 +49,20 @@ describe('item generators', () => {
     expect(learnerNameFrom('Mina')).toBe('Mina');
   });
 
+  it('opens every clock with the hands apart from each other and from the answer', () => {
+    for (const topic of allTopics()) {
+      const item = generateItem(topic, 'seed-a');
+      if (item.template !== 'clock' || !item.clockStart || item.goal.kind !== 'clock') continue;
+      const start = item.clockStart;
+      expect(start.minute === 0 && start.hour % 12 === 0).toBe(false);
+      expect(start.hour % 12 === item.goal.hour % 12 && start.minute === item.goal.minute).toBe(false);
+      const hourDeg = (start.hour % 12) * 30 + start.minute * 0.5;
+      const minuteDeg = start.minute * 6;
+      const gap = Math.abs(hourDeg - minuteDeg) % 360;
+      expect(Math.min(gap, 360 - gap)).toBeGreaterThan(50);
+    }
+  });
+
   it('paints one sample of every activity', () => {
     for (const template of Object.keys(TEMPLATE_LABEL) as TemplateId[]) {
       const item = sampleItem(template);

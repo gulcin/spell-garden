@@ -8,7 +8,7 @@ import { planChapter, type ChapterSlot } from '../progress/select.ts';
 import type { Progress } from '../progress/types.ts';
 import { DEMO_LINE, type Chapter } from '../story.ts';
 import { speak } from '../speech.ts';
-import { placeStyle, Prop } from './pictures.tsx';
+import { PLACES, placeStyle, Prop } from './pictures.tsx';
 
 type Mode = 'placement' | 'chapter';
 
@@ -216,6 +216,7 @@ export function Quest({
   }
 
   const star = `${import.meta.env.BASE_URL}art/star.webp`;
+  const spot = PLACES.find((entry) => entry.id === placeId) ?? PLACES[0];
   return (
     <section className="quest place-scene" data-place={placeId} style={placeStyle(placeId)}>
       <header className="quest-top">
@@ -228,11 +229,14 @@ export function Quest({
       </header>
       {phase === 'intro' ? (
         <div className="panel story">
-          <Prop name="apprentice" className="guide guide-small" alt="" />
-          <h2>{mode === 'placement' ? 'A quiet beginning' : chapter?.title}</h2>
+          <div className="intro-cast">
+            <Prop name="apprentice" className="guide guide-small" alt="" />
+            <Prop name={spot.prop} className="place-vignette" alt="" />
+          </div>
+          <h2>{mode === 'placement' ? spot.heading : chapter?.title}</h2>
           <p>
             {mode === 'placement'
-              ? `Five tiny spells, ${progress.learnerName}. They are not a test you can fail. They only show the garden where to open the gate.`
+              ? `${spot.line} Five tiny spells, ${progress.learnerName}. They are not a test you can fail. They only show the garden where to open the gate.`
               : chapter?.intro}
           </p>
           <button type="button" className="btn gold xl" data-testid={mode === 'placement' ? 'begin-placement' : 'begin-puzzles'} onClick={begin}>
