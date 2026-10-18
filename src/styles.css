@@ -429,25 +429,39 @@ code { font-size: 0.86em; background: #fff; padding: 0.1em 0.35em; border-radius
 }
 .page-banner .banner-photo { width: 100%; height: 100%; object-fit: cover; object-position: center 45%; display: block; }
 .quest-meta { display: flex; align-items: center; gap: 10px; }
-.crystal-count {
+.crystal-wallet {
   display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin: 0 0 8px;
+  align-items: flex-end;
+  gap: 2px;
+  margin: 0;
   min-height: 48px;
-  padding: 2px 14px 2px 4px;
+  padding: 2px 10px 2px 4px;
   border-radius: 999px;
   background: rgba(255, 248, 241, 0.96);
   border: 2px solid white;
   box-shadow: 0 6px 14px rgba(58, 45, 74, 0.12);
   font-family: Fredoka, Nunito, sans-serif;
   font-weight: 700;
-  font-size: 1.25rem;
   width: fit-content;
 }
-.crystal-count picture { width: 40px; height: 40px; }
-.crystal-count img { width: 40px; height: 40px; object-fit: contain; }
-.quest-top .crystal-count { margin: 0; }
+.crystal-wallet .coin {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 32px;
+  line-height: 1;
+}
+.crystal-wallet .coin img { width: 26px; height: 44px; object-fit: contain; display: block; }
+.crystal-wallet .coin span { font-size: 0.72rem; margin-top: -2px; color: #3a2d4a; }
+.crystal-wallet .coin.is-empty { opacity: 0.38; }
+.crystal-total {
+  font-size: 1.15rem;
+  margin-left: 4px;
+  padding-left: 8px;
+  border-left: 2px solid rgba(58, 45, 74, 0.12);
+  align-self: center;
+}
+.quest-top .crystal-wallet { margin: 0; }
 .banner-guide { position: absolute; left: 8px; bottom: 0; width: 92px; filter: drop-shadow(0 8px 8px rgba(58, 45, 74, 0.25)); }
 .place-card { max-width: 640px; margin: auto; }
 .quest-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 10px 0 22px; }
@@ -1043,6 +1057,11 @@ code { font-size: 0.86em; background: #fff; padding: 0.1em 0.35em; border-radius
   .quest:has(.skip) > .place-book { bottom: 146px; width: 64px; }
   .quest:has(.skip) > .place-book span { display: none; }
   .hotspot span { font-size: 0.82rem; padding: 3px 8px; }
+  .quest-top { flex-wrap: wrap; }
+  .quest-meta { margin-left: auto; flex-wrap: wrap; justify-content: flex-end; }
+  .crystal-wallet .coin { min-width: 26px; }
+  .crystal-wallet .coin img { width: 20px; height: 34px; }
+  .crystal-total { font-size: 1rem; }
 }
 
 @keyframes bob {
@@ -1096,6 +1115,47 @@ code { font-size: 0.86em; background: #fff; padding: 0.1em 0.35em; border-radius
   border: 2px solid white;
 }
 .shopkeeper-row p { margin: 0; }
+.shopkeeper-row .btn { margin-top: 8px; }
+.pay-till {
+  margin: 4px 0 8px;
+  padding: 12px;
+  border-radius: 20px;
+  background: rgba(255, 248, 241, 0.96);
+  border: 2px solid white;
+}
+.pay-till > p { margin: 0 0 8px; }
+.pay-row { display: flex; gap: 10px; }
+.pay-wallet, .pay-counter {
+  flex: 1;
+  min-height: 132px;
+  border-radius: 16px;
+  padding: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-content: flex-start;
+}
+.pay-wallet { background: rgba(242, 160, 196, 0.18); }
+.pay-counter { background: rgba(224, 176, 58, 0.2); border: 2px dashed #c9962a; }
+.coin-piece {
+  width: 52px;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: grab;
+  touch-action: none;
+}
+.coin-piece img { width: 52px; height: auto; display: block; pointer-events: none; }
+.coin-ghost {
+  position: fixed;
+  width: 52px;
+  z-index: 30;
+  pointer-events: none;
+  transform: translate(-50%, -72%);
+}
+.pay-sum { font-weight: 800; }
+.pay-actions { display: flex; gap: 8px; justify-content: flex-end; }
+.sheet-group { font-size: 1.25rem; margin: 12px 0 0; }
 .shopkeeper {
   width: min(148px, 34vw);
   flex: 0 0 auto;

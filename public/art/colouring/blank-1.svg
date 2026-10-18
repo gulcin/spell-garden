@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 880" fill="none">
+  <path data-region="page" d="M48 36 H592 A24 24 0 0 1 616 60 V820 A24 24 0 0 1 592 844 H48 A24 24 0 0 1 24 820 V60 A24 24 0 0 1 48 36 Z" fill="#f8e7cf"/>
+  <g id="ink" fill="none" stroke="#c4a06a" stroke-width="3" stroke-linecap="round" pointer-events="none">
+    <rect x="40" y="44" width="560" height="792" rx="22"/>
+    <rect x="54" y="58" width="532" height="764" rx="14"/>
+  </g>
+</svg>

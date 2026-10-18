@@ -24,6 +24,7 @@ import { useReportLive } from '../feedback/live.tsx';
 import type { Progress } from '../progress/types.ts';
 import { speak } from '../speech.ts';
 import { awardCrystals } from '../wardrobe/economy.ts';
+import { rewardSpeech } from '../wardrobe/purse.ts';
 import { CrystalCounter } from './CrystalCounter.tsx';
 import type { PlaceBook } from '../stories/books.ts';
 import { placeStyle } from './pictures.tsx';
@@ -127,8 +128,19 @@ function ColourLobby({
       <p className="colour-intro">
         A quiet table in the tower. Colour a page if you like. Nothing is marked, and you can stop whenever you want.
       </p>
+      <h2 className="sheet-group">Witch sheets</h2>
       <div className="sheet-grid">
-        {SHEETS.map((sheet) => (
+        {SHEETS.filter((sheet) => sheet.kind === 'picture').map((sheet) => (
+          <button key={sheet.id} type="button" className="sheet-card" data-testid={`sheet-${sheet.id}`} onClick={() => onOpen(sheet.id)}>
+            <SheetThumb id={sheet.id} />
+            <strong>{sheet.title}</strong>
+            <span>{sheet.blurb}</span>
+          </button>
+        ))}
+      </div>
+      <h2 className="sheet-group">Blank pages</h2>
+      <div className="sheet-grid">
+        {SHEETS.filter((sheet) => sheet.kind === 'blank').map((sheet) => (
           <button key={sheet.id} type="button" className="sheet-card" data-testid={`sheet-${sheet.id}`} onClick={() => onOpen(sheet.id)}>
             <SheetThumb id={sheet.id} />
             <strong>{sheet.title}</strong>
@@ -232,7 +244,8 @@ function ColourPage({
     if (demoPaint) setArt(demoArtwork(sheetId, ids));
     host.querySelectorAll<SVGElement>('[data-region]').forEach((node) => {
       const id = node.getAttribute('data-region') ?? '';
-      const fill = (demoPaint ? demoArtwork(sheetId, ids).fills : artRef.current.fills)[id] ?? PAPER;
+      if (!node.hasAttribute('data-base')) node.setAttribute('data-base', node.getAttribute('fill') || PAPER);
+      const fill = (demoPaint ? demoArtwork(sheetId, ids).fills : artRef.current.fills)[id] ?? node.getAttribute('data-base') ?? PAPER;
       node.setAttribute('fill', fill);
     });
   }, [svgText, demoPaint, sheetId]);
@@ -242,9 +255,10 @@ function ColourPage({
     if (!host) return;
     host.querySelectorAll<SVGElement>('[data-region]').forEach((node) => {
       const id = node.getAttribute('data-region') ?? '';
-      node.setAttribute('fill', art.fills[id] ?? PAPER);
+      if (!node.hasAttribute('data-base')) node.setAttribute('data-base', node.getAttribute('fill') || PAPER);
+      node.setAttribute('fill', art.fills[id] ?? node.getAttribute('data-base') ?? PAPER);
     });
-  }, [art.fills]);
+  }, [art.fills, svgText]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -451,7 +465,7 @@ function ColourPage({
     artRef.current = stamped;
     setArt(stamped);
     onReward(reward.gained);
-    const line = 'A little crystal, because you finished this page.';
+    const line = `${rewardSpeech(crystals, reward.gained)} You finished this page.`;
     setNote(line);
     speak(line);
   }

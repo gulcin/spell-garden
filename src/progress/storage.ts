@@ -2,6 +2,7 @@ import { normalizeHouse } from '../house/layout.ts';
 import { isAdventure } from '../stories/adventure.ts';
 import { normalizeBooks } from '../stories/books.ts';
 import { normalizeCrystals, normalizeWardrobe } from '../wardrobe/economy.ts';
+import { normalizePurse } from '../wardrobe/purse.ts';
 import {
   emptyTopicState,
   freshProgress,
@@ -88,7 +89,7 @@ export function withWardrobe(parsed: Progress): Progress {
         return topic ? [[id, topic] as const] : [];
       }),
     ),
-    crystals: normalizeCrystals(parsed.crystals),
+    ...normalizePurse((parsed as Progress & { purse?: unknown }).purse, normalizeCrystals(parsed.crystals)),
     wardrobe: normalizeWardrobe(parsed.wardrobe),
     visitedPlaces: normalizeVisited(parsed.visitedPlaces, parsed.sessions?.length ?? 0),
     storyOffers: stringList(parsed.storyOffers),

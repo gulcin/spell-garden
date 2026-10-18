@@ -1,5 +1,6 @@
 import type { Progress, WardrobeState } from '../progress/types.ts';
 import { WEAR_SLOTS, itemById, type WearSlot } from './catalog.ts';
+import { breakInto } from './purse.ts';
 
 export function emptyWardrobe(): WardrobeState {
   return { owned: [], equipped: {} };
@@ -27,23 +28,29 @@ export function normalizeWardrobe(value: unknown): WardrobeState {
 }
 
 export function awardCrystals(progress: Progress, amount: number): Progress {
-  const gain = Math.max(0, Math.floor(amount));
-  if (gain === 0) return progress;
-  return { ...progress, crystals: Math.max(0, progress.crystals) + gain };
+  const gain = Math.floor(amount);
+  if (!Number.isFinite(gain) || gain <= 0) return progress;
+  const crystals = Math.max(0, progress.crystals) + gain;
+  return { ...progress, crystals, purse: breakInto(crystals) };
+}
+
+/** Subtracts a price from the total, then folds the pocket back into coins. */
+export function spendCrystals(progress: Progress, price: number): Progress | null {
+  const cost = Math.floor(price);
+  if (!Number.isFinite(cost) || cost < 0 || progress.crystals < cost) return null;
+  const crystals = progress.crystals - cost;
+  return { ...progress, crystals, purse: breakInto(crystals) };
 }
 
 export function buyItem(progress: Progress, id: string): { progress: Progress; bought: boolean } {
   const item = itemById(id);
-  if (!item || progress.wardrobe.owned.includes(id) || progress.crystals < item.price) {
-    return { progress, bought: false };
-  }
-  const crystals = progress.crystals - item.price;
-  if (crystals < 0) return { progress, bought: false };
+  if (!item || progress.wardrobe.owned.includes(id)) return { progress, bought: false };
+  const spent = spendCrystals(progress, item.price);
+  if (!spent) return { progress, bought: false };
   return {
     bought: true,
     progress: {
-      ...progress,
-      crystals,
+      ...spent,
       wardrobe: {
         owned: [...progress.wardrobe.owned, id],
         equipped: { ...progress.wardrobe.equipped, [item.slot]: id },

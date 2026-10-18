@@ -9,6 +9,7 @@ import { freshProgress, type Progress } from '../progress/types.ts';
 import { REWARDS } from '../story.ts';
 import type { ShopCategory } from '../wardrobe/catalog.ts';
 import { buyFurniture } from '../house/buy.ts';
+import { breakInto } from '../wardrobe/purse.ts';
 import { ReportLiveProvider } from '../feedback/live.tsx';
 import { About } from './About.tsx';
 import { TellSheet, TellUsButton } from './TellUs.tsx';
@@ -33,6 +34,7 @@ function previewProgress(screen: string, dressed: boolean): Progress {
   const progress = freshProgress('Aida');
   if (screen === 'shop' || screen === 'house') {
     progress.crystals = 40;
+    progress.purse = breakInto(40);
     if (dressed) {
       progress.wardrobe = {
         owned: ['robe-rose', 'hat-mushroom', 'extra-crown'],
@@ -44,11 +46,13 @@ function previewProgress(screen: string, dressed: boolean): Progress {
       progress.house = bought.progress.house;
       progress.books = bought.progress.books;
       progress.crystals = bought.progress.crystals;
+      progress.purse = bought.progress.purse;
     }
     return progress;
   }
   if (dressed) {
     progress.crystals = 18;
+    progress.purse = breakInto(18);
     progress.wardrobe = {
       owned: ['robe-rose', 'hat-mushroom', 'extra-crown', 'extra-kitten', 'broom-blossom', 'extra-necklace'],
       equipped: {

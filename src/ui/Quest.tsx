@@ -10,7 +10,8 @@ import { DEMO_LINE, type Chapter } from '../story.ts';
 import { speak } from '../speech.ts';
 import { useReportLive } from '../feedback/live.tsx';
 import type { BoardState } from '../activities/types.ts';
-import { crystalGain, crystalLine } from '../wardrobe/catalog.ts';
+import { crystalGain } from '../wardrobe/catalog.ts';
+import { rewardSpeech } from '../wardrobe/purse.ts';
 import { awardCrystals } from '../wardrobe/economy.ts';
 import { CrystalCounter } from './CrystalCounter.tsx';
 import { DressedApprentice } from './DressedApprentice.tsx';
@@ -225,7 +226,7 @@ export function Quest({
     if (!board) return;
     if (isSolved(item, board)) {
       record(true, item);
-      const praise = `${PRAISE[correct % PRAISE.length] ?? PRAISE[0]} ${crystalLine(placeId)}`;
+      const praise = `${PRAISE[correct % PRAISE.length] ?? PRAISE[0]} ${rewardSpeech(progress.crystals, crystalGain(placeId))}`;
       setLive({ lastAnswer: `Correct. ${describeBoard(item, board)}` });
       setNote(praise);
       setPhase('ok');

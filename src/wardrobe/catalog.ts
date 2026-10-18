@@ -53,10 +53,6 @@ export function crystalGain(placeId: string): number {
   return placeId === 'crystal-cave' ? 3 : 1;
 }
 
-export function crystalLine(placeId: string): string {
-  return placeId === 'crystal-cave' ? 'Three crystals settle in your pocket.' : 'A crystal settles in your pocket.';
-}
-
 /** Where each painted piece sits on the apprentice cutout. Tuned against her pose. */
 export const WEAR_BOX: Record<WearSlot, { left: string; top: string; width: string; z: number }> = {
   dress: { left: '4%', top: '31%', width: '74%', z: 2 },

@@ -1,6 +1,7 @@
 import { freshHouse, type HouseState } from '../house/layout.ts';
 import type { Adventure } from '../stories/adventure.ts';
 import { emptyBooks, type PlaceBook } from '../stories/books.ts';
+import { emptyPurse, type Purse } from '../wardrobe/purse.ts';
 
 export const PROGRESS_KEY = 'prague.wizard-math.progress.v1';
 export const PROGRESS_FORMAT = 'prague.wizard-math.progress.v1' as const;
@@ -79,8 +80,10 @@ export type Progress = {
   sessions: SessionRecord[];
   seenTemplates: string[];
   rewards: string[];
-  /** Crystals spent at the crystal shop. Never negative. */
+  /** Total crystal value. Never negative. The purse is this same amount in coins. */
   crystals: number;
+  /** Pink 1, yellow 5, blue 10, gold 20. Always the canonical breakdown of crystals. */
+  purse: Purse;
   wardrobe: WardrobeState;
   /** Places she has opened. Stars on the map come from this list. */
   visitedPlaces: string[];
@@ -129,6 +132,7 @@ export function freshProgress(name = DEFAULT_LEARNER_NAME): Progress {
     seenTemplates: [],
     rewards: [],
     crystals: 0,
+    purse: emptyPurse(),
     wardrobe: { owned: [], equipped: {} },
     visitedPlaces: [],
     storyOffers: [],

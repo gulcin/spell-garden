@@ -4,13 +4,17 @@ import { furnitureById, shopFurniture } from '../house/catalog.ts';
 import type { Progress } from '../progress/types.ts';
 import { SHOP_CATEGORIES, SHOP_ITEMS, itemById, type ShopCategory } from '../wardrobe/catalog.ts';
 import { buyItem, equipItem } from '../wardrobe/economy.ts';
+import { paymentSpeech, tenderSpeech, type Purse } from '../wardrobe/purse.ts';
 import { speak } from '../speech.ts';
 import { CrystalCounter } from './CrystalCounter.tsx';
+import { PayTill } from './PayTill.tsx';
 import { DressedApprentice } from './DressedApprentice.tsx';
 import { placeStyle, Prop } from './pictures.tsx';
 import { PlaceBookButton, StoryButton } from './StoryTime.tsx';
 
 type Shelf = ShopCategory | 'home';
+
+type PendingPay = { id: string; name: string; price: number; kind: 'wear' | 'home' };
 
 export function CrystalShop({
   progress,
@@ -31,24 +35,43 @@ export function CrystalShop({
 }) {
   const [shelf, setShelf] = useState<Shelf>(category);
   const [cheer, setCheer] = useState<string | null>(null);
+  const [paySelf, setPaySelf] = useState(false);
+  const [paying, setPaying] = useState<PendingPay | null>(null);
   const items = SHOP_ITEMS.filter((item) => item.category === shelf);
+
+  function say(line: string) {
+    setCheer(line);
+    speak(line);
+  }
 
   function purchase(id: string) {
     const item = itemById(id);
     if (!item || progress.wardrobe.owned.includes(id) || progress.crystals < item.price) return;
+    const line = `${item.name} is yours. It suits you. ${paymentSpeech(progress.crystals, item.price)}`;
     update((current) => buyItem(current, id).progress);
-    const line = `${item.name} is yours. It suits you.`;
-    setCheer(line);
-    speak(line);
+    say(line);
   }
 
   function purchaseHome(id: string) {
     const item = furnitureById(id);
     if (!item || progress.house.owned.includes(id) || progress.crystals < item.price) return;
+    const line = `You brought home the ${item.name.toLowerCase()}. ${paymentSpeech(progress.crystals, item.price)}`;
     update((current) => buyFurniture(current, id).progress);
-    const line = `You brought home the ${item.name.toLowerCase()}.`;
-    setCheer(line);
-    speak(line);
+    say(line);
+  }
+
+  function beginPay(next: PendingPay) {
+    if (progress.crystals < next.price) return;
+    setPaying(next);
+  }
+
+  function completePay(tender: Purse) {
+    if (!paying) return;
+    const line = `${paying.kind === 'home' ? `You brought home the ${paying.name.toLowerCase()}.` : `${paying.name} is yours. It suits you.`} ${tenderSpeech(progress.crystals, tender, paying.price, paying.name)}`;
+    if (paying.kind === 'home') update((current) => buyFurniture(current, paying.id).progress);
+    else update((current) => buyItem(current, paying.id).progress);
+    say(line);
+    setPaying(null);
   }
 
   function wear(id: string) {
@@ -74,7 +97,21 @@ export function CrystalShop({
       </header>
       <div className="shopkeeper-row">
         <Prop name="shopkeeper" className="shopkeeper" alt="Clover the shop fox, holding a crystal" />
-        <p>Hello. Crystals from the cave spend here. The first thing on each shelf is a small pile.</p>
+        <div>
+          <p>Hello. Crystals from the cave spend here. Pink is 1, yellow is 5, blue is 10, and gold is 20. The first thing on each shelf is a small pile.</p>
+          <button
+            type="button"
+            className={paySelf ? 'btn gold' : 'btn quiet'}
+            data-testid="pay-mode"
+            aria-pressed={paySelf}
+            onClick={() => {
+              setPaySelf((on) => !on);
+              setPaying(null);
+            }}
+          >
+            I'll pay
+          </button>
+        </div>
       </div>
       {onOpenBook ? <PlaceBookButton placeId="crystal-shop" books={progress.books} onOpen={onOpenBook} /> : null}
       {cheer ? (
@@ -97,6 +134,15 @@ export function CrystalShop({
           </button>
         ))}
       </div>
+      {paying ? (
+        <PayTill
+          crystals={progress.crystals}
+          price={paying.price}
+          itemName={paying.name}
+          onPay={completePay}
+          onCancel={() => setPaying(null)}
+        />
+      ) : null}
       {shelf === 'home' ? (
         <div className="shop-grid" data-testid="home-shelf">
           {shopFurniture().map((item) => {
@@ -114,8 +160,13 @@ export function CrystalShop({
                     {placed ? 'In the house' : 'Put in the house'}
                   </button>
                 ) : (
-                  <button type="button" className="btn gold" disabled={short > 0} onClick={() => purchaseHome(item.id)}>
-                    {short > 0 ? `Need ${short} more` : `Buy · ${item.price}`}
+                  <button
+                    type="button"
+                    className="btn gold"
+                    disabled={short > 0}
+                    onClick={() => (paySelf ? beginPay({ id: item.id, name: item.name, price: item.price, kind: 'home' }) : purchaseHome(item.id))}
+                  >
+                    {short > 0 ? `Need ${short} more` : paySelf ? `I'll pay · ${item.price}` : `Buy · ${item.price}`}
                   </button>
                 )}
               </article>
@@ -139,8 +190,13 @@ export function CrystalShop({
                   {wearing ? 'Wearing' : 'Wear this'}
                 </button>
               ) : (
-                <button type="button" className="btn gold" disabled={short > 0} onClick={() => purchase(item.id)}>
-                  {short > 0 ? `Need ${short} more` : `Buy · ${item.price}`}
+                <button
+                  type="button"
+                  className="btn gold"
+                  disabled={short > 0}
+                  onClick={() => (paySelf ? beginPay({ id: item.id, name: item.name, price: item.price, kind: 'wear' }) : purchase(item.id))}
+                >
+                  {short > 0 ? `Need ${short} more` : paySelf ? `I'll pay · ${item.price}` : `Buy · ${item.price}`}
                 </button>
               )}
             </article>

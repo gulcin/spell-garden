@@ -23,17 +23,28 @@ describe('colouring corner', () => {
     expect(normalizeVisited(['colouring-nook', 'crystal-shop', 'nope'], 0)).toEqual(['colouring-nook', 'crystal-shop']);
   });
 
-  it('offers the named colours and eleven closed sheets', () => {
+  it('offers the named colours, eleven witch sheets, and five blank pages', () => {
     const names = PALETTE.map((swatch) => swatch.name);
     expect(names).toEqual(expect.arrayContaining(['Clear blue', 'Gold', 'Pink', 'Purple']));
     expect(PALETTE.length).toBeGreaterThanOrEqual(16);
-    expect(SHEETS.length).toBeGreaterThanOrEqual(11);
-    for (const sheet of SHEETS) {
+    const pictures = SHEETS.filter((sheet) => sheet.kind === 'picture');
+    const blanks = SHEETS.filter((sheet) => sheet.kind === 'blank');
+    expect(pictures.length).toBeGreaterThanOrEqual(11);
+    expect(blanks).toHaveLength(5);
+    for (const sheet of pictures) {
       const svg = readFileSync(new URL(`../public/art/colouring/${sheet.id}.svg`, import.meta.url), 'utf8');
       const regions = [...svg.matchAll(/data-region="([^"]+)" d="([^"]+)"/g)];
       expect(regions.length).toBeGreaterThanOrEqual(12);
       expect(new Set(regions.map((match) => match[1])).size).toBe(regions.length);
       for (const match of regions) expect(match[2]?.trim().endsWith('Z')).toBe(true);
+      expect(svg).toContain('pointer-events="none"');
+    }
+    for (const sheet of blanks) {
+      const svg = readFileSync(new URL(`../public/art/colouring/${sheet.id}.svg`, import.meta.url), 'utf8');
+      const regions = [...svg.matchAll(/data-region="([^"]+)" d="([^"]+)"/g)];
+      expect(regions.map((match) => match[1])).toEqual(['page']);
+      expect(regions[0]?.[2]?.trim().endsWith('Z')).toBe(true);
+      expect(svg).toContain('fill="#f8e7cf"');
       expect(svg).toContain('pointer-events="none"');
     }
   });
