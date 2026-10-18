@@ -8,6 +8,7 @@ import { ReportLiveProvider, useReportLive } from './feedback/live.tsx';
 import { About } from './ui/About.tsx';
 import { ColouringCorner } from './ui/ColouringCorner.tsx';
 import { CrystalShop } from './ui/CrystalShop.tsx';
+import { PetReveal, PetShop } from './ui/PetShop.tsx';
 import { WitchHouse } from './ui/WitchHouse.tsx';
 import { Garden } from './ui/Garden.tsx';
 import { GardenMapButton } from './ui/GardenMapButton.tsx';
@@ -22,6 +23,7 @@ import { buildAdventure, closingLines, type Adventure } from './stories/adventur
 import { bookByPlace, sealVisit } from './stories/books.ts';
 import { storyById, STORIES } from './stories/library.ts';
 import { crystalGain } from './wardrobe/catalog.ts';
+import { companionTitle, grantProgress } from './pets/state.ts';
 import { WardrobeProvider } from './ui/DressedApprentice.tsx';
 import { WardrobeMirror } from './ui/Wardrobe.tsx';
 import { GardenNews } from './ui/GardenNews.tsx';
@@ -38,6 +40,7 @@ type Screen =
   | 'about'
   | 'garden'
   | 'shop'
+  | 'pets'
   | 'house'
   | 'wardrobe'
   | 'colour'
@@ -92,7 +95,7 @@ function GardenApp() {
 
   function update(recipe: (current: Progress) => Progress) {
     setProgress((current) => {
-      const next = recipe(current);
+      const next = grantProgress(recipe(current));
       saveProgress(next);
       return next;
     });
@@ -151,6 +154,16 @@ function GardenApp() {
     );
     setLive({ screen: 'shop', placeId: 'crystal-shop', placeName: 'Crystal shop', activity: '', question: '' });
     maybeOffer('crystal-shop', 'shop');
+  }
+
+  function openPets() {
+    update((current) =>
+      current.visitedPlaces.includes('pet-shop')
+        ? current
+        : { ...current, visitedPlaces: [...current.visitedPlaces, 'pet-shop'] },
+    );
+    setLive({ screen: 'pets', placeId: 'pet-shop', placeName: 'Pet shop', activity: '', question: '' });
+    show('pets');
   }
 
   function openHouse() {
@@ -245,11 +258,13 @@ function GardenApp() {
       </div>
       {screen === 'home' ? <GardenNews /> : null}
       {screen === 'home' ? (
+        <>
         <Home
           progress={progress}
           onStart={() => start()}
           onVisit={(placeId) => start(placeId)}
           onShop={openShop}
+          onPets={openPets}
           onHouse={openHouse}
           onColour={openColour}
           onStories={() => show('shelf')}
@@ -258,7 +273,10 @@ function GardenApp() {
           onParent={() => show('parent')}
           onRename={(name) => update((current) => ({ ...current, learnerName: name || DEFAULT_LEARNER_NAME }))}
         />
+        <PetReveal progress={progress} update={update} onBook={openPets} />
+        </>
       ) : null}
+      {screen === 'pets' ? <PetShop progress={progress} update={update} /> : null}
       {screen === 'shop' ? (
         <CrystalShop progress={progress} update={update} onWardrobe={() => show('wardrobe')} onHouse={openHouse} onStory={() => openStory('crystal-shop', 'shop')} onOpenBook={() => openBook('crystal-shop')} />
       ) : null}
@@ -327,12 +345,14 @@ function GardenApp() {
               deeds,
               crystals: correct * crystalGain(placeId),
               wardrobe: progress.wardrobe,
+              companion: companionTitle(progress.pets),
               at,
             });
             update((current) =>
               rememberAdventure(applyPlacement(current, correct, asked, allTopics(), at), adventure, chapterId, closingLines({
                 placeId,
                 crystals: correct * crystalGain(placeId),
+                companion: companionTitle(progress.pets),
                 at,
               })),
             );
@@ -386,6 +406,7 @@ function GardenApp() {
               wardrobe: progress.wardrobe,
               creature: gift.kind === 'friend' ? gift.name : null,
               gift: gift.kind === 'friend' ? null : gift.name,
+              companion: companionTitle(progress.pets),
               at,
             });
             setReward(gift);
@@ -407,6 +428,7 @@ function GardenApp() {
                   crystals: correct * crystalGain(placeId),
                   creature: gift.kind === 'friend' ? gift.name : null,
                   gift: gift.kind === 'friend' ? null : gift.name,
+                  companion: companionTitle(progress.pets),
                   at,
                 }),
               ),

@@ -566,6 +566,43 @@ async function main() {
   await shot(page, 'witch-house');
   await page.locator('[data-testid="garden-map"]').click();
 
+  await page.locator('[data-testid="map-pets"]').click({ force: true });
+  await page.waitForSelector('[data-testid="pet-shop"]');
+  await page.locator('[data-testid="pet-book"]').click();
+  const petGroups = [];
+  for (let group = 0; group < 5; group += 1) {
+    petGroups.push((await page.locator('[data-testid="pet-group-name"]').innerText()).trim());
+    if (group < 4) await page.locator('[data-testid="pet-group-next"]').click();
+  }
+  if (petGroups.join(',') !== 'Cats,Dogs,Creatures,Imaginary,Fairies') record('pet groups', 'still broken', petGroups.join(','));
+  else record('pet groups', 'pass');
+  await page.locator('[data-testid="pet-shelf"]').click();
+  await page.locator('[data-testid="buy-pet-cloud-cat"]').click();
+  await page.locator('[data-testid="pet-book"]').click();
+  for (let back = 0; back < 5; back += 1) {
+    const label = (await page.locator('[data-testid="pet-group-name"]').innerText()).trim();
+    if (label === 'Cats') break;
+    await page.locator('[data-testid="pet-group-prev"]').click();
+  }
+  await page.locator('[data-testid="pet-name-cloud-cat"]').fill('Pip');
+  await page.locator('[data-testid="walk-pet-cloud-cat"]').click();
+  const named = await page.locator('[data-testid="pet-name-cloud-cat"]').inputValue();
+  const walking = await page.locator('[data-testid="walk-pet-cloud-cat"]').innerText();
+  if (named !== 'Pip' || !walking.includes('Walking')) record('pet buy and name', 'still broken', `${named} ${walking}`);
+  else record('pet buy and name', 'pass');
+  const petFit = await layout(page);
+  if (petFit.length) record('pet shop fit', 'still broken', petFit.slice(0, 4).join('; '));
+  else record('pet shop fit', 'pass');
+  await shot(page, 'pet-shop');
+  await page.locator('[data-testid="garden-map"]').click();
+  await page.waitForSelector('[data-testid="map-companion"]');
+  record('pet companion', 'pass');
+  await page.locator('[data-testid="map-house"]').click({ force: true });
+  await page.locator('[data-testid="rest-pet-cloud-cat"]').click();
+  await page.waitForSelector('[data-testid="home-pet-cloud-cat"]');
+  record('pet in the house', 'pass');
+  await page.locator('[data-testid="garden-map"]').click();
+
   await page.locator('[data-testid="map-colour"]').click();
   const smudge = await answerNeighbour(page, 'smudge');
   record('talk smudge', 'pass', smudge.slice(0, 60));

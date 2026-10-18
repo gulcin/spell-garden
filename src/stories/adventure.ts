@@ -168,9 +168,10 @@ export function deedLine(placeId: string, item: Pick<Item, 'template' | 'goal'>)
   return deedFromGoal(placeId, item.template, item.goal);
 }
 
-export function visitIntro(placeId: string, wardrobe: WardrobeState | null | undefined): string {
+export function visitIntro(placeId: string, wardrobe: WardrobeState | null | undefined, companion?: string | null): string {
   const place = PLACE_NAME[placeId] ?? 'garden';
-  return `Today you visited the ${place}. You wore ${outfitPhrase(wardrobe)}.`;
+  const friend = companion?.trim() ? ` ${companion.trim()} came along.` : '';
+  return `Today you visited the ${place}. You wore ${outfitPhrase(wardrobe)}.${friend}`;
 }
 
 export function closingLines(input: {
@@ -178,6 +179,7 @@ export function closingLines(input: {
   crystals: number;
   creature?: string | null;
   gift?: string | null;
+  companion?: string | null;
   at: number;
 }): string[] {
   const place = PLACE_NAME[input.placeId] ?? 'garden';
@@ -190,7 +192,8 @@ export function closingLines(input: {
         : `You earned ${input.crystals} crystals in the ${place}. They settled in your pocket.`;
   const when = adventureDate(input.at);
   const brought = input.gift ? ` You also brought home ${input.gift}.` : '';
-  return [crystals, `You met ${friend}.${brought} This adventure is dated ${when}, so you can hear it again.`];
+  const along = input.companion?.trim() ? ` ${input.companion.trim()} came along.` : '';
+  return [crystals, `You met ${friend}.${brought}${along} This adventure is dated ${when}, so you can hear it again.`];
 }
 
 export function outfitPhrase(wardrobe: WardrobeState | null | undefined): string {
@@ -229,6 +232,7 @@ export function buildAdventure(input: {
   wardrobe: WardrobeState | null | undefined;
   creature?: string | null;
   gift?: string | null;
+  companion?: string | null;
   at: number;
 }): Adventure {
   const place = PLACE_NAME[input.placeId] ?? 'garden';
@@ -247,8 +251,9 @@ export function buildAdventure(input: {
         : `You earned ${input.crystals} crystals in the ${place}. They settled in your pocket.`;
   const worn = outfitPhrase(input.wardrobe);
   const when = adventureDate(input.at);
+  const along = input.companion?.trim() ? ` ${input.companion.trim()} came along.` : '';
   const pages = [
-    `Today you visited the ${place}. You wore ${worn}.`,
+    `Today you visited the ${place}. You wore ${worn}.${along}`,
     work,
     more ? `${more} ${crystals}` : crystals,
     `You met ${friend}.${input.gift ? ` You also brought home ${input.gift}.` : ''} This adventure is dated ${when}, so you can hear it again.`,

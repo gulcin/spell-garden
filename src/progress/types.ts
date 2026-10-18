@@ -1,4 +1,5 @@
 import { freshHouse, type HouseState } from '../house/layout.ts';
+import { freshPets, type PetState } from '../pets/catalog.ts';
 import type { Adventure } from '../stories/adventure.ts';
 import { emptyBooks, type PlaceBook } from '../stories/books.ts';
 import type { QuestRecord, TalkMemory } from '../cast/talk.ts';
@@ -104,6 +105,8 @@ export type Progress = {
   books: PlaceBook[];
   /** Furniture she owns and where it sits in the witch's house. */
   house: HouseState;
+  /** Cats, dogs, creatures, imaginary friends, and fairies. */
+  pets: PetState;
   /** How many times she has stopped to talk with each neighbour. */
   talks: TalkMemory[];
   /** Little quests a neighbour is waiting on, or has already thanked her for. */
@@ -151,6 +154,7 @@ export function freshProgress(name = DEFAULT_LEARNER_NAME): Progress {
     adventures: [],
     books: emptyBooks(),
     house: freshHouse(),
+    pets: freshPets(),
     talks: [],
     quests: [],
     updatedAt: Date.now(),

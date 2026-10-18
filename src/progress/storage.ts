@@ -1,5 +1,6 @@
 import { normalizeHouse } from '../house/layout.ts';
 import { migrateStoredProgress } from './migrations.ts';
+import { grantEarned, normalizePets } from '../pets/state.ts';
 import { isAdventure } from '../stories/adventure.ts';
 import { normalizeBooks } from '../stories/books.ts';
 import { normalizeQuests, normalizeTalks } from '../cast/talk.ts';
@@ -27,7 +28,7 @@ const PLACE_TRAIL = [
   'mushroom-ring',
 ];
 
-const KNOWN_PLACES = new Set([...PLACE_TRAIL, 'crystal-shop', 'colouring-nook', 'witch-house']);
+const KNOWN_PLACES = new Set([...PLACE_TRAIL, 'crystal-shop', 'colouring-nook', 'witch-house', 'pet-shop']);
 
 /** Older saves visited places in map order. A missing list keeps those stars. */
 export function normalizeVisited(value: unknown, sessions: number): string[] {
@@ -99,6 +100,14 @@ export function withWardrobe(parsed: Progress): Progress {
     storyFavourites: stringList(parsed.storyFavourites),
     adventures: Array.isArray(parsed.adventures) ? parsed.adventures.filter(isAdventure).slice(0, 24) : [],
     house: normalizeHouse(parsed.house),
+    pets: grantEarned(
+      normalizePets((parsed as Progress & { pets?: unknown }).pets),
+      {
+        sessions: (parsed.sessions ?? []).map(normalizeSession),
+        visitedPlaces: normalizeVisited(parsed.visitedPlaces, parsed.sessions?.length ?? 0),
+      },
+      parsed.updatedAt,
+    ),
     talks: normalizeTalks((parsed as Progress & { talks?: unknown }).talks),
     quests: normalizeQuests((parsed as Progress & { quests?: unknown }).quests),
     books: normalizeBooks(

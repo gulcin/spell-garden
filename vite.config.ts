@@ -38,6 +38,7 @@ export function precacheFile(file: string): boolean {
   if (file.startsWith('art/crystals/') && file.includes('@2x')) return false;
   if (file.startsWith('art/cast/') && file.includes('@2x')) return false;
   if (file.startsWith('art/wear/look-') && file.includes('@2x')) return false;
+  if (file.startsWith('art/pets/') && file.includes('@2x')) return false;
   return true;
 }
 

@@ -1,14 +1,17 @@
 import { PLACES, Prop, REWARD_ART } from './pictures.tsx';
 import type { Progress } from '../progress/types.ts';
+import { companionTitle } from '../pets/state.ts';
 import { REWARDS } from '../story.ts';
 import { CrystalCounter } from './CrystalCounter.tsx';
 import { DressedApprentice } from './DressedApprentice.tsx';
+import { PetArt } from './PetShop.tsx';
 
 export function Home({
   progress,
   onStart,
   onVisit,
   onShop,
+  onPets,
   onHouse,
   onColour,
   onStories,
@@ -21,6 +24,7 @@ export function Home({
   onStart: () => void;
   onVisit: (placeId: string) => void;
   onShop: () => void;
+  onPets: () => void;
   onHouse: () => void;
   onColour: () => void;
   onStories: () => void;
@@ -31,14 +35,20 @@ export function Home({
 }) {
   const friends = REWARDS.filter((reward) => reward.kind === 'friend' && progress.rewards.includes(reward.id));
   const here = progress.sessions.length % PLACES.length;
+  const herePlace = PLACES[here]!;
+  const companion = companionTitle(progress.pets);
+  const companionId = progress.pets.companionId;
   const base = import.meta.env.BASE_URL;
   return (
     <div className="home">
       <header className="hero">
-        <DressedApprentice
-          className="guide"
-          alt="Aida, a young wizard with long straight hair, an owl, and a star wand"
-        />
+        <div className="guide-wrap">
+          <DressedApprentice
+            className="guide"
+            alt="Aida, a young wizard with long straight hair, an owl, and a star wand"
+          />
+          {companion && companionId ? <PetArt id={companionId} className="hero-pet" alt={companion} /> : null}
+        </div>
         <div className="hero-copy">
           <CrystalCounter count={progress.crystals} />
           <p className="kicker">A gentle wizard garden</p>
@@ -132,6 +142,26 @@ export function Home({
               <span className="label-full">Colouring</span>
               <span className="label-short">Colour</span>
             </button>
+            <button
+              type="button"
+              className={`hotspot hotspot-pets hotspot-edge${progress.visitedPlaces.includes('pet-shop') ? ' has-star' : ''}`}
+              style={{ left: '90%', top: '62%' }}
+              data-testid="map-pets"
+              aria-label="Pet shop"
+              onClick={onPets}
+            >
+              <span className="label-full">Pet shop</span>
+              <span className="label-short">Pets</span>
+            </button>
+            {companion && companionId ? (
+              <span
+                className="map-companion"
+                data-testid="map-companion"
+                style={{ left: `${Math.min(84, herePlace.x + 8)}%`, top: `${Math.max(10, herePlace.y - 10)}%` }}
+              >
+                <PetArt id={companionId} alt="" />
+              </span>
+            ) : null}
           </div>
         </div>
       </section>
