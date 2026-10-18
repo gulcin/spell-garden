@@ -1,4 +1,5 @@
 import { isAdventure } from '../stories/adventure.ts';
+import { normalizeBooks } from '../stories/books.ts';
 import { normalizeCrystals, normalizeWardrobe } from '../wardrobe/economy.ts';
 import { freshProgress, learnerNameFrom, PROGRESS_FORMAT, PROGRESS_KEY, type Progress } from './types.ts';
 
@@ -48,6 +49,15 @@ export function withWardrobe(parsed: Progress): Progress {
     storiesHeard: stringList(parsed.storiesHeard),
     storyFavourites: stringList(parsed.storyFavourites),
     adventures: Array.isArray(parsed.adventures) ? parsed.adventures.filter(isAdventure).slice(0, 24) : [],
+    books: normalizeBooks(
+      parsed.books,
+      (Array.isArray(parsed.adventures) ? parsed.adventures.filter(isAdventure) : []).map((adventure) => ({
+        id: adventure.id,
+        placeId: adventure.placeId,
+        at: adventure.at,
+        pages: adventure.pages,
+      })),
+    ),
   };
 }
 

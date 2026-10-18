@@ -15,8 +15,9 @@ import { awardCrystals } from '../wardrobe/economy.ts';
 import { CrystalCounter } from './CrystalCounter.tsx';
 import { DressedApprentice } from './DressedApprentice.tsx';
 import { PLACES, placeStyle, Prop } from './pictures.tsx';
-import { deedLine } from '../stories/adventure.ts';
-import { StoryButton } from './StoryTime.tsx';
+import { deedLine, visitIntro } from '../stories/adventure.ts';
+import { appendPuzzlePage } from '../stories/books.ts';
+import { PlaceBookButton, StoryButton } from './StoryTime.tsx';
 
 type Mode = 'placement' | 'chapter';
 
@@ -46,16 +47,19 @@ export function Quest({
   update,
   onFinish,
   onStory,
+  onOpenBook,
 }: {
   mode: Mode;
   progress: Progress;
   chapter?: Chapter;
   placeId?: string;
   update: (recipe: (current: Progress) => Progress) => void;
-  onFinish: (correct: number, asked: number, deeds: string[]) => void;
+  onFinish: (correct: number, asked: number, deeds: string[], chapterId: string) => void;
   onStory?: () => void;
+  onOpenBook?: () => void;
 }) {
   const sessionId = useRef(`s-${Date.now()}`);
+  const chapterId = useRef(`visit-${placeId}-${sessionId.current}`);
   const deeds = useRef<string[]>([]);
   const [slots] = useState<ChapterSlot[]>(() =>
     mode === 'placement'
@@ -110,7 +114,7 @@ export function Quest({
         </div>
         <h2>The garden is resting</h2>
         <p>Every spell you can reach is already glowing. A grown-up can open a new path from the journal.</p>
-        <button type="button" className="btn primary" onClick={() => onFinish(correct, asked, deeds.current)}>
+        <button type="button" className="btn primary" onClick={() => onFinish(correct, asked, deeds.current, chapterId.current)}>
           Back to the tower
         </button>
       </section>
@@ -171,13 +175,16 @@ export function Quest({
 
   function record(ok: boolean, currentItem: Item) {
     setAsked((value) => value + 1);
+    const at = Date.now();
+    const deed = ok ? deedLine(placeId, currentItem) : '';
+    const pageId = `${chapterId.current}:${deeds.current.length + 1}`;
     if (ok) {
       setCorrect((value) => value + 1);
-      deeds.current = [...deeds.current, deedLine(placeId, currentItem)];
+      deeds.current = [...deeds.current, deed];
     }
     update((current) => {
       const prev = current.topics[currentItem.topicId];
-      const nextTopic = recordAttempt(prev, ok, sessionId.current, currentItem.template, Date.now());
+      const nextTopic = recordAttempt(prev, ok, sessionId.current, currentItem.template, at);
       const sessions = current.sessions.map((session) =>
         session.id === sessionId.current
           ? {
@@ -189,7 +196,18 @@ export function Quest({
           : session,
       );
       const next = { ...current, topics: { ...current.topics, [currentItem.topicId]: nextTopic }, sessions };
-      return ok ? awardCrystals(next, crystalGain(placeId)) : next;
+      const awarded = ok ? awardCrystals(next, crystalGain(placeId)) : next;
+      if (!ok) return awarded;
+      return {
+        ...awarded,
+        books: appendPuzzlePage(awarded.books, {
+          placeId,
+          chapterId: chapterId.current,
+          at,
+          intro: { id: `${chapterId.current}:intro`, text: visitIntro(placeId, current.wardrobe) },
+          deed: { id: pageId, text: deed },
+        }),
+      };
     });
   }
 
@@ -244,7 +262,7 @@ export function Quest({
 
   function next() {
     if (index + 1 >= slots.length) {
-      onFinish(correct, asked, deeds.current);
+      onFinish(correct, asked, deeds.current, chapterId.current);
       return;
     }
     const upcoming = slots[index + 1];
@@ -268,6 +286,7 @@ export function Quest({
   const spot = PLACES.find((entry) => entry.id === placeId) ?? PLACES[0];
   return (
     <section className="quest place-scene" data-place={placeId} style={placeStyle(placeId)}>
+      {onOpenBook ? <PlaceBookButton placeId={placeId} books={progress.books} onOpen={onOpenBook} /> : null}
       <header className="quest-top">
         <p className="kicker">{mode === 'placement' ? 'Finding your path' : chapter?.title}</p>
         <div className="quest-meta">

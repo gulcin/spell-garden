@@ -22,7 +22,8 @@ import { Parent } from './Parent.tsx';
 import { PLACES, placeStyle, Prop } from './pictures.tsx';
 import { RewardScreen } from './Reward.tsx';
 import { buildAdventure } from '../stories/adventure.ts';
-import { rememberStory, StoryOffer, StoryReader, StoryShelf } from './StoryTime.tsx';
+import { appendPuzzlePage, bookByPlace } from '../stories/books.ts';
+import { BookReader, rememberStory, StoryOffer, StoryReader, StoryShelf } from './StoryTime.tsx';
 import { WardrobeMirror } from './Wardrobe.tsx';
 
 function previewProgress(screen: string, dressed: boolean): Progress {
@@ -61,6 +62,13 @@ function previewProgress(screen: string, dressed: boolean): Progress {
         at: Date.UTC(2026, 9, 18),
       }),
     ];
+    progress.books = appendPuzzlePage(progress.books, {
+      placeId: 'lantern-grove',
+      chapterId: 'visit-preview',
+      at: Date.UTC(2026, 9, 18),
+      intro: { id: 'visit-preview:intro', text: 'Today you visited the lantern grove. You wore your rose petal robe and mushroom cap.' },
+      deed: { id: 'visit-preview:1', text: 'You lit 7 lanterns.' },
+    });
   }
   return progress;
 }
@@ -114,18 +122,30 @@ export function Gallery() {
         <Home progress={progress} onStart={() => undefined} onVisit={() => undefined} onShop={() => undefined} onColour={() => undefined} onStories={() => undefined} onGarden={() => undefined} onAbout={() => undefined} onParent={() => undefined} onRename={() => undefined} />
       ) : null}
       {screen === 'shop' ? (
-        <CrystalShop progress={progress} update={update} category={category} onWardrobe={() => undefined} onStory={() => undefined} />
+        <CrystalShop progress={progress} update={update} category={category} onWardrobe={() => undefined} onStory={() => undefined} onOpenBook={() => undefined} />
       ) : null}
       {screen === 'shelf' ? (
         <StoryShelf
           progress={progress}
-          onOpen={() => undefined}
-          onOpenAdventure={() => undefined}
+          onOpenBook={() => undefined}
           onBedtime={() => undefined}
           onFavourite={(id) => update((current) => rememberStory(current, id, 'storyFavourites'))}
         />
       ) : null}
-      {screen === 'story-offer' ? <StoryOffer storyId={params.get('story') ?? 'crystal-cave'} onHear={() => undefined} onSkip={() => undefined} /> : null}
+      {screen === 'story-offer' ? <StoryOffer storyId={params.get('story') ?? 'crystal-cave'} books={progress.books} onOpenBook={() => undefined} onHear={() => undefined} onSkip={() => undefined} /> : null}
+      {screen === 'book' ? (
+        <BookReader
+          placeId="lantern-grove"
+          book={bookByPlace(progress.books, 'lantern-grove')}
+          bedtime={false}
+          loved={false}
+          autoplay={params.get('speak') !== '0'}
+          onHeard={() => undefined}
+          onClose={() => undefined}
+          onNextStory={() => undefined}
+          onToggleFavourite={() => undefined}
+        />
+      ) : null}
       {screen === 'adventure' ? (
         <StoryReader
           storyId={progress.adventures[0]?.id ?? 'adventure'}

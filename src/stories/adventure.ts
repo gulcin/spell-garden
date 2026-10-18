@@ -168,6 +168,31 @@ export function deedLine(placeId: string, item: Pick<Item, 'template' | 'goal'>)
   return deedFromGoal(placeId, item.template, item.goal);
 }
 
+export function visitIntro(placeId: string, wardrobe: WardrobeState | null | undefined): string {
+  const place = PLACE_NAME[placeId] ?? 'garden';
+  return `Today you visited the ${place}. You wore ${outfitPhrase(wardrobe)}.`;
+}
+
+export function closingLines(input: {
+  placeId: string;
+  crystals: number;
+  creature?: string | null;
+  gift?: string | null;
+  at: number;
+}): string[] {
+  const place = PLACE_NAME[input.placeId] ?? 'garden';
+  const friend = input.creature?.trim() || PLACE_FRIEND[input.placeId] || 'a quiet friend';
+  const crystals =
+    input.crystals <= 0
+      ? 'You left the crystals where they were, and that is all right.'
+      : input.crystals === 1
+        ? `You earned 1 crystal in the ${place}. It settled in your pocket.`
+        : `You earned ${input.crystals} crystals in the ${place}. They settled in your pocket.`;
+  const when = adventureDate(input.at);
+  const brought = input.gift ? ` You also brought home ${input.gift}.` : '';
+  return [crystals, `You met ${friend}.${brought} This adventure is dated ${when}, so you can hear it again.`];
+}
+
 export function outfitPhrase(wardrobe: WardrobeState | null | undefined): string {
   const equipped = wardrobe?.equipped ?? {};
   const names = Object.values(equipped)

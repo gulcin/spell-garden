@@ -6,7 +6,8 @@ import { speak } from '../speech.ts';
 import { CrystalCounter } from './CrystalCounter.tsx';
 import { DressedApprentice } from './DressedApprentice.tsx';
 import { placeStyle, Prop } from './pictures.tsx';
-import { StoryButton } from './StoryTime.tsx';
+import type { PlaceBook } from '../stories/books.ts';
+import { PlaceBookButton, StoryButton } from './StoryTime.tsx';
 
 export function CrystalShop({
   progress,
@@ -14,12 +15,14 @@ export function CrystalShop({
   category = 'dress',
   onWardrobe,
   onStory,
+  onOpenBook,
 }: {
   progress: Progress;
   update: (recipe: (current: Progress) => Progress) => void;
   category?: ShopCategory;
   onWardrobe: () => void;
   onStory?: () => void;
+  onOpenBook?: () => void;
 }) {
   const [shelf, setShelf] = useState<ShopCategory>(category);
   const [cheer, setCheer] = useState<string | null>(null);
@@ -59,6 +62,7 @@ export function CrystalShop({
         <Prop name="shopkeeper" className="shopkeeper" alt="Clover the shop fox, holding a crystal" />
         <p>Hello. Crystals from the cave spend here. The first thing on each shelf is a small pile.</p>
       </div>
+      {onOpenBook ? <PlaceBookButton placeId="crystal-shop" books={progress.books} onOpen={onOpenBook} /> : null}
       {cheer ? (
         <p className="note good shop-cheer" role="status" data-testid="shop-cheer">
           {cheer}

@@ -16,8 +16,9 @@ import { Parent } from './ui/Parent.tsx';
 import { PLACES, placeStyle } from './ui/pictures.tsx';
 import { Quest } from './ui/Quest.tsx';
 import { RewardScreen } from './ui/Reward.tsx';
-import { rememberStory, StoryOffer, StoryReader, StoryShelf } from './ui/StoryTime.tsx';
-import { buildAdventure, type Adventure } from './stories/adventure.ts';
+import { BookReader, PlaceBookButton, rememberStory, StoryOffer, StoryReader, StoryShelf } from './ui/StoryTime.tsx';
+import { buildAdventure, closingLines, type Adventure } from './stories/adventure.ts';
+import { bookByPlace, sealVisit } from './stories/books.ts';
 import { storyById, STORIES } from './stories/library.ts';
 import { crystalGain } from './wardrobe/catalog.ts';
 import { WardrobeProvider } from './ui/DressedApprentice.tsx';
@@ -59,6 +60,7 @@ function GardenApp() {
   const [placeId, setPlaceId] = useState<(typeof PLACES)[number]['id']>('lantern-grove');
   const [chapterIndex, setChapterIndex] = useState(0);
   const [storyId, setStoryId] = useState(STORIES[0]?.id ?? 'lantern-grove');
+  const [readingBook, setReadingBook] = useState<string | null>(null);
   const [bedtime, setBedtime] = useState(false);
   const [resume, setResume] = useState<Screen>('home');
   const leaving = useRef(false);
@@ -148,6 +150,7 @@ function GardenApp() {
   function openStory(id: string, back: Screen) {
     const tale = storyById(id);
     if (!tale) return;
+    setReadingBook(null);
     setStoryId(id);
     setBedtime(false);
     setResume(back);
@@ -155,9 +158,16 @@ function GardenApp() {
     show('story');
   }
 
+  function openBook(id: string) {
+    const tale = storyById(id);
+    setReadingBook(id);
+    setLive({ screen: 'story', placeId: id, placeName: tale?.place ?? id, activity: tale?.title ?? 'Storybook', question: '' });
+  }
+
   function beginBedtime() {
     const first = STORIES[0];
     if (!first) return;
+    setReadingBook(null);
     setStoryId(first.id);
     setBedtime(true);
     setResume('shelf');
@@ -165,12 +175,21 @@ function GardenApp() {
     show('story');
   }
 
-  function rememberAdventure(current: Progress, adventure: Adventure): Progress {
+  function rememberAdventure(current: Progress, adventure: Adventure, chapterId: string, closing: string[]): Progress {
     const adventures = [adventure, ...current.adventures.filter((item) => item.id !== adventure.id)].slice(0, 24);
-    return { ...current, adventures };
+    return {
+      ...current,
+      adventures,
+      books: sealVisit(current.books, {
+        placeId: adventure.placeId,
+        chapterId,
+        pages: closing.map((text, index) => ({ id: `${chapterId}:close:${index}`, text })),
+      }),
+    };
   }
 
   function openAdventure(adventure: Adventure, back: Screen) {
+    setReadingBook(null);
     setStoryId(adventure.id);
     setBedtime(false);
     setResume(back);
@@ -212,22 +231,21 @@ function GardenApp() {
         />
       ) : null}
       {screen === 'shop' ? (
-        <CrystalShop progress={progress} update={update} onWardrobe={() => show('wardrobe')} onStory={() => openStory('crystal-shop', 'shop')} />
+        <CrystalShop progress={progress} update={update} onWardrobe={() => show('wardrobe')} onStory={() => openStory('crystal-shop', 'shop')} onOpenBook={() => openBook('crystal-shop')} />
       ) : null}
       {screen === 'colour' ? (
-        <ColouringCorner progress={progress} update={update} onStory={() => openStory('colouring-nook', 'colour')} />
+        <ColouringCorner progress={progress} update={update} onStory={() => openStory('colouring-nook', 'colour')} onOpenBook={() => openBook('colouring-nook')} />
       ) : null}
       {screen === 'shelf' ? (
         <StoryShelf
           progress={progress}
-          onOpen={(id) => openStory(id, 'shelf')}
-          onOpenAdventure={(adventure) => openAdventure(adventure, 'shelf')}
+          onOpenBook={(id) => openBook(id)}
           onBedtime={beginBedtime}
           onFavourite={(id) => update((current) => rememberStory(current, id, 'storyFavourites'))}
         />
       ) : null}
       {screen === 'story-offer' ? (
-        <StoryOffer storyId={storyId} onHear={() => openStory(storyId, resume)} onSkip={() => show(resume)} />
+        <StoryOffer storyId={storyId} books={progress.books} onOpenBook={() => openBook(storyId)} onHear={() => openStory(storyId, resume)} onSkip={() => show(resume)} />
       ) : null}
       {screen === 'story' ? (
         <StoryReader
@@ -257,7 +275,8 @@ function GardenApp() {
           placeId={placeId}
           update={update}
           onStory={() => openStory(placeId, 'placement')}
-          onFinish={(correct, asked, deeds) => {
+          onOpenBook={() => openBook(placeId)}
+          onFinish={(correct, asked, deeds, chapterId) => {
             const at = Date.now();
             const adventure = buildAdventure({
               name: progress.learnerName,
@@ -267,7 +286,13 @@ function GardenApp() {
               wardrobe: progress.wardrobe,
               at,
             });
-            update((current) => rememberAdventure(applyPlacement(current, correct, asked, allTopics(), at), adventure));
+            update((current) =>
+              rememberAdventure(applyPlacement(current, correct, asked, allTopics(), at), adventure, chapterId, closingLines({
+                placeId,
+                crystals: correct * crystalGain(placeId),
+                at,
+              })),
+            );
             setPlacedCorrect(correct);
             openAdventure(adventure, 'placed');
           }}
@@ -295,7 +320,8 @@ function GardenApp() {
           placeId={placeId}
           update={update}
           onStory={() => openStory(placeId, 'chapter')}
-          onFinish={(correct, _asked, deeds) => {
+          onOpenBook={() => openBook(placeId)}
+          onFinish={(correct, _asked, deeds, chapterId) => {
             const gift = nextReward(progress.rewards);
             const at = Date.now();
             const adventure = buildAdventure({
@@ -321,6 +347,14 @@ function GardenApp() {
                   ),
                 },
                 adventure,
+                chapterId,
+                closingLines({
+                  placeId,
+                  crystals: correct * crystalGain(placeId),
+                  creature: gift.kind === 'friend' ? gift.name : null,
+                  gift: gift.kind === 'friend' ? null : gift.name,
+                  at,
+                }),
               ),
             );
             openAdventure(adventure, 'reward');
@@ -329,7 +363,22 @@ function GardenApp() {
       ) : null}
       {screen === 'reward' && reward ? (
         <div className="place-scene fill-scene" style={placeStyle(placeId)}>
+          <PlaceBookButton placeId={placeId} books={progress.books} onOpen={() => openBook(placeId)} />
           <RewardScreen reward={reward} name={progress.learnerName} onHome={() => show('home')} />
+        </div>
+      ) : null}
+      {readingBook ? (
+        <div className="book-layer">
+          <BookReader
+            placeId={readingBook}
+            book={bookByPlace(progress.books, readingBook)}
+            bedtime={false}
+            loved={progress.storyFavourites.includes(readingBook)}
+            onHeard={() => update((current) => rememberStory(current, readingBook, 'storiesHeard'))}
+            onClose={() => setReadingBook(null)}
+            onNextStory={() => setReadingBook(null)}
+            onToggleFavourite={() => update((current) => rememberStory(current, readingBook, 'storyFavourites'))}
+          />
         </div>
       ) : null}
       {telling ? <TellSheet onClose={() => setTelling(false)} /> : null}
