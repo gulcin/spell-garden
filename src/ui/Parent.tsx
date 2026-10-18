@@ -124,7 +124,7 @@ function Journal({
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'prague-spell-garden-progress.json';
+    link.download = 'spell-garden-progress.json';
     link.click();
     URL.revokeObjectURL(url);
   }

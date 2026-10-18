@@ -2,7 +2,7 @@
   "name": "prague-spell-garden",
   "private": true,
   "version": "1.0.0",
-  "description": "A gentle, touch-first wizard-apprentice maths garden for Prague, built on the Marble Skill Taxonomy.",
+  "description": "A gentle, touch-first wizard-apprentice maths garden for Aida, built on the Marble Skill Taxonomy.",
   "type": "module",
   "scripts": {
     "dev": "vite",

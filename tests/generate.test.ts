@@ -4,6 +4,7 @@ import { countUpHint, generateItem, placementPlan } from '../src/activities/gene
 import { classify, isManipulative } from '../src/curriculum/classify.ts';
 import { allTopics } from '../src/curriculum/data.ts';
 import { askHer } from '../src/curriculum/ask.ts';
+import { learnerNameFrom } from '../src/progress/types.ts';
 
 describe('item generators', () => {
   it('solves every maths topic from its own solution', () => {
@@ -40,10 +41,18 @@ describe('item generators', () => {
     expect(line.hints.some((hint) => hint === countUpHint(4, 6))).toBe(true);
   });
 
+  it('migrates a saved Prague name to Aida and keeps any other name', () => {
+    expect(learnerNameFrom('Prague')).toBe('Aida');
+    expect(learnerNameFrom(' prague ')).toBe('Aida');
+    expect(learnerNameFrom('')).toBe('Aida');
+    expect(learnerNameFrom(undefined)).toBe('Aida');
+    expect(learnerNameFrom('Mina')).toBe('Mina');
+  });
+
   it('asks a real-world question from the evidence', () => {
     const topic = allTopics()[0]!;
-    const question = askHer(topic, 'Prague');
-    expect(question.startsWith('Ask Prague:')).toBe(true);
+    const question = askHer(topic, 'Aida');
+    expect(question.startsWith('Ask Aida:')).toBe(true);
     expect(question.length).toBeGreaterThan(20);
   });
 

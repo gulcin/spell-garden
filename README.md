@@ -1,6 +1,6 @@
-# Prague's Spell Garden
+# Aida's Spell Garden
 
-A touch-first maths garden. Prague is a wizard apprentice: counting, sharing, clocks, and fractions cast kind magic — lanterns, plants, bridges, and sleepy creatures. There is no combat, no timer, and no scary content.
+A touch-first maths garden. Aida is a wizard apprentice: counting, sharing, clocks, and fractions cast kind magic — lanterns, plants, bridges, and sleepy creatures. There is no combat, no timer, and no scary content.
 
 The spells follow every mathematics topic in the Marble Skill Taxonomy (v1). A new garden starts around IB PYP Grade 3 (about age 8). Each chapter is six puzzles: a focus spell practised until it can be mastered, plus other manipulatives, with spaced review. If a spell is missing an earlier idea, the garden steps down and fills that gap. Mastery can climb with no age ceiling. A grown-up can change the starting level in the journal.
 

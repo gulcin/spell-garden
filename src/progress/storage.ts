@@ -1,4 +1,4 @@
-import { freshProgress, PROGRESS_FORMAT, PROGRESS_KEY, type Progress } from './types.ts';
+import { freshProgress, learnerNameFrom, PROGRESS_FORMAT, PROGRESS_KEY, type Progress } from './types.ts';
 
 function isProgress(value: unknown): value is Progress {
   if (!value || typeof value !== 'object') return false;
@@ -12,10 +12,11 @@ export function loadProgress(): Progress {
     if (!raw) return freshProgress();
     const parsed: unknown = JSON.parse(raw);
     if (!isProgress(parsed)) return freshProgress();
+    const learnerName = learnerNameFrom(parsed.learnerName);
     return {
-      ...freshProgress(parsed.learnerName || 'Prague'),
+      ...freshProgress(learnerName),
       ...parsed,
-      learnerName: parsed.learnerName || 'Prague',
+      learnerName,
       seenTemplates: parsed.seenTemplates ?? [],
       rewards: parsed.rewards ?? [],
       sessions: parsed.sessions ?? [],

@@ -1,6 +1,6 @@
 # Progress format
 
-A sibling app can read Prague's garden from `localStorage`.
+A sibling app can read Aida's garden from `localStorage`.
 
 | | |
 | --- | --- |
@@ -14,7 +14,7 @@ A sibling app can read Prague's garden from `localStorage`.
 {
   "format": "prague.wizard-math.progress.v1",
   "taxonomy": "marble-skill-taxonomy-v1",
-  "learnerName": "Prague",
+  "learnerName": "Aida",
   "updatedAt": 0,
   "placement": {
     "done": true,

@@ -9,7 +9,7 @@ export function About({ onHome }: { onHome: () => void }) {
       </button>
       <h1>About this garden</h1>
       <p>
-        Prague is a young apprentice. She does not fight anything. Maths mends bridges, fills potion bottles, wakes sleepy
+        Aida is a young apprentice. She does not fight anything. Maths mends bridges, fills potion bottles, wakes sleepy
         creatures, and lights lanterns. Every picture here is original.
       </p>
       <p>

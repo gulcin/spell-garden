@@ -267,6 +267,7 @@ export function Quest({
           </button>
           <Board item={item} api={api} />
           {note ? <p className={phase === 'ok' ? 'note good' : 'note'}>{note}</p> : null}
+          <Prop name="apprentice" className="play-guide" alt="" />
           <div className="dock">
             {phase === 'play' ? (
               <>

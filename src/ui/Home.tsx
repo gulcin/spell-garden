@@ -26,7 +26,7 @@ export function Home({
         <Prop
           name="apprentice"
           className="guide"
-          alt="Prague, a young wizard with curly hair, an owl, and a wand"
+          alt="Aida, a young wizard with long straight hair, an owl, and a star wand"
         />
         <div className="hero-copy">
           <p className="kicker">A gentle wizard garden</p>
@@ -66,7 +66,7 @@ export function Home({
                 src={`${base}art/map.jpg`}
                 width={1280}
                 height={720}
-                alt="A watercolor map of Prague's garden, with eight glowing places to visit"
+                alt="A watercolor map of Aida's garden, with eight glowing places to visit"
               />
             </picture>
             {PLACES.map((place, index) => {

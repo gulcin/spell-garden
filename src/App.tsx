@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { allTopics } from './curriculum/data.ts';
 import { applyPlacement } from './progress/placement.ts';
 import { loadProgress, saveProgress } from './progress/storage.ts';
-import type { Progress } from './progress/types.ts';
+import { DEFAULT_LEARNER_NAME, type Progress } from './progress/types.ts';
 import { chapterFor, nextReward, type Reward } from './story.ts';
 import { About } from './ui/About.tsx';
 import { Garden } from './ui/Garden.tsx';
@@ -40,7 +40,7 @@ export function App() {
           onGarden={() => setScreen('garden')}
           onAbout={() => setScreen('about')}
           onParent={() => setScreen('parent')}
-          onRename={(name) => update((current) => ({ ...current, learnerName: name || 'Prague' }))}
+          onRename={(name) => update((current) => ({ ...current, learnerName: name || DEFAULT_LEARNER_NAME }))}
         />
       ) : null}
       {screen === 'garden' ? <Garden progress={progress} onHome={() => setScreen('home')} /> : null}

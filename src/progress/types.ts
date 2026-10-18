@@ -1,6 +1,15 @@
 export const PROGRESS_KEY = 'prague.wizard-math.progress.v1';
 export const PROGRESS_FORMAT = 'prague.wizard-math.progress.v1' as const;
 
+/** The child this garden is for. Saved progress named Prague is migrated here. */
+export const DEFAULT_LEARNER_NAME = 'Aida';
+
+export function learnerNameFrom(saved: string | null | undefined): string {
+  const name = (saved ?? '').trim();
+  if (!name || name.toLowerCase() === 'prague') return DEFAULT_LEARNER_NAME;
+  return name.slice(0, 24);
+}
+
 /** IB PYP Grade 3, about age 8. New gardens begin here. */
 export const DEFAULT_FRONTIER_AGE = 8;
 
@@ -73,7 +82,7 @@ export function emptyTopicState(): TopicState {
   };
 }
 
-export function freshProgress(name = 'Prague'): Progress {
+export function freshProgress(name = DEFAULT_LEARNER_NAME): Progress {
   return {
     format: PROGRESS_FORMAT,
     taxonomy: 'marble-skill-taxonomy-v1',

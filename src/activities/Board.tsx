@@ -387,7 +387,7 @@ function ZoneBox({
     >
       {backdrop === 'jar' ? <Prop name="jar" className="jar-art" /> : null}
       {backdrop === 'pad' ? (
-        <svg className="lily-pad" viewBox="0 0 64 64" aria-hidden>
+        <svg className="lily-pad" viewBox="0 0 64 64" preserveAspectRatio="none" aria-hidden>
           <ellipse cx="32" cy="36" rx="26" ry="18" fill="#b7dd9a" stroke="#5f8f58" strokeWidth="2" />
           <path d="M32 22 L32 50" stroke="#5f8f58" strokeWidth="2" />
         </svg>
@@ -477,7 +477,15 @@ function Stage({
       <div className="stage grid-stage">
         {coords ? <p className="axis">across, then up</p> : null}
         {rows.map((row) => (
-          <div className="grid-row" key={row} style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
+          <div
+            className="grid-row"
+            key={row}
+            style={{
+              gridTemplateColumns: coords
+                ? `2.2rem repeat(${cols}, minmax(0, 1fr))`
+                : `repeat(${cols}, minmax(0, 1fr))`,
+            }}
+          >
             {coords ? <span className="axis-n">{row}</span> : null}
             {Array.from({ length: cols }, (_, col) => {
               const zone = item.zones.find((candidate) => candidate.row === row && candidate.col === col);
