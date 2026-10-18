@@ -1,3 +1,4 @@
+import { isAdventure } from '../stories/adventure.ts';
 import { normalizeCrystals, normalizeWardrobe } from '../wardrobe/economy.ts';
 import { freshProgress, learnerNameFrom, PROGRESS_FORMAT, PROGRESS_KEY, type Progress } from './types.ts';
 
@@ -46,6 +47,7 @@ export function withWardrobe(parsed: Progress): Progress {
     storyOffers: stringList(parsed.storyOffers),
     storiesHeard: stringList(parsed.storiesHeard),
     storyFavourites: stringList(parsed.storyFavourites),
+    adventures: Array.isArray(parsed.adventures) ? parsed.adventures.filter(isAdventure).slice(0, 24) : [],
   };
 }
 

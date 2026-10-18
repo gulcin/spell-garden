@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Progress } from '../progress/types.ts';
-import { pageArt, pageAudio, pageCues, storyById, STORIES, type Tale } from '../stories/library.ts';
+import { adventureDate, wordIndexAt, type Adventure } from '../stories/adventure.ts';
+import { pageArt, pageAudio, pageCues, storyById, STORIES } from '../stories/library.ts';
+import { ADVENTURE_RATE, pickUsVoice } from '../speech.ts';
 import { placeStyle } from './pictures.tsx';
 
 type CueFile = { duration: number; words: { text: string; start: number; end: number }[] };
@@ -39,11 +41,13 @@ export function StoryShelf({
   onOpen,
   onBedtime,
   onFavourite,
+  onOpenAdventure,
 }: {
   progress: Progress;
   onOpen: (id: string) => void;
   onBedtime: () => void;
   onFavourite: (id: string) => void;
+  onOpenAdventure: (adventure: Adventure) => void;
 }) {
   const base = import.meta.env.BASE_URL;
   return (
@@ -64,6 +68,42 @@ export function StoryShelf({
       <button type="button" className="btn gold xl" data-testid="bedtime" onClick={onBedtime}>
         Bedtime listen
       </button>
+      <h2 className="shelf-label">My adventures</h2>
+      {progress.adventures.length === 0 ? (
+        <p className="colour-intro" data-testid="adventures-empty">
+          After a visit, today's adventure waits here with its date.
+        </p>
+      ) : (
+        <div className="book-grid" data-testid="my-adventures">
+          {progress.adventures.map((adventure) => {
+            const heard = progress.storiesHeard.includes(adventure.id);
+            const loved = progress.storyFavourites.includes(adventure.id);
+            const cover = pageArt(adventure.placeId, 0);
+            return (
+              <article key={adventure.id} className="book-card">
+                <button type="button" className="book-open" data-testid={`adventure-${adventure.id}`} onClick={() => onOpenAdventure(adventure)}>
+                  <img src={cover.src} srcSet={cover.srcSet} alt="" />
+                  <strong>{adventure.title}</strong>
+                  <span>{adventure.place}</span>
+                  <em className="adventure-date">{adventureDate(adventure.at)}</em>
+                  {heard ? <em data-testid={`heard-${adventure.id}`}>Listen again</em> : <em className="fresh">Ready</em>}
+                </button>
+                <button
+                  type="button"
+                  className={loved ? 'heart on' : 'heart'}
+                  aria-pressed={loved}
+                  aria-label={loved ? `Remove ${adventure.title} from favourites` : `Save ${adventure.title} for later`}
+                  data-testid={`favourite-${adventure.id}`}
+                  onClick={() => onFavourite(adventure.id)}
+                >
+                  ♥
+                </button>
+              </article>
+            );
+          })}
+        </div>
+      )}
+      <h2 className="shelf-label">Garden stories</h2>
       <div className="book-grid">
         {STORIES.map((story) => {
           const heard = progress.storiesHeard.includes(story.id);
@@ -95,8 +135,18 @@ export function StoryShelf({
   );
 }
 
+type Reading = {
+  id: string;
+  place: string;
+  title: string;
+  pages: string[];
+  artId: string;
+  spoken: boolean;
+};
+
 export function StoryReader({
   storyId,
+  adventure = null,
   bedtime,
   onHeard,
   onClose,
@@ -107,6 +157,7 @@ export function StoryReader({
   autoplay = true,
 }: {
   storyId: string;
+  adventure?: Adventure | null;
   bedtime: boolean;
   loved: boolean;
   onHeard: () => void;
@@ -116,12 +167,29 @@ export function StoryReader({
   startPage?: number;
   autoplay?: boolean;
 }) {
-  const story = storyById(storyId);
-  if (!story) return null;
+  const story = adventure ? null : storyById(storyId);
+  if (!adventure && !story) return null;
+  const reading: Reading = adventure
+    ? {
+        id: adventure.id,
+        place: adventure.place,
+        title: adventure.title,
+        pages: adventure.pages,
+        artId: adventure.placeId,
+        spoken: true,
+      }
+    : {
+        id: story!.id,
+        place: story!.place,
+        title: story!.title,
+        pages: story!.pages,
+        artId: story!.id,
+        spoken: false,
+      };
   return (
     <ReaderBody
-      key={`${story.id}-${bedtime ? 'night' : 'day'}-${startPage}`}
-      story={story}
+      key={`${reading.id}-${bedtime ? 'night' : 'day'}-${startPage}`}
+      story={reading}
       bedtime={bedtime}
       loved={loved}
       startPage={startPage}
@@ -145,7 +213,7 @@ function ReaderBody({
   onNextStory,
   onToggleFavourite,
 }: {
-  story: Tale;
+  story: Reading;
   bedtime: boolean;
   loved: boolean;
   startPage: number;
@@ -162,10 +230,12 @@ function ReaderBody({
   const [time, setTime] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [cues, setCues] = useState<CueFile | null>(null);
+  const [spokenIndex, setSpokenIndex] = useState(-1);
   const heardRef = useRef(false);
   const last = story.pages.length - 1;
 
   useEffect(() => {
+    if (story.spoken) return;
     let gone = false;
     setCues(null);
     setTime(0);
@@ -196,10 +266,10 @@ function ReaderBody({
       gone = true;
       audio.pause();
     };
-  }, [autoplay, page, story.id]);
+  }, [autoplay, page, story.id, story.spoken]);
 
   useEffect(() => {
-    if (!playing) return;
+    if (story.spoken || !playing) return;
     let frame = 0;
     const tick = () => {
       const audio = audioRef.current;
@@ -208,9 +278,10 @@ function ReaderBody({
     };
     frame = window.requestAnimationFrame(tick);
     return () => window.cancelAnimationFrame(frame);
-  }, [playing, page, story.id]);
+  }, [playing, page, story.id, story.spoken]);
 
   useEffect(() => {
+    if (story.spoken) return;
     const audio = audioRef.current;
     if (!audio) return;
     const onTime = () => setTime(audio.currentTime);
@@ -238,12 +309,81 @@ function ReaderBody({
       audio.removeEventListener('pause', onPause);
       audio.removeEventListener('ended', onEnd);
     };
-  }, [bedtime, last, onHeard, onNextStory, page]);
+  }, [bedtime, last, onHeard, onNextStory, page, story.spoken]);
+
+  useEffect(() => {
+    if (!story.spoken) return;
+    const text = story.pages[page] ?? '';
+    const words = text.split(/\s+/).filter(Boolean);
+    setSpokenIndex(-1);
+    const synth = window.speechSynthesis;
+    if (!synth || !autoplay) return;
+    let gone = false;
+    let usingBoundary = false;
+    let started = false;
+    let step = 0;
+    const timer = window.setInterval(() => {
+      if (usingBoundary || gone) return;
+      setSpokenIndex(step);
+      step += 1;
+      if (step >= words.length) window.clearInterval(timer);
+    }, 420);
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = 'en-US';
+    utter.rate = ADVENTURE_RATE;
+    utter.pitch = 1.02;
+    chooseVoice(utter, synth.getVoices?.() ?? []);
+    utter.onboundary = (event) => {
+      if (event.name !== 'word' || gone) return;
+      usingBoundary = true;
+      window.clearInterval(timer);
+      setSpokenIndex(wordIndexAt(text, event.charIndex));
+    };
+    utter.onend = () => {
+      if (gone) return;
+      setPlaying(false);
+      if (page < last) {
+        go(page + 1, 'next');
+        return;
+      }
+      if (!heardRef.current) {
+        heardRef.current = true;
+        onHeard();
+      }
+    };
+    utter.onerror = () => {
+      if (!gone) setPlaying(false);
+    };
+    const start = () => {
+      if (gone || started) return;
+      started = true;
+      synth.cancel();
+      synth.speak(utter);
+      setPlaying(true);
+    };
+    if ((synth.getVoices?.() ?? []).length === 0 && synth.addEventListener) {
+      const ready = () => {
+        synth.removeEventListener?.('voiceschanged', ready);
+        chooseVoice(utter, synth.getVoices?.() ?? []);
+        start();
+      };
+      synth.addEventListener('voiceschanged', ready);
+      window.setTimeout(start, 40);
+    } else {
+      start();
+    }
+    return () => {
+      gone = true;
+      window.clearInterval(timer);
+      synth.cancel();
+    };
+  }, [autoplay, last, onHeard, page, story.pages, story.spoken]);
 
   function go(next: number, direction: 'next' | 'back') {
     const clamped = Math.max(0, Math.min(last, next));
     if (clamped === page) return;
     audioRef.current?.pause();
+    window.speechSynthesis?.cancel();
     if (reduce) {
       setPage(clamped);
       return;
@@ -256,6 +396,31 @@ function ReaderBody({
   }
 
   function toggle() {
+    if (story.spoken) {
+      const synth = window.speechSynthesis;
+      if (!synth) return;
+      if (synth.speaking && !synth.paused) {
+        synth.pause();
+        setPlaying(false);
+        return;
+      }
+      if (synth.paused) {
+        synth.resume();
+        setPlaying(true);
+        return;
+      }
+      const text = story.pages[page] ?? '';
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = 'en-US';
+      utter.rate = ADVENTURE_RATE;
+      utter.pitch = 1.02;
+      chooseVoice(utter, synth.getVoices?.() ?? []);
+      utter.onend = () => setPlaying(false);
+      synth.cancel();
+      synth.speak(utter);
+      setPlaying(true);
+      return;
+    }
     const audio = audioRef.current;
     if (!audio) return;
     if (audio.paused) void audio.play();
@@ -265,8 +430,8 @@ function ReaderBody({
   const text = story.pages[page] ?? '';
   const pieces = piecesOf(text);
   const wordCount = pieces.filter((piece) => piece.index != null).length;
-  const active = activeWord(cues, time, wordCount);
-  const art = pageArt(story.id, page);
+  const active = story.spoken ? spokenIndex : activeWord(cues, time, wordCount);
+  const art = pageArt(story.artId, page);
   const groups = sentences(pieces);
 
   return (
@@ -348,9 +513,21 @@ function ReaderBody({
       <p className="story-count">
         Page {page + 1} of {story.pages.length}
       </p>
-      <audio ref={audioRef} preload="auto" playsInline data-testid="story-audio" />
+      {story.spoken ? null : <audio ref={audioRef} preload="auto" playsInline data-testid="story-audio" />}
     </section>
   );
+}
+
+function chooseVoice(utter: SpeechSynthesisUtterance, voices: SpeechSynthesisVoice[]) {
+  const choice = pickUsVoice(voices);
+  if (!choice) return;
+  const match = voices.find((voice) => voice === choice || (voice.name === choice.name && voice.lang === choice.lang));
+  if (!match || (typeof SpeechSynthesisVoice !== 'undefined' && !(match instanceof SpeechSynthesisVoice))) return;
+  try {
+    utter.voice = match;
+  } catch {
+    /* The language is still en-US if this browser will not accept the voice. */
+  }
 }
 
 function piecesOf(text: string): { word: string; index: number | null }[] {

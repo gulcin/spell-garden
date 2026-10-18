@@ -1,3 +1,5 @@
+import type { Adventure } from '../stories/adventure.ts';
+
 export const PROGRESS_KEY = 'prague.wizard-math.progress.v1';
 export const PROGRESS_FORMAT = 'prague.wizard-math.progress.v1' as const;
 
@@ -80,6 +82,8 @@ export type Progress = {
   storiesHeard: string[];
   /** Stories she saved with the heart. */
   storyFavourites: string[];
+  /** Personalised visits, newest first. */
+  adventures: Adventure[];
   updatedAt: number;
 };
 
@@ -116,6 +120,7 @@ export function freshProgress(name = DEFAULT_LEARNER_NAME): Progress {
     storyOffers: [],
     storiesHeard: [],
     storyFavourites: [],
+    adventures: [],
     updatedAt: Date.now(),
   };
 }

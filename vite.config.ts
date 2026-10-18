@@ -14,7 +14,7 @@ function listFiles(dir: string): string[] {
   return out;
 }
 
-export const SPELL_GARDEN_CACHE = 'spell-garden-v10';
+export const SPELL_GARDEN_CACHE = 'spell-garden-v11';
 
 /** Files the service worker installs up front. Story audio and 1x page art stay offline; 2x story art waits until it is shown. */
 export function precacheFile(file: string): boolean {

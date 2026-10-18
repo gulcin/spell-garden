@@ -1,3 +1,12 @@
+export const ADVENTURE_RATE = 0.86;
+
+export function pickUsVoice(voices: { lang: string; name: string }[]): { lang: string; name: string } | null {
+  const american = voices.filter((voice) => /^en-US/i.test(voice.lang));
+  return (
+    american.find((voice) => /female|aria|jenny|sara|samantha|ava|zira/i.test(voice.name)) ?? american[0] ?? null
+  );
+}
+
 export function speak(text: string): void {
   const clean = text.replace(/\s+/g, ' ').trim();
   if (!clean || typeof window === 'undefined') return;

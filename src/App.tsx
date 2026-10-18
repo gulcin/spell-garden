@@ -17,7 +17,9 @@ import { PLACES, placeStyle } from './ui/pictures.tsx';
 import { Quest } from './ui/Quest.tsx';
 import { RewardScreen } from './ui/Reward.tsx';
 import { rememberStory, StoryOffer, StoryReader, StoryShelf } from './ui/StoryTime.tsx';
+import { buildAdventure, type Adventure } from './stories/adventure.ts';
 import { storyById, STORIES } from './stories/library.ts';
+import { crystalGain } from './wardrobe/catalog.ts';
 import { WardrobeProvider } from './ui/DressedApprentice.tsx';
 import { WardrobeMirror } from './ui/Wardrobe.tsx';
 
@@ -163,6 +165,19 @@ function GardenApp() {
     show('story');
   }
 
+  function rememberAdventure(current: Progress, adventure: Adventure): Progress {
+    const adventures = [adventure, ...current.adventures.filter((item) => item.id !== adventure.id)].slice(0, 24);
+    return { ...current, adventures };
+  }
+
+  function openAdventure(adventure: Adventure, back: Screen) {
+    setStoryId(adventure.id);
+    setBedtime(false);
+    setResume(back);
+    setLive({ screen: 'story', placeId: adventure.placeId, placeName: adventure.place, activity: adventure.title, question: '' });
+    show('story');
+  }
+
   function nextBedtimeStory() {
     const index = STORIES.findIndex((story) => story.id === storyId);
     const next = STORIES[index + 1];
@@ -206,6 +221,7 @@ function GardenApp() {
         <StoryShelf
           progress={progress}
           onOpen={(id) => openStory(id, 'shelf')}
+          onOpenAdventure={(adventure) => openAdventure(adventure, 'shelf')}
           onBedtime={beginBedtime}
           onFavourite={(id) => update((current) => rememberStory(current, id, 'storyFavourites'))}
         />
@@ -216,6 +232,7 @@ function GardenApp() {
       {screen === 'story' ? (
         <StoryReader
           storyId={storyId}
+          adventure={progress.adventures.find((item) => item.id === storyId) ?? null}
           bedtime={bedtime}
           loved={progress.storyFavourites.includes(storyId)}
           onHeard={() => update((current) => rememberStory(current, storyId, 'storiesHeard'))}
@@ -240,10 +257,19 @@ function GardenApp() {
           placeId={placeId}
           update={update}
           onStory={() => openStory(placeId, 'placement')}
-          onFinish={(correct, asked) => {
-            update((current) => applyPlacement(current, correct, asked, allTopics(), Date.now()));
+          onFinish={(correct, asked, deeds) => {
+            const at = Date.now();
+            const adventure = buildAdventure({
+              name: progress.learnerName,
+              placeId,
+              deeds,
+              crystals: correct * crystalGain(placeId),
+              wardrobe: progress.wardrobe,
+              at,
+            });
+            update((current) => rememberAdventure(applyPlacement(current, correct, asked, allTopics(), at), adventure));
             setPlacedCorrect(correct);
-            show('placed');
+            openAdventure(adventure, 'placed');
           }}
         />
       ) : null}
@@ -269,19 +295,35 @@ function GardenApp() {
           placeId={placeId}
           update={update}
           onStory={() => openStory(placeId, 'chapter')}
-          onFinish={() => {
+          onFinish={(correct, _asked, deeds) => {
             const gift = nextReward(progress.rewards);
+            const at = Date.now();
+            const adventure = buildAdventure({
+              name: progress.learnerName,
+              placeId,
+              deeds,
+              crystals: correct * crystalGain(placeId),
+              wardrobe: progress.wardrobe,
+              creature: gift.kind === 'friend' ? gift.name : null,
+              gift: gift.kind === 'friend' ? null : gift.name,
+              at,
+            });
             setReward(gift);
-            update((current) => ({
-              ...current,
-              rewards: current.rewards.includes(gift.id) ? current.rewards : [...current.rewards, gift.id],
-              sessions: current.sessions.map((session, index, all) =>
-                index === all.length - 1 && session.endedAt == null
-                  ? { ...session, endedAt: Date.now(), rewardId: gift.id }
-                  : session,
+            update((current) =>
+              rememberAdventure(
+                {
+                  ...current,
+                  rewards: current.rewards.includes(gift.id) ? current.rewards : [...current.rewards, gift.id],
+                  sessions: current.sessions.map((session, index, all) =>
+                    index === all.length - 1 && session.endedAt == null
+                      ? { ...session, endedAt: at, rewardId: gift.id }
+                      : session,
+                  ),
+                },
+                adventure,
               ),
-            }));
-            show('reward');
+            );
+            openAdventure(adventure, 'reward');
           }}
         />
       ) : null}

@@ -21,6 +21,7 @@ import { Home } from './Home.tsx';
 import { Parent } from './Parent.tsx';
 import { PLACES, placeStyle, Prop } from './pictures.tsx';
 import { RewardScreen } from './Reward.tsx';
+import { buildAdventure } from '../stories/adventure.ts';
 import { rememberStory, StoryOffer, StoryReader, StoryShelf } from './StoryTime.tsx';
 import { WardrobeMirror } from './Wardrobe.tsx';
 
@@ -43,6 +44,23 @@ function previewProgress(screen: string, dressed: boolean): Progress {
         necklace: 'extra-necklace',
       },
     };
+  }
+  if (screen === 'shelf' || screen === 'adventure') {
+    progress.wardrobe = {
+      owned: ['robe-rose', 'hat-mushroom'],
+      equipped: { dress: 'robe-rose', hat: 'hat-mushroom' },
+    };
+    progress.adventures = [
+      buildAdventure({
+        name: 'Aida',
+        placeId: 'lantern-grove',
+        deeds: ['You lit 7 lanterns.', 'You shared 12 crystals between 3 jars.'],
+        crystals: 4,
+        wardrobe: progress.wardrobe,
+        creature: 'Nim the moth',
+        at: Date.UTC(2026, 9, 18),
+      }),
+    ];
   }
   return progress;
 }
@@ -102,11 +120,25 @@ export function Gallery() {
         <StoryShelf
           progress={progress}
           onOpen={() => undefined}
+          onOpenAdventure={() => undefined}
           onBedtime={() => undefined}
           onFavourite={(id) => update((current) => rememberStory(current, id, 'storyFavourites'))}
         />
       ) : null}
       {screen === 'story-offer' ? <StoryOffer storyId={params.get('story') ?? 'crystal-cave'} onHear={() => undefined} onSkip={() => undefined} /> : null}
+      {screen === 'adventure' ? (
+        <StoryReader
+          storyId={progress.adventures[0]?.id ?? 'adventure'}
+          adventure={progress.adventures[0] ?? null}
+          bedtime={false}
+          loved={false}
+          autoplay={params.get('speak') !== '0'}
+          onHeard={() => undefined}
+          onClose={() => undefined}
+          onNextStory={() => undefined}
+          onToggleFavourite={() => undefined}
+        />
+      ) : null}
       {screen === 'story' ? (
         <StoryReader
           storyId={params.get('story') ?? 'crystal-cave'}

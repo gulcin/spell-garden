@@ -15,6 +15,7 @@ import { awardCrystals } from '../wardrobe/economy.ts';
 import { CrystalCounter } from './CrystalCounter.tsx';
 import { DressedApprentice } from './DressedApprentice.tsx';
 import { PLACES, placeStyle, Prop } from './pictures.tsx';
+import { deedLine } from '../stories/adventure.ts';
 import { StoryButton } from './StoryTime.tsx';
 
 type Mode = 'placement' | 'chapter';
@@ -51,10 +52,11 @@ export function Quest({
   chapter?: Chapter;
   placeId?: string;
   update: (recipe: (current: Progress) => Progress) => void;
-  onFinish: (correct: number, asked: number) => void;
+  onFinish: (correct: number, asked: number, deeds: string[]) => void;
   onStory?: () => void;
 }) {
   const sessionId = useRef(`s-${Date.now()}`);
+  const deeds = useRef<string[]>([]);
   const [slots] = useState<ChapterSlot[]>(() =>
     mode === 'placement'
       ? placementPlan().map((slot) => ({
@@ -108,7 +110,7 @@ export function Quest({
         </div>
         <h2>The garden is resting</h2>
         <p>Every spell you can reach is already glowing. A grown-up can open a new path from the journal.</p>
-        <button type="button" className="btn primary" onClick={() => onFinish(correct, asked)}>
+        <button type="button" className="btn primary" onClick={() => onFinish(correct, asked, deeds.current)}>
           Back to the tower
         </button>
       </section>
@@ -169,7 +171,10 @@ export function Quest({
 
   function record(ok: boolean, currentItem: Item) {
     setAsked((value) => value + 1);
-    if (ok) setCorrect((value) => value + 1);
+    if (ok) {
+      setCorrect((value) => value + 1);
+      deeds.current = [...deeds.current, deedLine(placeId, currentItem)];
+    }
     update((current) => {
       const prev = current.topics[currentItem.topicId];
       const nextTopic = recordAttempt(prev, ok, sessionId.current, currentItem.template, Date.now());
@@ -239,7 +244,7 @@ export function Quest({
 
   function next() {
     if (index + 1 >= slots.length) {
-      onFinish(correct, asked);
+      onFinish(correct, asked, deeds.current);
       return;
     }
     const upcoming = slots[index + 1];
