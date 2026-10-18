@@ -12,7 +12,7 @@ const PLACE_TRAIL = [
   'mushroom-ring',
 ];
 
-const KNOWN_PLACES = new Set([...PLACE_TRAIL, 'crystal-shop']);
+const KNOWN_PLACES = new Set([...PLACE_TRAIL, 'crystal-shop', 'colouring-nook']);
 
 /** Older saves visited places in map order. A missing list keeps those stars. */
 export function normalizeVisited(value: unknown, sessions: number): string[] {

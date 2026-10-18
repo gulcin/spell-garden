@@ -11,6 +11,7 @@ import type { ShopCategory } from '../wardrobe/catalog.ts';
 import { ReportLiveProvider } from '../feedback/live.tsx';
 import { About } from './About.tsx';
 import { TellSheet, TellUsButton } from './TellUs.tsx';
+import { ColouringCorner } from './ColouringCorner.tsx';
 import { CrystalShop } from './CrystalShop.tsx';
 import { WardrobeProvider } from './DressedApprentice.tsx';
 import { DressedApprentice } from './DressedApprentice.tsx';
@@ -91,10 +92,18 @@ export function Gallery() {
         <TellUsButton onOpen={() => setTelling(true)} />
       </div>
       {screen === 'home' ? (
-        <Home progress={progress} onStart={() => undefined} onVisit={() => undefined} onShop={() => undefined} onGarden={() => undefined} onAbout={() => undefined} onParent={() => undefined} onRename={() => undefined} />
+        <Home progress={progress} onStart={() => undefined} onVisit={() => undefined} onShop={() => undefined} onColour={() => undefined} onGarden={() => undefined} onAbout={() => undefined} onParent={() => undefined} onRename={() => undefined} />
       ) : null}
       {screen === 'shop' ? (
         <CrystalShop progress={progress} update={update} category={category} onWardrobe={() => undefined} />
+      ) : null}
+      {screen === 'colour' || screen === 'sheet' ? (
+        <ColouringCorner
+          progress={progress}
+          update={update}
+          startSheet={screen === 'sheet' ? params.get('sheet') : null}
+          demoPaint={params.get('paint') === '1'}
+        />
       ) : null}
       {screen === 'wardrobe' ? <WardrobeMirror progress={progress} update={update} onShop={() => undefined} /> : null}
       {screen === 'about' ? <About onHome={() => undefined} /> : null}

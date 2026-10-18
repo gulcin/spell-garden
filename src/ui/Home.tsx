@@ -9,6 +9,7 @@ export function Home({
   onStart,
   onVisit,
   onShop,
+  onColour,
   onGarden,
   onAbout,
   onParent,
@@ -18,6 +19,7 @@ export function Home({
   onStart: () => void;
   onVisit: (placeId: string) => void;
   onShop: () => void;
+  onColour: () => void;
   onGarden: () => void;
   onAbout: () => void;
   onParent: () => void;
@@ -100,6 +102,16 @@ export function Home({
               onClick={onShop}
             >
               <span>Crystal shop</span>
+            </button>
+            <button
+              type="button"
+              className={`hotspot hotspot-colour${progress.visitedPlaces.includes('colouring-nook') ? ' has-star' : ''}`}
+              style={{ left: '58%', top: '14%' }}
+              data-testid="map-colour"
+              aria-label="Colouring corner"
+              onClick={onColour}
+            >
+              <span>Colouring</span>
             </button>
           </div>
         </div>

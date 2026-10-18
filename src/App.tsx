@@ -6,6 +6,7 @@ import { DEFAULT_LEARNER_NAME, type Progress } from './progress/types.ts';
 import { chapterFor, nextReward, type Reward } from './story.ts';
 import { ReportLiveProvider, useReportLive } from './feedback/live.tsx';
 import { About } from './ui/About.tsx';
+import { ColouringCorner } from './ui/ColouringCorner.tsx';
 import { CrystalShop } from './ui/CrystalShop.tsx';
 import { Garden } from './ui/Garden.tsx';
 import { GardenMapButton } from './ui/GardenMapButton.tsx';
@@ -18,7 +19,7 @@ import { RewardScreen } from './ui/Reward.tsx';
 import { WardrobeProvider } from './ui/DressedApprentice.tsx';
 import { WardrobeMirror } from './ui/Wardrobe.tsx';
 
-type Screen = 'home' | 'placement' | 'placed' | 'chapter' | 'reward' | 'parent' | 'about' | 'garden' | 'shop' | 'wardrobe';
+type Screen = 'home' | 'placement' | 'placed' | 'chapter' | 'reward' | 'parent' | 'about' | 'garden' | 'shop' | 'wardrobe' | 'colour';
 
 type HistoryState = { spellGarden?: Screen };
 
@@ -98,6 +99,16 @@ function GardenApp() {
     show('shop');
   }
 
+  function openColour() {
+    update((current) =>
+      current.visitedPlaces.includes('colouring-nook')
+        ? current
+        : { ...current, visitedPlaces: [...current.visitedPlaces, 'colouring-nook'] },
+    );
+    setLive({ screen: 'colour', placeId: 'colouring-nook', placeName: 'Colouring corner', activity: '', question: '' });
+    show('colour');
+  }
+
   return (
     <WardrobeProvider wardrobe={progress.wardrobe}>
     <main className={screen === 'home' ? 'app' : 'app away'}>
@@ -111,6 +122,7 @@ function GardenApp() {
           onStart={() => start()}
           onVisit={(placeId) => start(placeId)}
           onShop={openShop}
+          onColour={openColour}
           onGarden={() => show('garden')}
           onAbout={() => show('about')}
           onParent={() => show('parent')}
@@ -120,6 +132,7 @@ function GardenApp() {
       {screen === 'shop' ? (
         <CrystalShop progress={progress} update={update} onWardrobe={() => show('wardrobe')} />
       ) : null}
+      {screen === 'colour' ? <ColouringCorner progress={progress} update={update} /> : null}
       {screen === 'wardrobe' ? (
         <WardrobeMirror progress={progress} update={update} onShop={() => show('shop')} />
       ) : null}

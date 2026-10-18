@@ -359,6 +359,11 @@ code { font-size: 0.86em; background: #fff; padding: 0.1em 0.35em; border-radius
   background: radial-gradient(circle, rgba(232, 246, 255, 0.96) 0 22%, rgba(142, 196, 230, 0.55) 23% 58%, transparent 59%);
   box-shadow: 0 0 16px 6px rgba(120, 180, 220, 0.5);
 }
+.hotspot-colour {
+  width: clamp(58px, 12%, 88px);
+  background: radial-gradient(circle, rgba(255, 236, 248, 0.96) 0 22%, rgba(214, 150, 196, 0.55) 23% 58%, transparent 59%);
+  box-shadow: 0 0 16px 6px rgba(196, 120, 180, 0.48);
+}
 
 .map {
   background: rgba(255, 248, 241, 0.72);
@@ -1048,7 +1053,7 @@ code { font-size: 0.86em; background: #fff; padding: 0.1em 0.35em; border-radius
   .guide, .play-guide, .hotspot-now, .sparkles i, .ghost-hand { animation: none; }
 }
 
-.shop.place-scene, .wardrobe.place-scene {
+.shop.place-scene, .wardrobe.place-scene, .colour-lobby.place-scene {
   flex: 1;
   min-height: 0;
   overflow: auto;
@@ -1128,3 +1133,98 @@ code { font-size: 0.86em; background: #fff; padding: 0.1em 0.35em; border-radius
   padding: 16px;
 }
 .shop-cheer { margin: 0; }
+
+.colour-intro, .colour-note { margin: 0; }
+.colour-intro {
+  background: rgba(255, 248, 241, 0.96);
+  border-radius: 20px;
+  padding: 12px 16px;
+  border: 2px solid white;
+}
+.sheet-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)); gap: 10px; }
+.sheet-card {
+  background: rgba(255, 248, 241, 0.97);
+  border: 2px solid white;
+  border-radius: 18px;
+  padding: 8px;
+  text-align: left;
+  min-height: 64px;
+  box-shadow: 0 8px 18px rgba(58, 45, 74, 0.08);
+}
+.sheet-card strong { display: block; margin-top: 6px; }
+.sheet-card span { color: var(--muted); font-size: 0.85rem; }
+.sheet-thumb { background: white; border-radius: 12px; overflow: hidden; height: 150px; }
+.sheet-thumb svg { width: 100%; height: 150px; display: block; }
+.sheet-card img { width: 100%; height: 150px; object-fit: contain; background: white; border-radius: 12px; }
+.picture-row h2 { font-size: 1.3rem; margin: 8px 0; }
+
+.colour-app {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.colour-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.colour-top h1 { font-size: clamp(1.3rem, 2.4vw, 1.8rem); margin: 0; }
+.colour-top .kicker { margin: 0; }
+.colour-viewport {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+  touch-action: none;
+  background: rgba(255, 248, 241, 0.88);
+  border-radius: 24px;
+  border: 2px solid white;
+}
+.colour-zoom { position: absolute; inset: 0; transform-origin: 0 0; }
+.sheet-stack { position: absolute; inset: 8px; }
+.sheet-svg, .sheet-svg svg { width: 100%; height: 100%; display: block; }
+.brush-layer { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
+.brush-layer.is-quiet { pointer-events: none; }
+.colour-tools { display: flex; flex-direction: column; gap: 8px; flex: 0 0 auto; }
+.palette { display: flex; flex-wrap: wrap; gap: 8px; }
+.swatch {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 3px solid white;
+  box-shadow: 0 2px 0 rgba(58, 45, 74, 0.16);
+  padding: 0;
+}
+.swatch.on { outline: 3px solid var(--ink); }
+.tool-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.tool-row button {
+  min-height: 48px;
+  min-width: 48px;
+  border-radius: 999px;
+  border: 2px solid white;
+  background: rgba(255, 248, 241, 0.96);
+  font-weight: 800;
+  padding: 0 14px;
+}
+.tool-row button.on { background: var(--violet); color: white; }
+.tool-row button.size { width: 48px; padding: 0; display: grid; place-items: center; }
+.tool-row button.size i { display: block; border-radius: 50%; background: var(--ink); }
+.tool-row button:disabled { opacity: 0.4; }
+.tool-row.actions .btn { min-height: 52px; }
+.print-art { display: none; }
+@media (orientation: landscape) {
+  .colour-app { flex-direction: row; flex-wrap: wrap; }
+  .colour-top { width: 100%; }
+  .colour-viewport { flex: 1 1 58%; }
+  .colour-tools { flex: 1 1 240px; max-width: 320px; overflow: auto; }
+  .colour-note { width: 100%; }
+}
+@media print {
+  body * { visibility: hidden !important; }
+  .print-art, .print-art * { visibility: visible !important; }
+  .print-art {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: white;
+  }
+  .print-art img { width: 100%; height: 100%; object-fit: contain; }
+}
