@@ -6,17 +6,20 @@ import { speak } from '../speech.ts';
 import { CrystalCounter } from './CrystalCounter.tsx';
 import { DressedApprentice } from './DressedApprentice.tsx';
 import { placeStyle, Prop } from './pictures.tsx';
+import { StoryButton } from './StoryTime.tsx';
 
 export function CrystalShop({
   progress,
   update,
   category = 'dress',
   onWardrobe,
+  onStory,
 }: {
   progress: Progress;
   update: (recipe: (current: Progress) => Progress) => void;
   category?: ShopCategory;
   onWardrobe: () => void;
+  onStory?: () => void;
 }) {
   const [shelf, setShelf] = useState<ShopCategory>(category);
   const [cheer, setCheer] = useState<string | null>(null);
@@ -47,7 +50,10 @@ export function CrystalShop({
           <p className="kicker">Crystal shop</p>
           <h1>Clover's counter</h1>
         </div>
-        <CrystalCounter count={progress.crystals} />
+        <div className="shop-tools">
+          {onStory ? <StoryButton onClick={onStory} /> : null}
+          <CrystalCounter count={progress.crystals} />
+        </div>
       </header>
       <div className="shopkeeper-row">
         <Prop name="shopkeeper" className="shopkeeper" alt="Clover the shop fox, holding a crystal" />

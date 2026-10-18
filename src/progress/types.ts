@@ -74,6 +74,12 @@ export type Progress = {
   wardrobe: WardrobeState;
   /** Places she has opened. Stars on the map come from this list. */
   visitedPlaces: string[];
+  /** Places whose story has already been offered. */
+  storyOffers: string[];
+  /** Stories she has heard through to the end. */
+  storiesHeard: string[];
+  /** Stories she saved with the heart. */
+  storyFavourites: string[];
   updatedAt: number;
 };
 
@@ -107,6 +113,9 @@ export function freshProgress(name = DEFAULT_LEARNER_NAME): Progress {
     crystals: 0,
     wardrobe: { owned: [], equipped: {} },
     visitedPlaces: [],
+    storyOffers: [],
+    storiesHeard: [],
+    storyFavourites: [],
     updatedAt: Date.now(),
   };
 }

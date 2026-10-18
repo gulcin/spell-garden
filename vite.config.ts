@@ -14,6 +14,15 @@ function listFiles(dir: string): string[] {
   return out;
 }
 
+export const SPELL_GARDEN_CACHE = 'spell-garden-v10';
+
+/** Files the service worker installs up front. Story audio and 1x page art stay offline; 2x story art waits until it is shown. */
+export function precacheFile(file: string): boolean {
+  if (file === 'sw.js' || file.startsWith('splash-') || file.startsWith('art/places/')) return false;
+  if (file.startsWith('art/stories/') && file.includes('@2x')) return false;
+  return true;
+}
+
 /** Relative by default so GitHub Pages project sites and local previews both work. */
 export function assetBase(): string {
   const raw = process.env.BASE_PATH?.trim();
@@ -64,10 +73,10 @@ function spellGardenPwa(): Plugin {
 
       const files = listFiles(dist)
         .map((file) => relative(dist, file).split('\\').join('/'))
-        .filter((file) => file !== 'sw.js' && !file.startsWith('art/places/') && !file.startsWith('splash-'));
+        .filter(precacheFile);
       const assets = files.map((file) => `${prefix}${file}`);
       const home = `${prefix}index.html`;
-      const source = `const CACHE='spell-garden-v9';
+      const source = `const CACHE='${SPELL_GARDEN_CACHE}';
 const ASSETS=${JSON.stringify(assets)};
 const HOME=${JSON.stringify(home)};
 self.addEventListener('install',(event)=>{event.waitUntil(caches.open(CACHE).then((cache)=>cache.addAll(ASSETS)).then(()=>self.skipWaiting()))});

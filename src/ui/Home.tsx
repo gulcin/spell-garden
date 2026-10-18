@@ -10,6 +10,7 @@ export function Home({
   onVisit,
   onShop,
   onColour,
+  onStories,
   onGarden,
   onAbout,
   onParent,
@@ -20,6 +21,7 @@ export function Home({
   onVisit: (placeId: string) => void;
   onShop: () => void;
   onColour: () => void;
+  onStories: () => void;
   onGarden: () => void;
   onAbout: () => void;
   onParent: () => void;
@@ -120,6 +122,9 @@ export function Home({
         {progress.placement.done ? "Begin today's chapter" : 'Wake the lanterns'}
       </button>
       <nav className="home-nav">
+        <button type="button" data-testid="story-shelf-link" onClick={onStories}>
+          Story shelf
+        </button>
         <button type="button" data-testid="about-link" onClick={onAbout}>
           About
         </button>

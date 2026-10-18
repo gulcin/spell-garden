@@ -16,10 +16,26 @@ import { Parent } from './ui/Parent.tsx';
 import { PLACES, placeStyle } from './ui/pictures.tsx';
 import { Quest } from './ui/Quest.tsx';
 import { RewardScreen } from './ui/Reward.tsx';
+import { rememberStory, StoryOffer, StoryReader, StoryShelf } from './ui/StoryTime.tsx';
+import { storyById, STORIES } from './stories/library.ts';
 import { WardrobeProvider } from './ui/DressedApprentice.tsx';
 import { WardrobeMirror } from './ui/Wardrobe.tsx';
 
-type Screen = 'home' | 'placement' | 'placed' | 'chapter' | 'reward' | 'parent' | 'about' | 'garden' | 'shop' | 'wardrobe' | 'colour';
+type Screen =
+  | 'home'
+  | 'placement'
+  | 'placed'
+  | 'chapter'
+  | 'reward'
+  | 'parent'
+  | 'about'
+  | 'garden'
+  | 'shop'
+  | 'wardrobe'
+  | 'colour'
+  | 'shelf'
+  | 'story'
+  | 'story-offer';
 
 type HistoryState = { spellGarden?: Screen };
 
@@ -40,6 +56,9 @@ function GardenApp() {
   const [placedCorrect, setPlacedCorrect] = useState(0);
   const [placeId, setPlaceId] = useState<(typeof PLACES)[number]['id']>('lantern-grove');
   const [chapterIndex, setChapterIndex] = useState(0);
+  const [storyId, setStoryId] = useState(STORIES[0]?.id ?? 'lantern-grove');
+  const [bedtime, setBedtime] = useState(false);
+  const [resume, setResume] = useState<Screen>('home');
   const leaving = useRef(false);
 
   useEffect(() => {
@@ -79,14 +98,29 @@ function GardenApp() {
     else window.history.pushState({ spellGarden: next }, '');
   }
 
+  function maybeOffer(id: string, next: Screen) {
+    if (storyById(id) && !progress.storyOffers.includes(id)) {
+      update((current) => rememberStory(current, id, 'storyOffers'));
+      setStoryId(id);
+      setBedtime(false);
+      setResume(next);
+      const tale = storyById(id);
+      setLive({ screen: 'story-offer', placeId: id, placeName: tale?.place ?? id, activity: tale?.title ?? '', question: '' });
+      show('story-offer');
+      return;
+    }
+    show(next);
+  }
+
   function start(chosen?: string) {
     const count = progress.sessions.length;
     const id = (chosen ?? PLACES[count % PLACES.length]!.id) as (typeof PLACES)[number]['id'];
     setPlaceId(id);
     const spot = PLACES.find((place) => place.id === id);
-    setLive({ screen: progress.placement.done ? 'chapter' : 'placement', placeId: id, placeName: spot?.name ?? id });
+    const next: Screen = progress.placement.done ? 'chapter' : 'placement';
+    setLive({ screen: next, placeId: id, placeName: spot?.name ?? id });
     if (progress.placement.done) setChapterIndex(count);
-    show(progress.placement.done ? 'chapter' : 'placement');
+    maybeOffer(id, next);
   }
 
   function openShop() {
@@ -96,7 +130,7 @@ function GardenApp() {
         : { ...current, visitedPlaces: [...current.visitedPlaces, 'crystal-shop'] },
     );
     setLive({ screen: 'shop', placeId: 'crystal-shop', placeName: 'Crystal shop', activity: '', question: '' });
-    show('shop');
+    maybeOffer('crystal-shop', 'shop');
   }
 
   function openColour() {
@@ -106,7 +140,39 @@ function GardenApp() {
         : { ...current, visitedPlaces: [...current.visitedPlaces, 'colouring-nook'] },
     );
     setLive({ screen: 'colour', placeId: 'colouring-nook', placeName: 'Colouring corner', activity: '', question: '' });
-    show('colour');
+    maybeOffer('colouring-nook', 'colour');
+  }
+
+  function openStory(id: string, back: Screen) {
+    const tale = storyById(id);
+    if (!tale) return;
+    setStoryId(id);
+    setBedtime(false);
+    setResume(back);
+    setLive({ screen: 'story', placeId: id, placeName: tale.place, activity: tale.title, question: '' });
+    show('story');
+  }
+
+  function beginBedtime() {
+    const first = STORIES[0];
+    if (!first) return;
+    setStoryId(first.id);
+    setBedtime(true);
+    setResume('shelf');
+    setLive({ screen: 'story', placeId: first.id, placeName: first.place, activity: 'Bedtime listen', question: '' });
+    show('story');
+  }
+
+  function nextBedtimeStory() {
+    const index = STORIES.findIndex((story) => story.id === storyId);
+    const next = STORIES[index + 1];
+    if (!next) {
+      setBedtime(false);
+      show('shelf');
+      return;
+    }
+    setStoryId(next.id);
+    setLive({ screen: 'story', placeId: next.id, placeName: next.place, activity: 'Bedtime listen', question: '' });
   }
 
   return (
@@ -123,6 +189,7 @@ function GardenApp() {
           onVisit={(placeId) => start(placeId)}
           onShop={openShop}
           onColour={openColour}
+          onStories={() => show('shelf')}
           onGarden={() => show('garden')}
           onAbout={() => show('about')}
           onParent={() => show('parent')}
@@ -130,9 +197,36 @@ function GardenApp() {
         />
       ) : null}
       {screen === 'shop' ? (
-        <CrystalShop progress={progress} update={update} onWardrobe={() => show('wardrobe')} />
+        <CrystalShop progress={progress} update={update} onWardrobe={() => show('wardrobe')} onStory={() => openStory('crystal-shop', 'shop')} />
       ) : null}
-      {screen === 'colour' ? <ColouringCorner progress={progress} update={update} /> : null}
+      {screen === 'colour' ? (
+        <ColouringCorner progress={progress} update={update} onStory={() => openStory('colouring-nook', 'colour')} />
+      ) : null}
+      {screen === 'shelf' ? (
+        <StoryShelf
+          progress={progress}
+          onOpen={(id) => openStory(id, 'shelf')}
+          onBedtime={beginBedtime}
+          onFavourite={(id) => update((current) => rememberStory(current, id, 'storyFavourites'))}
+        />
+      ) : null}
+      {screen === 'story-offer' ? (
+        <StoryOffer storyId={storyId} onHear={() => openStory(storyId, resume)} onSkip={() => show(resume)} />
+      ) : null}
+      {screen === 'story' ? (
+        <StoryReader
+          storyId={storyId}
+          bedtime={bedtime}
+          loved={progress.storyFavourites.includes(storyId)}
+          onHeard={() => update((current) => rememberStory(current, storyId, 'storiesHeard'))}
+          onClose={() => {
+            setBedtime(false);
+            show(resume);
+          }}
+          onNextStory={nextBedtimeStory}
+          onToggleFavourite={() => update((current) => rememberStory(current, storyId, 'storyFavourites'))}
+        />
+      ) : null}
       {screen === 'wardrobe' ? (
         <WardrobeMirror progress={progress} update={update} onShop={() => show('shop')} />
       ) : null}
@@ -145,6 +239,7 @@ function GardenApp() {
           progress={progress}
           placeId={placeId}
           update={update}
+          onStory={() => openStory(placeId, 'placement')}
           onFinish={(correct, asked) => {
             update((current) => applyPlacement(current, correct, asked, allTopics(), Date.now()));
             setPlacedCorrect(correct);
@@ -173,6 +268,7 @@ function GardenApp() {
           chapter={chapterFor(chapterIndex)}
           placeId={placeId}
           update={update}
+          onStory={() => openStory(placeId, 'chapter')}
           onFinish={() => {
             const gift = nextReward(progress.rewards);
             setReward(gift);

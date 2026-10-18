@@ -21,6 +21,7 @@ import { Home } from './Home.tsx';
 import { Parent } from './Parent.tsx';
 import { PLACES, placeStyle, Prop } from './pictures.tsx';
 import { RewardScreen } from './Reward.tsx';
+import { rememberStory, StoryOffer, StoryReader, StoryShelf } from './StoryTime.tsx';
 import { WardrobeMirror } from './Wardrobe.tsx';
 
 function previewProgress(screen: string, dressed: boolean): Progress {
@@ -92,10 +93,34 @@ export function Gallery() {
         <TellUsButton onOpen={() => setTelling(true)} />
       </div>
       {screen === 'home' ? (
-        <Home progress={progress} onStart={() => undefined} onVisit={() => undefined} onShop={() => undefined} onColour={() => undefined} onGarden={() => undefined} onAbout={() => undefined} onParent={() => undefined} onRename={() => undefined} />
+        <Home progress={progress} onStart={() => undefined} onVisit={() => undefined} onShop={() => undefined} onColour={() => undefined} onStories={() => undefined} onGarden={() => undefined} onAbout={() => undefined} onParent={() => undefined} onRename={() => undefined} />
       ) : null}
       {screen === 'shop' ? (
-        <CrystalShop progress={progress} update={update} category={category} onWardrobe={() => undefined} />
+        <CrystalShop progress={progress} update={update} category={category} onWardrobe={() => undefined} onStory={() => undefined} />
+      ) : null}
+      {screen === 'shelf' ? (
+        <StoryShelf
+          progress={progress}
+          onOpen={() => undefined}
+          onBedtime={() => undefined}
+          onFavourite={(id) => update((current) => rememberStory(current, id, 'storyFavourites'))}
+        />
+      ) : null}
+      {screen === 'story-offer' ? <StoryOffer storyId={params.get('story') ?? 'crystal-cave'} onHear={() => undefined} onSkip={() => undefined} /> : null}
+      {screen === 'story' ? (
+        <StoryReader
+          storyId={params.get('story') ?? 'crystal-cave'}
+          bedtime={params.get('bedtime') === '1'}
+          loved={progress.storyFavourites.includes(params.get('story') ?? 'crystal-cave')}
+          startPage={Number(params.get('page') ?? '0')}
+          autoplay={false}
+          onHeard={() => undefined}
+          onClose={() => undefined}
+          onNextStory={() => undefined}
+          onToggleFavourite={() =>
+            update((current) => rememberStory(current, params.get('story') ?? 'crystal-cave', 'storyFavourites'))
+          }
+        />
       ) : null}
       {screen === 'colour' || screen === 'sheet' ? (
         <ColouringCorner
@@ -103,6 +128,7 @@ export function Gallery() {
           update={update}
           startSheet={screen === 'sheet' ? params.get('sheet') : null}
           demoPaint={params.get('paint') === '1'}
+          onStory={() => undefined}
         />
       ) : null}
       {screen === 'wardrobe' ? <WardrobeMirror progress={progress} update={update} onShop={() => undefined} /> : null}

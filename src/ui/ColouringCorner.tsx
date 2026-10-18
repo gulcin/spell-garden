@@ -26,6 +26,7 @@ import { speak } from '../speech.ts';
 import { awardCrystals } from '../wardrobe/economy.ts';
 import { CrystalCounter } from './CrystalCounter.tsx';
 import { placeStyle } from './pictures.tsx';
+import { StoryButton } from './StoryTime.tsx';
 
 type Tool = 'fill' | 'brush' | 'eraser';
 
@@ -36,11 +37,13 @@ export function ColouringCorner({
   update,
   startSheet = null,
   demoPaint = false,
+  onStory,
 }: {
   progress: Progress;
   update: (recipe: (current: Progress) => Progress) => void;
   startSheet?: string | null;
   demoPaint?: boolean;
+  onStory?: () => void;
 }) {
   const { setLive } = useReportLive();
   const [sheetId, setSheetId] = useState<string | null>(startSheet);
@@ -71,7 +74,7 @@ export function ColouringCorner({
   }, [sheetId]);
 
   if (!sheetId) {
-    return <ColourLobby saved={saved} crystals={progress.crystals} onOpen={setSheetId} />;
+    return <ColourLobby saved={saved} crystals={progress.crystals} onOpen={setSheetId} onStory={onStory} />;
   }
 
   return (
@@ -81,6 +84,7 @@ export function ColouringCorner({
       crystals={progress.crystals}
       demoPaint={demoPaint}
       onBack={() => setSheetId(null)}
+      onStory={onStory}
       onReward={(amount) => update((current) => awardCrystals(current, amount))}
     />
   );
@@ -90,10 +94,12 @@ function ColourLobby({
   saved,
   crystals,
   onOpen,
+  onStory,
 }: {
   saved: SavedArt[];
   crystals: number;
   onOpen: (id: string) => void;
+  onStory?: () => void;
 }) {
   const previews = usePreviewUrls(saved);
   return (
@@ -103,7 +109,10 @@ function ColourLobby({
           <p className="kicker">Colouring corner</p>
           <h1>The tower nook</h1>
         </div>
-        <CrystalCounter count={crystals} />
+        <div className="shop-tools">
+          {onStory ? <StoryButton onClick={onStory} /> : null}
+          <CrystalCounter count={crystals} />
+        </div>
       </header>
       <p className="colour-intro">
         A quiet table in the tower. Colour a page if you like. Nothing is marked, and you can stop whenever you want.
@@ -142,12 +151,14 @@ function ColourPage({
   crystals,
   demoPaint,
   onBack,
+  onStory,
   onReward,
 }: {
   sheetId: string;
   crystals: number;
   demoPaint: boolean;
   onBack: () => void;
+  onStory?: () => void;
   onReward: (amount: number) => void;
 }) {
   const sheet = sheetById(sheetId);
@@ -441,7 +452,10 @@ function ColourPage({
           <p className="kicker">Colouring corner</p>
           <h1>{sheet?.title ?? 'A page'}</h1>
         </div>
-        <CrystalCounter count={crystals} />
+        <div className="shop-tools">
+          {onStory ? <StoryButton onClick={onStory} /> : null}
+          <CrystalCounter count={crystals} />
+        </div>
       </header>
       <div
         className="colour-viewport"

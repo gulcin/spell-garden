@@ -24,7 +24,12 @@ export function normalizeVisited(value: unknown, sessions: number): string[] {
   return PLACE_TRAIL.slice(0, count);
 }
 
-/** Fills crystals and the wardrobe without dropping a save from before the shop. */
+function stringList(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item): item is string => typeof item === 'string' && item.length > 0);
+}
+
+/** Fills crystals, the wardrobe, and story lists without dropping an older save. */
 export function withWardrobe(parsed: Progress): Progress {
   const learnerName = learnerNameFrom(parsed.learnerName);
   return {
@@ -38,6 +43,9 @@ export function withWardrobe(parsed: Progress): Progress {
     crystals: normalizeCrystals(parsed.crystals),
     wardrobe: normalizeWardrobe(parsed.wardrobe),
     visitedPlaces: normalizeVisited(parsed.visitedPlaces, parsed.sessions?.length ?? 0),
+    storyOffers: stringList(parsed.storyOffers),
+    storiesHeard: stringList(parsed.storiesHeard),
+    storyFavourites: stringList(parsed.storyFavourites),
   };
 }
 

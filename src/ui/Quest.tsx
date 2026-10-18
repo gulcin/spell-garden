@@ -15,6 +15,7 @@ import { awardCrystals } from '../wardrobe/economy.ts';
 import { CrystalCounter } from './CrystalCounter.tsx';
 import { DressedApprentice } from './DressedApprentice.tsx';
 import { PLACES, placeStyle, Prop } from './pictures.tsx';
+import { StoryButton } from './StoryTime.tsx';
 
 type Mode = 'placement' | 'chapter';
 
@@ -43,6 +44,7 @@ export function Quest({
   placeId = 'lantern-grove',
   update,
   onFinish,
+  onStory,
 }: {
   mode: Mode;
   progress: Progress;
@@ -50,6 +52,7 @@ export function Quest({
   placeId?: string;
   update: (recipe: (current: Progress) => Progress) => void;
   onFinish: (correct: number, asked: number) => void;
+  onStory?: () => void;
 }) {
   const sessionId = useRef(`s-${Date.now()}`);
   const [slots] = useState<ChapterSlot[]>(() =>
@@ -263,6 +266,7 @@ export function Quest({
       <header className="quest-top">
         <p className="kicker">{mode === 'placement' ? 'Finding your path' : chapter?.title}</p>
         <div className="quest-meta">
+          {onStory ? <StoryButton onClick={onStory} /> : null}
           <CrystalCounter count={progress.crystals} />
           <div className="pips" aria-label={`Spell ${index + 1} of ${slots.length}`}>
             {slots.map((entry, pip) => (

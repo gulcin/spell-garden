@@ -62,11 +62,15 @@ Every screen except the home map has a cream **Garden map** pill (painted map th
 | Wizard tower | `art/places/wizard-tower.webp` | painted |
 | Mushroom ring | `art/places/mushroom-ring.webp` | painted |
 
-Place scenes are WebP at 1x and 2x. The service worker does not precache them; they load with the chapter and are cached after that. Cache name: `spell-garden-v9`.
+Place scenes are WebP at 1x and 2x. The service worker does not precache them; they load with the chapter and are cached after that. Cache name: `spell-garden-v10`.
 
 The colouring corner is a painted nook inside the wizard tower (`art/places/colouring-nook.webp`). Its sheets are closed line-art SVGs in `art/colouring/`. Drawings stay in IndexedDB on the iPad.
 
 The crystal shop is a painted cottage on the map. Clover the fox sells robes, hats, extras, and brooms. Solved spells add crystals (three in the crystal cave, one elsewhere). Purchases and what she is wearing live on the same progress save.
+
+## Story time
+
+Each place, the crystal shop, and the colouring corner has a four-page story. Page paintings live in `art/stories/{place}-{page}.webp` (1x 600×800, 2x 1200×1600). The shelf background is `art/bookshelf.webp`. Narration is `audio/stories/{place}/{page}.mp3` with word cues in the matching JSON. The service worker precaches the audio and the 1x page art. The 2x page art is cached after it is shown.
 
 ## Rewards and creatures
 
