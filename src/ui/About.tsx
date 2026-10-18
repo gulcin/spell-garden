@@ -28,6 +28,12 @@ export function About({ onHome }: { onHome: () => void }) {
         Hints are read aloud in an English voice. Tap “Hear it again” any time. “I don't know” walks through the idea, then offers a
         fresh try. “Skip” hops to the next spell, with no lost crystals, and the next one of that kind is a little gentler.
       </p>
+      <h2>Music</h2>
+      <p data-testid="music-credits">
+        Each place has its own tune, written for this garden and dedicated to the public domain (CC0). The loops are played
+        by the browser itself, with no borrowed recordings. They stay quiet, and they dip while someone is speaking. A grown-up
+        can turn sound or music off in the journal. The full note is in MUSIC-CREDITS.md.
+      </p>
     </article>
   );
 }

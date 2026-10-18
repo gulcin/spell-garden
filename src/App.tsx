@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { allTopics, topicById } from './curriculum/data.ts';
 import { applyPlacement } from './progress/placement.ts';
 import { loadProgress, saveProgress } from './progress/storage.ts';
@@ -29,6 +29,8 @@ import { WardrobeMirror } from './ui/Wardrobe.tsx';
 import { GardenNews } from './ui/GardenNews.tsx';
 import { UpdateBanner } from './ui/UpdateBanner.tsx';
 import { setLessonInProgress } from './updateState.ts';
+import { listenForMusic, playMusic } from './music/engine.ts';
+import { musicFor } from './music/place.ts';
 
 type Screen =
   | 'home'
@@ -81,6 +83,11 @@ function GardenApp() {
   useEffect(() => {
     setLessonInProgress(screen !== 'home');
   }, [screen]);
+
+  useLayoutEffect(() => {
+    listenForMusic();
+    playMusic(musicFor({ screen, placeId, bedtime }));
+  }, [screen, placeId, bedtime]);
 
   useEffect(() => {
     const onPop = (event: PopStateEvent) => {

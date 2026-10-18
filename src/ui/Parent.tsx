@@ -9,6 +9,7 @@ import { parseProgress } from '../progress/storage.ts';
 import { flushReportQueue, hydrateReports, loadReports, mumMailto, type Report } from '../feedback/reports.ts';
 import { checkForUpdates } from '../swUpdates.ts';
 import { versionLabel } from '../version.ts';
+import { audioSettings, updateAudio, type AudioSettings } from '../music/settings.ts';
 import { PageBanner, Prop } from './pictures.tsx';
 import { WhatsNew } from './WhatsNew.tsx';
 
@@ -84,6 +85,49 @@ export function Parent({
       importNote={importNote}
       setImportNote={setImportNote}
     />
+  );
+}
+
+function SoundSettings() {
+  const [settings, setSettings] = useState<AudioSettings>(() => audioSettings());
+  function patch(next: Partial<AudioSettings>) {
+    setSettings(updateAudio(next));
+  }
+  return (
+    <fieldset className="sound-settings" data-testid="sound-settings">
+      <legend>Sound</legend>
+      <button
+        type="button"
+        className={settings.sound ? 'btn gold' : 'btn quiet'}
+        aria-pressed={settings.sound}
+        data-testid="sound-toggle"
+        onClick={() => patch({ sound: !settings.sound })}
+      >
+        {settings.sound ? 'Sound on' : 'Sound off'}
+      </button>
+      <button
+        type="button"
+        className={settings.music ? 'btn gold' : 'btn quiet'}
+        aria-pressed={settings.music}
+        data-testid="music-toggle"
+        onClick={() => patch({ music: !settings.music })}
+      >
+        {settings.music ? 'Music on' : 'Music off'}
+      </button>
+      <label>
+        Music volume
+        <input
+          type="range"
+          min={0}
+          max={1}
+          step={0.05}
+          value={settings.volume}
+          data-testid="music-volume"
+          aria-label="Music volume"
+          onChange={(event) => patch({ volume: Number(event.target.value) })}
+        />
+      </label>
+    </fieldset>
   );
 }
 
@@ -254,6 +298,7 @@ function Journal({
       </button>
       <h1>{progress.learnerName}'s journal</h1>
       <p className="lede">Mastered, practising, or ready. Ages and the notes for grown-ups stay on this screen.</p>
+      <SoundSettings />
       <ReportList onNews={() => setNewsOpen(true)} />
       <label className="start-level">
         Starting level

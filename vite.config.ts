@@ -30,7 +30,7 @@ const versionJson = `${JSON.stringify({ version: APP_VERSION, sha: appCommit(), 
 
 export const SPELL_GARDEN_CACHE = `spell-garden-v${APP_VERSION}`;
 
-/** Files the service worker installs up front. Story audio and 1x page art stay offline; 2x story art waits until it is shown. */
+/** Files the service worker installs up front. Story audio and 1x page art stay offline; 2x story art waits until it is shown. Place music is composed in the app script, so it rides along in the precached bundle and adds no audio files. */
 export function precacheFile(file: string): boolean {
   if (file === 'sw.js' || file === 'version.json' || file.startsWith('splash-') || file.startsWith('art/places/')) return false;
   if (file.startsWith('art/stories/') && file.includes('@2x')) return false;
