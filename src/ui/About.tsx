@@ -1,9 +1,11 @@
 import { ATTRIBUTION } from '../curriculum/types.ts';
 import { PROGRESS_KEY } from '../progress/types.ts';
+import { PageBanner } from './pictures.tsx';
 
 export function About({ onHome }: { onHome: () => void }) {
   return (
     <article className="about panel">
+      <PageBanner place="wizard-tower" />
       <button type="button" className="text-link" onClick={onHome}>
         Back to the tower
       </button>

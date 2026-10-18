@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { applyAll, initialState, isSolved } from '../src/activities/logic.ts';
-import { countUpHint, generateItem, placementPlan } from '../src/activities/generate.ts';
-import { classify, isManipulative } from '../src/curriculum/classify.ts';
+import { countUpHint, generateItem, placementPlan, sampleItem } from '../src/activities/generate.ts';
+import { classify, isManipulative, TEMPLATE_LABEL, type TemplateId } from '../src/curriculum/classify.ts';
 import { allTopics } from '../src/curriculum/data.ts';
 import { askHer } from '../src/curriculum/ask.ts';
 import { learnerNameFrom } from '../src/progress/types.ts';
@@ -47,6 +47,14 @@ describe('item generators', () => {
     expect(learnerNameFrom('')).toBe('Aida');
     expect(learnerNameFrom(undefined)).toBe('Aida');
     expect(learnerNameFrom('Mina')).toBe('Mina');
+  });
+
+  it('paints one sample of every activity', () => {
+    for (const template of Object.keys(TEMPLATE_LABEL) as TemplateId[]) {
+      const item = sampleItem(template);
+      expect(item.template).toBe(template);
+      expect(item.prompt.length).toBeGreaterThan(8);
+    }
   });
 
   it('asks a real-world question from the evidence', () => {

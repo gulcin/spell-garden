@@ -3,6 +3,7 @@ import { TEMPLATE_LABEL, classify } from '../curriculum/classify.ts';
 import { allTopics, clustersFor, domains } from '../curriculum/data.ts';
 import { masteredIds, statusOf } from '../progress/mastery.ts';
 import type { Progress, Status } from '../progress/types.ts';
+import { PageBanner } from './pictures.tsx';
 
 const STATUS_WORD: Record<Status, string> = {
   mastered: 'Mastered',
@@ -21,6 +22,7 @@ export function Garden({ progress, onHome }: { progress: Progress; onHome: () =>
   const summary = clustersFor(domain)[0]?.summary;
   return (
     <div className="garden">
+      <PageBanner place="greenhouse" />
       <button type="button" className="text-link" onClick={onHome}>
         Back to the tower
       </button>

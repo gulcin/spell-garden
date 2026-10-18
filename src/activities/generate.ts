@@ -1,5 +1,5 @@
 import { classify, type TemplateId } from '../curriculum/classify.ts';
-import { topicByName } from '../curriculum/data.ts';
+import { allTopics, topicByName } from '../curriculum/data.ts';
 import type { Topic } from '../curriculum/types.ts';
 import type { Action, Art, Item, Piece, ShapeName, Zone } from './types.ts';
 
@@ -81,6 +81,12 @@ const PLACEMENT = [
 
 export function placementPlan(): { topic: Topic; salt: string }[] {
   return PLACEMENT.map((row) => ({ topic: topicByName(row.name), salt: row.salt }));
+}
+
+export function sampleItem(template: TemplateId): Item {
+  const topic = allTopics().find((entry) => classify(entry) === template);
+  if (!topic) throw new Error(`No topic paints ${template}`);
+  return generateItem(topic, `art-preview-${template}`);
 }
 
 export function generateItem(topic: Topic, salt: string): Item {

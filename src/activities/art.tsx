@@ -13,78 +13,48 @@ const PHOTO: Partial<Record<Art, string>> = {
   leaf: 'sprout',
   drop: 'potion',
   marble: 'seed',
-  moth: 'lantern',
+  moth: 'moth',
   fish: 'flower',
+  owl: 'owl',
 };
 
-export function Glyph({ art, label, tone = 0 }: { art: Art; label?: string; tone?: number }) {
+const BLOCKS: Partial<Record<Art, string>> = {
+  unit: 'block-unit',
+  block: 'block-unit',
+  rod: 'block-rod',
+  flat: 'block-flat',
+  plank: 'plank',
+};
+
+const TINTED = new Set<Art>(['spark', 'gem', 'crystal', 'marble']);
+
+export function Glyph({ art, label, tone }: { art: Art; label?: string; tone?: number }) {
   const photo = PHOTO[art];
+  const tint = tone != null && TINTED.has(art) ? ` tone-${tone % 6}` : '';
   if (photo) {
     return (
-      <span className={`photo-prop tone-${tone % 6}`}>
+      <span className={`photo-prop${tint}`}>
         <Prop name={photo} className="glyph-photo" />
         {label ? <em className="prop-label">{label}</em> : null}
       </span>
     );
   }
-  if (art === 'rod' || art === 'unit' || art === 'flat' || art === 'block' || art === 'plank') {
-    return <Block kind={art === 'rod' ? 'rod' : art === 'flat' ? 'flat' : 'unit'} />;
+  const block = BLOCKS[art];
+  if (block) {
+    return (
+      <span className={`photo-prop block-art block-${art}`}>
+        <Prop name={block} className="glyph-photo" />
+      </span>
+    );
   }
   if (art === 'ribbon') return <span className="ribbon">more</span>;
-  if (art === 'owl') return <Owl />;
   return <Moon />;
-}
-
-function Block({ kind }: { kind: 'unit' | 'rod' | 'flat' }) {
-  if (kind === 'rod') {
-    return (
-      <svg viewBox="0 0 28 78" className="glyph glyph-rod" aria-hidden>
-        <rect x="3" y="2" width="22" height="74" rx="6" fill="#c9b4e6" stroke="#6d548f" strokeWidth="2" />
-        {Array.from({ length: 8 }, (_, i) => (
-          <rect key={i} x="6" y={6 + i * 8.6} width="16" height="6" rx="2" fill="#efe6fb" />
-        ))}
-      </svg>
-    );
-  }
-  if (kind === 'flat') {
-    return (
-      <svg viewBox="0 0 64 64" className="glyph glyph-flat" aria-hidden>
-        <rect x="2" y="2" width="60" height="60" rx="8" fill="#b7d4ef" stroke="#5d7f9e" strokeWidth="2" />
-        {Array.from({ length: 4 }, (_, row) =>
-          Array.from({ length: 4 }, (_, col) => (
-            <rect key={`${row}-${col}`} x={8 + col * 13} y={8 + row * 13} width="10" height="10" rx="2" fill="#f4fbff" opacity="0.85" />
-          )),
-        )}
-      </svg>
-    );
-  }
-  return (
-    <svg viewBox="0 0 32 32" className="glyph glyph-unit" aria-hidden>
-      <rect x="2" y="2" width="28" height="28" rx="7" fill="#f0c987" stroke="#a8753a" strokeWidth="2" />
-      <rect x="6" y="6" width="12" height="8" rx="3" fill="#fff6df" opacity="0.85" />
-    </svg>
-  );
 }
 
 function Moon() {
   return (
     <svg viewBox="0 0 64 64" className="glyph" aria-hidden>
       <path d="M38 8 A22 22 0 1 0 38 56 A15 15 0 1 1 38 8" fill="#f6e2a8" stroke="#c4963e" strokeWidth="2" />
-    </svg>
-  );
-}
-
-function Owl() {
-  return (
-    <svg viewBox="0 0 64 64" className="glyph" aria-hidden>
-      <ellipse cx="32" cy="36" rx="18" ry="18" fill="#f3e2c8" stroke="#8a6a48" strokeWidth="2" />
-      <path d="M16 28 Q10 16 22 20" fill="#e7d3b4" stroke="#8a6a48" strokeWidth="2" />
-      <path d="M48 28 Q54 16 42 20" fill="#e7d3b4" stroke="#8a6a48" strokeWidth="2" />
-      <circle cx="25" cy="34" r="6" fill="#fff" />
-      <circle cx="39" cy="34" r="6" fill="#fff" />
-      <circle cx="25" cy="35" r="2.4" fill="#2c2144" />
-      <circle cx="39" cy="35" r="2.4" fill="#2c2144" />
-      <path d="M30 42 L32 46 L34 42" fill="#e0a15a" />
     </svg>
   );
 }

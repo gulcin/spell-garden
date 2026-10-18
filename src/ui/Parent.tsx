@@ -6,6 +6,7 @@ import { markMastered, masteredIds, statusOf } from '../progress/mastery.ts';
 import { applyStartAge, gradeLabel, startAgeChoices } from '../progress/placement.ts';
 import { PROGRESS_KEY, freshProgress, type Progress, type Status } from '../progress/types.ts';
 import { parseProgress } from '../progress/storage.ts';
+import { PageBanner, Prop } from './pictures.tsx';
 
 const STATUS_WORD: Record<Status, string> = {
   mastered: 'Mastered',
@@ -18,12 +19,14 @@ export function Parent({
   progress,
   update,
   onHome,
+  startOpen = false,
 }: {
   progress: Progress;
   update: (recipe: (current: Progress) => Progress) => void;
   onHome: () => void;
+  startOpen?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(startOpen);
   const [answer, setAnswer] = useState('');
   const [gateNote, setGateNote] = useState<string | null>(null);
   const [query, setQuery] = useState('');
@@ -34,6 +37,7 @@ export function Parent({
   if (!open) {
     return (
       <section className="panel gate">
+        <PageBanner place="potion-cottage" />
         <button type="button" className="text-link" onClick={onHome}>
           Back to the tower
         </button>
@@ -131,6 +135,7 @@ function Journal({
 
   return (
     <div className="journal">
+      <PageBanner place="observatory" />
       <button type="button" className="text-link" onClick={onHome}>
         Back to the tower
       </button>
@@ -271,7 +276,12 @@ function Journal({
       ) : null}
       <section>
         <h2>Chapters</h2>
-        {progress.sessions.length === 0 ? <p>No chapters yet. When she finishes a quest, it will rest here.</p> : null}
+        {progress.sessions.length === 0 ? (
+          <p className="empty-note">
+            <Prop name="book" className="example-book" alt="" />
+            No chapters yet. When she finishes a quest, it will rest here.
+          </p>
+        ) : null}
         <ul className="sessions">
           {progress.sessions.map((session) => (
             <li key={session.id}>

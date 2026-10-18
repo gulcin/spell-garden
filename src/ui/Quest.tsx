@@ -8,7 +8,7 @@ import { planChapter, type ChapterSlot } from '../progress/select.ts';
 import type { Progress } from '../progress/types.ts';
 import { DEMO_LINE, type Chapter } from '../story.ts';
 import { speak } from '../speech.ts';
-import { Prop } from './pictures.tsx';
+import { placeStyle, Prop } from './pictures.tsx';
 
 type Mode = 'placement' | 'chapter';
 
@@ -22,12 +22,14 @@ export function Quest({
   mode,
   progress,
   chapter,
+  placeId = 'lantern-grove',
   update,
   onFinish,
 }: {
   mode: Mode;
   progress: Progress;
   chapter?: Chapter;
+  placeId?: string;
   update: (recipe: (current: Progress) => Progress) => void;
   onFinish: (correct: number, asked: number) => void;
 }) {
@@ -66,7 +68,11 @@ export function Quest({
 
   if (!slot || !item) {
     return (
-      <section className="panel">
+      <section className="panel story">
+        <div className="reward-row">
+          <Prop name="apprentice" className="guide guide-small" alt="" />
+          <Prop name="moth" className="reward-prop" alt="" />
+        </div>
         <h2>The garden is resting</h2>
         <p>Every spell you can reach is already glowing. A grown-up can open a new path from the journal.</p>
         <button type="button" className="btn primary" onClick={() => onFinish(correct, asked)}>
@@ -209,8 +215,9 @@ export function Quest({
     }
   }
 
+  const star = `${import.meta.env.BASE_URL}art/star.webp`;
   return (
-    <section className="quest">
+    <section className="quest place-scene" data-place={placeId} style={placeStyle(placeId)}>
       <header className="quest-top">
         <p className="kicker">{mode === 'placement' ? 'Finding your path' : chapter?.title}</p>
         <div className="pips" aria-label={`Spell ${index + 1} of ${slots.length}`}>
@@ -239,6 +246,7 @@ export function Quest({
           <h2>{item.template.replace('-', ' ')}</h2>
           <p>{DEMO_LINE[item.template]}</p>
           <div className={`demo-art demo-${item.template}`} aria-hidden>
+            <Prop name="apprentice" className="guide guide-small" alt="" />
             <span className="ghost-hand" />
           </div>
           <button type="button" className="btn gold xl" data-testid="skip-demo" onClick={skipDemo}>
@@ -257,7 +265,9 @@ export function Quest({
           {phase === 'ok' ? (
             <div className="sparkles" aria-hidden>
               {Array.from({ length: 8 }, (_, i) => (
-                <i key={i} style={{ ['--i' as string]: i }} />
+                <i key={i} style={{ ['--i' as string]: i }}>
+                  <img src={star} alt="" />
+                </i>
               ))}
             </div>
           ) : null}

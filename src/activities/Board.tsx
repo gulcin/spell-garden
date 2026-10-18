@@ -160,9 +160,12 @@ export function Board({ item, api }: Props) {
     <div className={`board board-${item.template}`} data-testid="board">
       {item.example && item.example.length > 0 ? (
         <div className="example">
-          {item.example.map((line) => (
-            <p key={line}>{line}</p>
-          ))}
+          <Prop name="book" className="example-book" alt="" />
+          <div>
+            {item.example.map((line) => (
+              <p key={line}>{line}</p>
+            ))}
+          </div>
         </div>
       ) : null}
       {item.equation ? (
@@ -175,7 +178,7 @@ export function Board({ item, api }: Props) {
       {item.mushrooms ? (
         <div className="mushrooms" aria-label={`${item.mushrooms} mushrooms`}>
           {Array.from({ length: item.mushrooms }, (_, i) => (
-            <span key={i} className="mushroom" />
+            <Prop key={i} name="mushroom" className="mushroom-art" alt="" />
           ))}
         </div>
       ) : null}
@@ -309,7 +312,12 @@ export function Board({ item, api }: Props) {
             {bank.map((piece) => (
               <PieceView key={piece.id} piece={piece} selected={selected === piece.id} onDown={onPieceDown} />
             ))}
-            {bank.length === 0 ? <p className="tray-empty">The nest is empty.</p> : null}
+            {bank.length === 0 ? (
+              <p className="tray-empty">
+                <Prop name="mushroom" className="mushroom-art" alt="" />
+                The nest is empty.
+              </p>
+            ) : null}
           </div>
           <Stage item={item} inZone={inZone} onPieceDown={onPieceDown} onZoneUp={onZoneUp} selected={selected} />
         </>
@@ -356,7 +364,11 @@ function PieceView({
       onPointerDown={(event) => onDown(event, piece.id)}
       aria-label={piece.label || piece.art}
     >
-      <Glyph art={piece.art} label={piece.label} tone={piece.tone} />
+      <Glyph
+        art={piece.art}
+        label={piece.art === 'coin' || piece.art === 'token' || piece.art === 'stone' ? piece.label : undefined}
+        tone={piece.tone}
+      />
       {piece.label && piece.art !== 'coin' && piece.art !== 'token' && piece.art !== 'stone' ? <em>{piece.label}</em> : null}
     </div>
   );
@@ -566,25 +578,26 @@ function ClockFace({
 }) {
   const hourDeg = (hour % 12) * 30 + minute * 0.5;
   const minuteDeg = minute * 6;
+  const base = import.meta.env.BASE_URL;
   return (
     <div className="clock" data-testid="clock-face" ref={faceRef}>
-      <svg className="clock-ring" viewBox="0 0 100 100" aria-hidden>
-        <circle cx="50" cy="50" r="46" fill="#fffaf3" stroke="#c4a06a" strokeWidth="4" />
-        <circle cx="50" cy="50" r="40" fill="none" stroke="#e7d3a8" strokeWidth="2" />
-        {Array.from({ length: 12 }, (_, i) => {
-          const a = ((i * 30 - 90) * Math.PI) / 180;
-          const x1 = 50 + Math.cos(a) * 34;
-          const y1 = 50 + Math.sin(a) * 34;
-          const x2 = 50 + Math.cos(a) * 40;
-          const y2 = 50 + Math.sin(a) * 40;
-          return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#8b6bb5" strokeWidth={i % 3 === 0 ? 2.4 : 1.2} strokeLinecap="round" />;
-        })}
-      </svg>
-      {Array.from({ length: 12 }, (_, i) => (
-        <span key={i} className="clock-num" style={{ transform: `rotate(${i * 30}deg) translateY(-72px) rotate(${-i * 30}deg)` }}>
-          {i === 0 ? 12 : i}
-        </span>
-      ))}
+      <picture className="clock-art">
+        <source type="image/webp" srcSet={`${base}art/clock.webp 1x, ${base}art/clock@2x.webp 2x`} />
+        <img src={`${base}art/clock.png`} alt="" />
+      </picture>
+      {Array.from({ length: 12 }, (_, i) => {
+        const angle = ((i * 30 - 90) * Math.PI) / 180;
+        const radius = 34;
+        return (
+          <span
+            key={i}
+            className="clock-num"
+            style={{ left: `${50 + Math.cos(angle) * radius}%`, top: `${50 + Math.sin(angle) * radius}%` }}
+          >
+            {i === 0 ? 12 : i}
+          </span>
+        );
+      })}
       <div
         className="hand hour"
         data-testid="hand-hour"
@@ -614,7 +627,9 @@ function AngleFace({
   return (
     <div className="angle-face" data-testid="angle-face" ref={faceRef}>
       <div className="angle-base" />
-      <div className="hand wand" data-testid="angle-wand" style={{ transform: `rotate(${degrees}deg)` }} onPointerDown={onDown} />
+      <div className="hand wand" data-testid="angle-wand" style={{ transform: `rotate(${degrees}deg)` }} onPointerDown={onDown}>
+        <img className="wand-star" src={`${import.meta.env.BASE_URL}art/star.webp`} alt="" />
+      </div>
       <p className="angle-read">{degrees}°</p>
     </div>
   );

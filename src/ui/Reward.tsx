@@ -6,7 +6,9 @@ export function RewardScreen({ reward, name, onHome }: { reward: Reward; name: s
     <section className="reward panel" data-testid="reward">
       <div className="sparkles" aria-hidden>
         {Array.from({ length: 10 }, (_, i) => (
-          <i key={i} style={{ ['--i' as string]: i }} />
+          <i key={i} style={{ ['--i' as string]: i }}>
+            <img src={`${import.meta.env.BASE_URL}art/star.webp`} alt="" />
+          </i>
         ))}
       </div>
       <p className="kicker">A cosy reward</p>
