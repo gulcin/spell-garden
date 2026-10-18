@@ -8,6 +8,10 @@ import { planChapter, type ChapterSlot } from '../progress/select.ts';
 import type { Progress } from '../progress/types.ts';
 import { DEMO_LINE, type Chapter } from '../story.ts';
 import { speak } from '../speech.ts';
+import { crystalGain, crystalLine } from '../wardrobe/catalog.ts';
+import { awardCrystals } from '../wardrobe/economy.ts';
+import { CrystalCounter } from './CrystalCounter.tsx';
+import { DressedApprentice } from './DressedApprentice.tsx';
 import { PLACES, placeStyle, Prop } from './pictures.tsx';
 
 type Mode = 'placement' | 'chapter';
@@ -70,7 +74,7 @@ export function Quest({
     return (
       <section className="panel story">
         <div className="reward-row">
-          <Prop name="apprentice" className="guide guide-small" alt="" />
+          <DressedApprentice className="guide guide-small" alt="" />
           <Prop name="moth" className="reward-prop" alt="" />
         </div>
         <h2>The garden is resting</h2>
@@ -144,7 +148,8 @@ export function Quest({
             }
           : session,
       );
-      return { ...current, topics: { ...current.topics, [currentItem.topicId]: nextTopic }, sessions };
+      const next = { ...current, topics: { ...current.topics, [currentItem.topicId]: nextTopic }, sessions };
+      return ok ? awardCrystals(next, crystalGain(placeId)) : next;
     });
   }
 
@@ -154,7 +159,7 @@ export function Quest({
     if (!board) return;
     if (isSolved(item, board)) {
       record(true, item);
-      const praise = PRAISE[correct % PRAISE.length] ?? PRAISE[0];
+      const praise = `${PRAISE[correct % PRAISE.length] ?? PRAISE[0]} ${crystalLine(placeId)}`;
       setNote(praise);
       setPhase('ok');
       speak(praise);
@@ -221,16 +226,19 @@ export function Quest({
     <section className="quest place-scene" data-place={placeId} style={placeStyle(placeId)}>
       <header className="quest-top">
         <p className="kicker">{mode === 'placement' ? 'Finding your path' : chapter?.title}</p>
-        <div className="pips" aria-label={`Spell ${index + 1} of ${slots.length}`}>
-          {slots.map((entry, pip) => (
-            <i key={`${entry.topic.id}-${pip}`} className={pip < index ? 'done' : pip === index ? 'now' : ''} />
-          ))}
+        <div className="quest-meta">
+          <CrystalCounter count={progress.crystals} />
+          <div className="pips" aria-label={`Spell ${index + 1} of ${slots.length}`}>
+            {slots.map((entry, pip) => (
+              <i key={`${entry.topic.id}-${pip}`} className={pip < index ? 'done' : pip === index ? 'now' : ''} />
+            ))}
+          </div>
         </div>
       </header>
       {phase === 'intro' ? (
         <div className="panel story">
           <div className="intro-cast">
-            <Prop name="apprentice" className="guide guide-small" alt="" />
+            <DressedApprentice className="guide guide-small" alt="" />
             <Prop name={spot.prop} className="place-vignette" alt="" />
           </div>
           <h2>{mode === 'placement' ? spot.heading : chapter?.title}</h2>
@@ -250,7 +258,7 @@ export function Quest({
           <h2>{item.template.replace('-', ' ')}</h2>
           <p>{DEMO_LINE[item.template]}</p>
           <div className={`demo-art demo-${item.template}`} aria-hidden>
-            <Prop name="apprentice" className="guide guide-small" alt="" />
+            <DressedApprentice className="guide guide-small" alt="" />
             <span className="ghost-hand" />
           </div>
           <button type="button" className="btn gold xl" data-testid="skip-demo" onClick={skipDemo}>
@@ -281,7 +289,7 @@ export function Quest({
           </button>
           <Board item={item} api={api} />
           {note ? <p className={phase === 'ok' ? 'note good' : 'note'}>{note}</p> : null}
-          <Prop name="apprentice" className="play-guide" alt="" />
+          <DressedApprentice className="play-guide" alt="" />
           <div className="dock">
             {phase === 'play' ? (
               <>

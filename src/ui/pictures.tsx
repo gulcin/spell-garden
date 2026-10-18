@@ -1,3 +1,5 @@
+import { DressedApprentice } from './DressedApprentice.tsx';
+
 /** Painted storybook art. WebP is preferred; PNG is the fallback. */
 export function placeStyle(id: string): { backgroundImage: string } {
   const base = `${import.meta.env.BASE_URL}art/places/${id}`;
@@ -10,8 +12,8 @@ export function PageBanner({ place }: { place: string }) {
   const base = `${import.meta.env.BASE_URL}art/places/${place}`;
   return (
     <div className="page-banner">
-      <img src={`${base}.webp`} srcSet={`${base}.webp 1x, ${base}@2x.webp 2x`} alt="" />
-      <Prop name="apprentice" className="guide guide-small banner-guide" alt="" />
+      <img className="banner-photo" src={`${base}.webp`} srcSet={`${base}.webp 1x, ${base}@2x.webp 2x`} alt="" />
+      <DressedApprentice className="guide guide-small banner-guide" alt="" />
     </div>
   );
 }

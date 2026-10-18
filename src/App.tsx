@@ -5,6 +5,7 @@ import { loadProgress, saveProgress } from './progress/storage.ts';
 import { DEFAULT_LEARNER_NAME, type Progress } from './progress/types.ts';
 import { chapterFor, nextReward, type Reward } from './story.ts';
 import { About } from './ui/About.tsx';
+import { CrystalShop } from './ui/CrystalShop.tsx';
 import { Garden } from './ui/Garden.tsx';
 import { GardenMapButton } from './ui/GardenMapButton.tsx';
 import { Home } from './ui/Home.tsx';
@@ -12,8 +13,10 @@ import { Parent } from './ui/Parent.tsx';
 import { PLACES, placeStyle } from './ui/pictures.tsx';
 import { Quest } from './ui/Quest.tsx';
 import { RewardScreen } from './ui/Reward.tsx';
+import { WardrobeProvider } from './ui/DressedApprentice.tsx';
+import { WardrobeMirror } from './ui/Wardrobe.tsx';
 
-type Screen = 'home' | 'placement' | 'placed' | 'chapter' | 'reward' | 'parent' | 'about' | 'garden';
+type Screen = 'home' | 'placement' | 'placed' | 'chapter' | 'reward' | 'parent' | 'about' | 'garden' | 'shop' | 'wardrobe';
 
 type HistoryState = { spellGarden?: Screen };
 
@@ -72,17 +75,25 @@ export function App() {
   }
 
   return (
+    <WardrobeProvider wardrobe={progress.wardrobe}>
     <main className={screen === 'home' ? 'app' : 'app away'}>
       {screen !== 'home' ? <GardenMapButton onHome={() => show('home')} /> : null}
       {screen === 'home' ? (
         <Home
           progress={progress}
           onStart={start}
+          onShop={() => show('shop')}
           onGarden={() => show('garden')}
           onAbout={() => show('about')}
           onParent={() => show('parent')}
           onRename={(name) => update((current) => ({ ...current, learnerName: name || DEFAULT_LEARNER_NAME }))}
         />
+      ) : null}
+      {screen === 'shop' ? (
+        <CrystalShop progress={progress} update={update} onWardrobe={() => show('wardrobe')} />
+      ) : null}
+      {screen === 'wardrobe' ? (
+        <WardrobeMirror progress={progress} update={update} onShop={() => show('shop')} />
       ) : null}
       {screen === 'garden' ? <Garden progress={progress} onHome={() => show('home')} /> : null}
       {screen === 'about' ? <About onHome={() => show('home')} /> : null}
@@ -143,5 +154,6 @@ export function App() {
         </div>
       ) : null}
     </main>
+    </WardrobeProvider>
   );
 }

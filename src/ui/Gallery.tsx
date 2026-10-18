@@ -1,18 +1,46 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Board, type BoardHandle } from '../activities/Board.tsx';
 import { generateItem, sampleItem } from '../activities/generate.ts';
 import type { Item } from '../activities/types.ts';
 import { classify, TEMPLATE_LABEL, type TemplateId } from '../curriculum/classify.ts';
 import { allTopics } from '../curriculum/data.ts';
-import { freshProgress } from '../progress/types.ts';
+import { freshProgress, type Progress } from '../progress/types.ts';
 import { REWARDS } from '../story.ts';
+import type { ShopCategory } from '../wardrobe/catalog.ts';
 import { About } from './About.tsx';
+import { CrystalShop } from './CrystalShop.tsx';
+import { WardrobeProvider } from './DressedApprentice.tsx';
+import { DressedApprentice } from './DressedApprentice.tsx';
 import { Garden } from './Garden.tsx';
 import { GardenMapButton } from './GardenMapButton.tsx';
 import { Home } from './Home.tsx';
 import { Parent } from './Parent.tsx';
 import { PLACES, placeStyle, Prop } from './pictures.tsx';
 import { RewardScreen } from './Reward.tsx';
+import { WardrobeMirror } from './Wardrobe.tsx';
+
+function previewProgress(screen: string, dressed: boolean): Progress {
+  const progress = freshProgress('Aida');
+  if (screen === 'shop') {
+    progress.crystals = 24;
+    return progress;
+  }
+  if (dressed) {
+    progress.crystals = 18;
+    progress.wardrobe = {
+      owned: ['robe-rose', 'hat-mushroom', 'extra-crown', 'extra-kitten', 'broom-blossom', 'extra-necklace'],
+      equipped: {
+        dress: 'robe-rose',
+        hat: 'hat-mushroom',
+        crown: 'extra-crown',
+        familiar: 'extra-kitten',
+        broom: 'broom-blossom',
+        necklace: 'extra-necklace',
+      },
+    };
+  }
+  return progress;
+}
 
 const PLACE_OF: Record<TemplateId, (typeof PLACES)[number]['id']> = {
   'ten-frame': 'lantern-grove',
@@ -43,14 +71,24 @@ export function Gallery() {
   const screen = params.get('screen') ?? 'home';
   const template = (params.get('template') ?? 'ten-frame') as TemplateId;
   const place = PLACE_OF[template] ?? 'lantern-grove';
-  const progress = freshProgress('Aida');
+  const category = (params.get('category') ?? 'dress') as ShopCategory;
+  const dressed = params.get('dressed') === '1' || screen === 'wardrobe';
+  const [progress, setProgress] = useState<Progress>(() => previewProgress(screen, dressed));
   const away = screen !== 'home';
+  function update(recipe: (current: Progress) => Progress) {
+    setProgress((current) => recipe(current));
+  }
   return (
+    <WardrobeProvider wardrobe={progress.wardrobe}>
     <main className={away ? 'app away' : 'app'}>
       {away ? <GardenMapButton onHome={() => undefined} /> : null}
       {screen === 'home' ? (
-        <Home progress={progress} onStart={() => undefined} onGarden={() => undefined} onAbout={() => undefined} onParent={() => undefined} onRename={() => undefined} />
+        <Home progress={progress} onStart={() => undefined} onShop={() => undefined} onGarden={() => undefined} onAbout={() => undefined} onParent={() => undefined} onRename={() => undefined} />
       ) : null}
+      {screen === 'shop' ? (
+        <CrystalShop progress={progress} update={update} category={category} onWardrobe={() => undefined} />
+      ) : null}
+      {screen === 'wardrobe' ? <WardrobeMirror progress={progress} update={update} onShop={() => undefined} /> : null}
       {screen === 'about' ? <About onHome={() => undefined} /> : null}
       {screen === 'garden' ? <Garden progress={progress} onHome={() => undefined} /> : null}
       {screen === 'gate' ? <Parent progress={progress} update={() => undefined} onHome={() => undefined} /> : null}
@@ -75,6 +113,7 @@ export function Gallery() {
         <Activity screen={screen} template={screen === 'example' ? 'fallback' : template} named={params.get('named') === 'colours'} />
       ) : null}
     </main>
+    </WardrobeProvider>
   );
 }
 
@@ -87,7 +126,7 @@ function Intro({ place }: { place: string }) {
       </header>
       <div className="panel story">
         <div className="intro-cast">
-          <Prop name="apprentice" className="guide guide-small" alt="" />
+          <DressedApprentice className="guide guide-small" alt="" />
           <Prop name={spot.prop} className="place-vignette" alt="" />
         </div>
         <h2>{spot.heading}</h2>
@@ -142,7 +181,7 @@ function Activity({ screen, template, named }: { screen: string; template: Templ
           <h2>{TEMPLATE_LABEL[item.template]}</h2>
           <p>{item.prompt}</p>
           <div className="demo-art" aria-hidden>
-            <Prop name="apprentice" className="guide guide-small" alt="" />
+            <DressedApprentice className="guide guide-small" alt="" />
           </div>
           <button type="button" className="btn gold xl">
             Your turn
@@ -178,7 +217,7 @@ function Activity({ screen, template, named }: { screen: string; template: Templ
         <Board item={item} api={api} />
         {screen === 'hint' ? <p className="note">{item.hints[0]}</p> : null}
         {screen === 'ok' ? <p className="note good">The spell worked. The garden glows a little warmer.</p> : null}
-        <Prop name="apprentice" className="play-guide" alt="" />
+        <DressedApprentice className="play-guide" alt="" />
         <div className="dock">
           <button type="button" className="btn quiet">
             Hint

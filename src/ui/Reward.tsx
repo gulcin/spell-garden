@@ -1,4 +1,5 @@
 import type { Reward } from '../story.ts';
+import { DressedApprentice } from './DressedApprentice.tsx';
 import { Prop, REWARD_ART } from './pictures.tsx';
 
 export function RewardScreen({ reward, name, onHome }: { reward: Reward; name: string; onHome: () => void }) {
@@ -13,7 +14,7 @@ export function RewardScreen({ reward, name, onHome }: { reward: Reward; name: s
       </div>
       <p className="kicker">A cosy reward</p>
       <div className="reward-row">
-        <Prop name="apprentice" className="guide guide-small" alt="" />
+        <DressedApprentice className="guide guide-small" alt="" />
         <Prop name={REWARD_ART[reward.id] ?? 'star'} className="reward-prop" alt={reward.name} />
       </div>
       <h1>{reward.name}</h1>

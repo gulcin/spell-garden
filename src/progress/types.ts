@@ -53,6 +53,13 @@ export type PlacementState = {
   completedAt: number | null;
 };
 
+export type WardrobeSlot = 'dress' | 'hat' | 'familiar' | 'bag' | 'wand' | 'necklace' | 'crown' | 'broom';
+
+export type WardrobeState = {
+  owned: string[];
+  equipped: Partial<Record<WardrobeSlot, string>>;
+};
+
 export type Progress = {
   format: typeof PROGRESS_FORMAT;
   taxonomy: 'marble-skill-taxonomy-v1';
@@ -62,6 +69,9 @@ export type Progress = {
   sessions: SessionRecord[];
   seenTemplates: string[];
   rewards: string[];
+  /** Crystals spent at the crystal shop. Never negative. */
+  crystals: number;
+  wardrobe: WardrobeState;
   updatedAt: number;
 };
 
@@ -92,6 +102,8 @@ export function freshProgress(name = DEFAULT_LEARNER_NAME): Progress {
     sessions: [],
     seenTemplates: [],
     rewards: [],
+    crystals: 0,
+    wardrobe: { owned: [], equipped: {} },
     updatedAt: Date.now(),
   };
 }

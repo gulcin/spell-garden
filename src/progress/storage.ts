@@ -1,4 +1,21 @@
+import { normalizeCrystals, normalizeWardrobe } from '../wardrobe/economy.ts';
 import { freshProgress, learnerNameFrom, PROGRESS_FORMAT, PROGRESS_KEY, type Progress } from './types.ts';
+
+/** Fills crystals and the wardrobe without dropping a save from before the shop. */
+export function withWardrobe(parsed: Progress): Progress {
+  const learnerName = learnerNameFrom(parsed.learnerName);
+  return {
+    ...freshProgress(learnerName),
+    ...parsed,
+    learnerName,
+    seenTemplates: parsed.seenTemplates ?? [],
+    rewards: parsed.rewards ?? [],
+    sessions: parsed.sessions ?? [],
+    topics: parsed.topics ?? {},
+    crystals: normalizeCrystals(parsed.crystals),
+    wardrobe: normalizeWardrobe(parsed.wardrobe),
+  };
+}
 
 function isProgress(value: unknown): value is Progress {
   if (!value || typeof value !== 'object') return false;
@@ -12,16 +29,7 @@ export function loadProgress(): Progress {
     if (!raw) return freshProgress();
     const parsed: unknown = JSON.parse(raw);
     if (!isProgress(parsed)) return freshProgress();
-    const learnerName = learnerNameFrom(parsed.learnerName);
-    return {
-      ...freshProgress(learnerName),
-      ...parsed,
-      learnerName,
-      seenTemplates: parsed.seenTemplates ?? [],
-      rewards: parsed.rewards ?? [],
-      sessions: parsed.sessions ?? [],
-      topics: parsed.topics ?? {},
-    };
+    return withWardrobe(parsed);
   } catch {
     return freshProgress();
   }
@@ -37,7 +45,7 @@ export function parseProgress(raw: string): Progress {
   if (!isProgress(parsed)) {
     throw new Error('That file is not a Spell Garden progress export.');
   }
-  return parsed;
+  return withWardrobe(parsed);
 }
 
 export { PROGRESS_KEY };
