@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { deviceContext, saveReport, type ReportKind } from '../feedback/reports.ts';
+import { deviceContext, reportMailto, saveReport, type Report, type ReportKind } from '../feedback/reports.ts';
 import { useReportLive } from '../feedback/live.tsx';
 import { speak } from '../speech.ts';
 
@@ -36,7 +36,7 @@ export function TellSheet({ onClose }: { onClose: () => void }) {
   const { live } = useReportLive();
   const [kind, setKind] = useState<ReportKind | null>(null);
   const [text, setText] = useState('');
-  const [kept, setKept] = useState(false);
+  const [kept, setKept] = useState<Report | null>(null);
   const [heard, setHeard] = useState<string | null>(null);
 
   function dictate() {
@@ -63,15 +63,20 @@ export function TellSheet({ onClose }: { onClose: () => void }) {
 
   function keep() {
     if (!kind) return;
-    saveReport({
+    const report: Report = {
       id: `note-${Date.now()}`,
       kind,
       text: text.trim(),
       createdAt: Date.now(),
       context: deviceContext(live),
-    });
-    setKept(true);
-    speak('Kept. A grown-up can send it.');
+    };
+    try {
+      saveReport(report);
+    } catch {
+      /* The note is still shown. A grown-up can send the letter. */
+    }
+    setKept(report);
+    speak('Kept. You can send it to Mum.');
   }
 
   return (
@@ -115,9 +120,14 @@ export function TellSheet({ onClose }: { onClose: () => void }) {
         </button>
         <p className="tell-hint">{heard ?? 'Tap the microphone and say it, if you like.'}</p>
         {kept ? (
-          <p className="note good" data-testid="tell-kept">
-            Kept safely on this iPad. A grown-up can send the notes to Mum.
-          </p>
+          <>
+            <p className="note good" data-testid="tell-kept">
+              Kept. Thank you. A copy stays on this iPad, and you can send it to Mum.
+            </p>
+            <a className="btn gold xl" data-testid="tell-send" href={reportMailto(kept)}>
+              Send to Mum
+            </a>
+          </>
         ) : (
           <button type="button" className="btn gold xl" data-testid="tell-keep" disabled={!kind} onClick={keep}>
             Keep this note

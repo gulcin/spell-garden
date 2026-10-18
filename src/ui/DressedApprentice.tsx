@@ -14,16 +14,35 @@ function useWardrobe(): WardrobeState {
   return useContext(WardrobeContext);
 }
 
+/** Full painted apprentice for each robe, so the old purple robe never shows through. */
+const ROBE_LOOK: Record<string, string> = {
+  'robe-moon': 'look-robe-moon',
+  'robe-rose': 'look-robe-rose',
+  'robe-moss': 'look-robe-moss',
+  'robe-midnight': 'look-robe-midnight',
+};
+
 /** The apprentice, plus any robes, hats, extras, and broom she is wearing. */
 export function DressedApprentice({ className, alt = '' }: { className?: string; alt?: string }) {
   const { equipped } = useWardrobe();
+  const look = equipped.dress ? ROBE_LOOK[equipped.dress] : undefined;
   const layers = WEAR_SLOTS.map((slot) => equipped[slot]).filter((id): id is string => Boolean(id));
   return (
     <span className={className ? `dressed ${className}` : 'dressed'}>
-      <Prop name="apprentice" alt={alt} />
+      {look ? (
+        <img
+          className="look"
+          src={`${import.meta.env.BASE_URL}art/wear/${look}.webp`}
+          srcSet={`${import.meta.env.BASE_URL}art/wear/${look}.webp 1x, ${import.meta.env.BASE_URL}art/wear/${look}@2x.webp 2x`}
+          alt={alt}
+          draggable={false}
+        />
+      ) : (
+        <Prop name="apprentice" alt={alt} />
+      )}
       {layers.map((id) => {
         const item = itemById(id);
-        if (!item) return null;
+        if (!item || (look && item.slot === 'dress')) return null;
         const box = wearStyle(id, item.slot);
         const style: CSSProperties = { left: box.left, top: box.top, width: box.width, zIndex: box.z };
         const base = `${import.meta.env.BASE_URL}art/wear/${id}`;

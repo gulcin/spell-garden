@@ -1,0 +1,134 @@
+import { buildInfo } from './version.ts';
+import { isLessonInProgress, subscribeLesson } from './updateState.ts';
+import { CHECK_INTERVAL_MS, planUpdate, UPDATE_DEFERRED_KEY, type UpdatePlan } from './updates.ts';
+
+type RemoteVersion = { version: string; sha?: string; date?: string };
+
+let registration: ServiceWorkerRegistration | undefined;
+let waiting = false;
+let applying = false;
+let started = false;
+const listeners = new Set<() => void>();
+
+function emit(): void {
+  listeners.forEach((listener) => listener());
+}
+
+function deferredFlags(): { deferred: boolean; deferredThisSession: boolean } {
+  return {
+    deferred: localStorage.getItem(UPDATE_DEFERRED_KEY) === '1',
+    deferredThisSession: sessionStorage.getItem(UPDATE_DEFERRED_KEY) === '1',
+  };
+}
+
+export function currentUpdatePlan(): UpdatePlan {
+  const flags = deferredFlags();
+  return planUpdate({
+    waiting,
+    lesson: isLessonInProgress(),
+    deferred: flags.deferred,
+    deferredThisSession: flags.deferredThisSession,
+    applying,
+  });
+}
+
+export function subscribeUpdates(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+function markDeferred(): void {
+  localStorage.setItem(UPDATE_DEFERRED_KEY, '1');
+  sessionStorage.setItem(UPDATE_DEFERRED_KEY, '1');
+  emit();
+}
+
+function clearDeferred(): void {
+  localStorage.removeItem(UPDATE_DEFERRED_KEY);
+  sessionStorage.removeItem(UPDATE_DEFERRED_KEY);
+  emit();
+}
+
+export function noteUpdatePlan(plan: UpdatePlan): void {
+  if (plan === 'defer') markDeferred();
+  if (plan === 'apply') applyUpdate();
+}
+
+export function applyUpdate(): void {
+  if (applying) return;
+  applying = true;
+  clearDeferred();
+  emit();
+  registration?.waiting?.postMessage('skip-waiting');
+}
+
+export async function fetchRemoteVersion(): Promise<RemoteVersion | null> {
+  try {
+    const response = await fetch(`${import.meta.env.BASE_URL}version.json`, { cache: 'no-store' });
+    if (!response.ok) return null;
+    const data = (await response.json()) as RemoteVersion;
+    if (!data || typeof data.version !== 'string') return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+export async function checkForUpdates(): Promise<string> {
+  const remote = await fetchRemoteVersion();
+  try {
+    if (registration) await registration.update();
+  } catch {
+    return "Couldn't look just now. Try again in a little while.";
+  }
+  if (registration?.waiting || registration?.installing || waiting) {
+    return 'Spell Garden learned something new!';
+  }
+  if (remote && remote.version !== buildInfo.version) return 'A new Spell Garden is on the way.';
+  if (remote && remote.version === buildInfo.version) clearDeferred();
+  if (!registration) return 'Updates arrive once Spell Garden is on the home screen.';
+  return 'Spell Garden is up to date.';
+}
+
+function markWaiting(): void {
+  waiting = true;
+  emit();
+}
+
+export function startUpdateChecks(): void {
+  if (started || !import.meta.env.PROD || !('serviceWorker' in navigator)) return;
+  started = true;
+  const base = import.meta.env.BASE_URL;
+  const scope = base.startsWith('/') ? base : undefined;
+  void navigator.serviceWorker
+    .register(`${base}sw.js`, { scope, updateViaCache: 'none' })
+    .then((reg) => {
+      registration = reg;
+      if (reg.waiting && navigator.serviceWorker.controller) markWaiting();
+      reg.addEventListener('updatefound', () => {
+        const installing = reg.installing;
+        if (!installing) return;
+        installing.addEventListener('statechange', () => {
+          if (installing.state === 'installed' && navigator.serviceWorker.controller) markWaiting();
+        });
+      });
+      const look = () => {
+        void checkForUpdates();
+      };
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') look();
+      });
+      window.setInterval(look, CHECK_INTERVAL_MS);
+      look();
+    })
+    .catch(() => {
+      /* Offline support is best-effort if the host blocks workers. */
+    });
+  let reloading = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!applying || reloading) return;
+    reloading = true;
+    window.location.reload();
+  });
+  subscribeLesson(() => emit());
+}

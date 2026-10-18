@@ -5,8 +5,10 @@ import {
   feedbackUrl,
   flushReportQueue,
   formatReport,
+  MUM_EMAIL,
   mumMailto,
   postReports,
+  reportMailto,
   REPORTS_QUEUE_KEY,
   saveReport,
   type Report,
@@ -60,7 +62,15 @@ describe('map stars and notes', () => {
 
   it('writes a letter to Mum and leaves the post box unused until an endpoint exists', async () => {
     const href = mumMailto([sample]);
-    expect(href.startsWith('mailto:yildirim.gulcin88@gmail.com?')).toBe(true);
+    expect(href.startsWith(`mailto:${MUM_EMAIL}?`)).toBe(true);
+    const letter = reportMailto(sample);
+    const decoded = decodeURIComponent(letter);
+    expect(letter.startsWith(`mailto:${MUM_EMAIL}?`)).toBe(true);
+    expect(decoded).toContain('Spell Garden report – 1.0.0 – Observatory/clock');
+    expect(decoded).toContain('Type: bug');
+    expect(decoded).toContain('Version: 1.0.0');
+    expect(decoded).toContain('Device: 834x1112 portrait');
+    expect(letter.length).toBeLessThan(4000);
     expect(decodeURIComponent(href)).toContain('The clock hand hid the other one.');
     expect(decodeURIComponent(href)).toContain('Observatory');
     expect(formatReport(sample)).toContain('clock');

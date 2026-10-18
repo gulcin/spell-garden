@@ -5,6 +5,7 @@ import { isSolved } from '../activities/logic.ts';
 import type { Item } from '../activities/types.ts';
 import { applySkip, recordAttempt } from '../progress/mastery.ts';
 import { planChapter, type ChapterSlot } from '../progress/select.ts';
+import { topicById } from '../curriculum/data.ts';
 import type { Progress } from '../progress/types.ts';
 import { DEMO_LINE, type Chapter } from '../story.ts';
 import { speak } from '../speech.ts';
@@ -23,7 +24,7 @@ import { appendPuzzlePage } from '../stories/books.ts';
 import { SkipButton } from './SkipButton.tsx';
 import { PlaceBookButton, StoryButton } from './StoryTime.tsx';
 
-type Mode = 'placement' | 'chapter';
+type Mode = 'placement' | 'chapter' | 'practice';
 
 function describeBoard(item: Item, state: BoardState): string {
   if (item.template === 'clock') return `Clock ${state.clock.hour}:${String(state.clock.minute).padStart(2, '0')}.`;
@@ -48,6 +49,7 @@ export function Quest({
   progress,
   chapter,
   placeId = 'lantern-grove',
+  practiceTopicId,
   update,
   onFinish,
   onStory,
@@ -57,16 +59,23 @@ export function Quest({
   progress: Progress;
   chapter?: Chapter;
   placeId?: string;
+  practiceTopicId?: string;
   update: (recipe: (current: Progress) => Progress) => void;
   onFinish: (correct: number, asked: number, deeds: string[], chapterId: string) => void;
   onStory?: () => void;
   onOpenBook?: () => void;
 }) {
-  const sessionId = useRef(`s-${Date.now()}`);
+  const sessionId = useRef(mode === 'practice' ? `practice-${practiceTopicId}` : `s-${Date.now()}`);
   const chapterId = useRef(`visit-${placeId}-${sessionId.current}`);
   const deeds = useRef<string[]>([]);
-  const [slots] = useState<ChapterSlot[]>(() =>
-    mode === 'placement'
+  const [slots] = useState<ChapterSlot[]>(() => {
+    if (mode === 'practice') {
+      const topic = practiceTopicId ? topicById(practiceTopicId) : undefined;
+      return topic
+        ? [{ topic, salt: `practice-${topic.id}`, focus: true, review: false, rescue: false }]
+        : [];
+    }
+    return mode === 'placement'
       ? placementPlan().map((slot) => ({
           topic: slot.topic,
           salt: slot.salt,
@@ -74,11 +83,11 @@ export function Quest({
           review: false,
           rescue: false,
         }))
-      : planChapter(progress, Date.now(), sessionId.current),
-  );
+      : planChapter(progress, Date.now(), sessionId.current);
+  });
   const [index, setIndex] = useState(0);
   const [retry, setRetry] = useState(0);
-  const [phase, setPhase] = useState<'intro' | 'demo' | 'play' | 'ok' | 'walk'>('intro');
+  const [phase, setPhase] = useState<'intro' | 'demo' | 'play' | 'ok' | 'walk'>(mode === 'practice' ? 'play' : 'intro');
   const [hintLevel, setHintLevel] = useState(0);
   const [note, setNote] = useState<string | null>(null);
   const [correct, setCorrect] = useState(0);
@@ -100,8 +109,41 @@ export function Quest({
   }, [index, phase]);
 
   useEffect(() => {
+    if (mode !== 'practice') return;
+    const topic = slots[0]?.topic;
+    update((current) =>
+      current.sessions.some((session) => session.id === sessionId.current)
+        ? current
+        : {
+            ...current,
+            sessions: [
+              ...current.sessions,
+              {
+                id: sessionId.current,
+                startedAt: Date.now(),
+                endedAt: null,
+                chapterTitle: topic?.name ?? 'A little spell',
+                topicIds: topic ? [topic.id] : [],
+                correct: 0,
+                incorrect: 0,
+                skips: 0,
+                rewardId: null,
+              },
+            ],
+          },
+    );
+  }, [mode, slots, update]);
+
+  useEffect(() => {
     if (!item || phase === 'intro' || phase === 'demo') return;
-    window.__prague = { item, getState: () => api.current?.getState() };
+    window.__prague = {
+      item,
+      getState: () => api.current?.getState(),
+      solved: () => {
+        const state = api.current?.getState();
+        return state ? isSolved(item, state) : false;
+      },
+    };
   }, [item, phase]);
 
   useEffect(() => {
@@ -316,7 +358,7 @@ export function Quest({
     <section className="quest place-scene" data-place={placeId} style={placeStyle(placeId)}>
       {onOpenBook ? <PlaceBookButton placeId={placeId} books={progress.books} onOpen={onOpenBook} /> : null}
       <header className="quest-top">
-        <p className="kicker">{mode === 'placement' ? 'Finding your path' : chapter?.title}</p>
+        <p className="kicker">{mode === 'placement' ? 'Finding your path' : mode === 'practice' ? slot?.topic.name : chapter?.title}</p>
         <div className="quest-meta">
           {onStory ? <StoryButton onClick={onStory} /> : null}
           <CrystalCounter count={progress.crystals} />
@@ -399,7 +441,7 @@ export function Quest({
               </>
             ) : (
               <button type="button" className="btn primary xl" data-testid="next" onClick={() => next()}>
-                {index + 1 >= slots.length ? 'See what woke up' : 'On we go'}
+                {index + 1 >= slots.length ? (mode === 'practice' ? 'Back to the spell beds' : 'See what woke up') : 'On we go'}
               </button>
             )}
           </div>

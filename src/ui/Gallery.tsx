@@ -205,7 +205,7 @@ export function Gallery() {
       ) : null}
       {screen === 'wardrobe' ? <WardrobeMirror progress={progress} update={update} onShop={() => undefined} /> : null}
       {screen === 'about' ? <About onHome={() => undefined} /> : null}
-      {screen === 'garden' ? <Garden progress={progress} onHome={() => undefined} /> : null}
+      {screen === 'garden' ? <Garden progress={progress} onHome={() => undefined} onTry={() => undefined} /> : null}
       {screen === 'gate' ? <Parent progress={progress} update={() => undefined} onHome={() => undefined} /> : null}
       {screen === 'journal' ? <Parent progress={progress} update={() => undefined} onHome={() => undefined} startOpen /> : null}
       {screen === 'reward' ? (

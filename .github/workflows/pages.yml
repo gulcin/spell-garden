@@ -45,6 +45,23 @@ jobs:
         env:
           BASE_PATH: ${{ steps.pages.outputs.base_path }}
 
+      - name: Install Chrome
+        run: npx --yes playwright@1.64.1 install --with-deps chromium
+
+      - name: Sanity
+        run: |
+          npx vite preview --host 127.0.0.1 --port 43123 --strictPort &
+          ready=0
+          for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
+            if curl -sf "http://127.0.0.1:43123${{ steps.pages.outputs.base_path }}/" >/dev/null; then
+              ready=1
+              break
+            fi
+            sleep 1
+          done
+          test "$ready" = 1
+          SANITY_URL="http://127.0.0.1:43123${{ steps.pages.outputs.base_path }}/" node e2e/sanity.mjs
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:

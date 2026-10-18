@@ -1,8 +1,8 @@
 import react from '@vitejs/plugin-react';
 import { execSync } from 'node:child_process';
-import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import { defineConfig, type Plugin } from 'vite';
+import { defineConfig, type Connect, type Plugin } from 'vite';
 
 function listFiles(dir: string): string[] {
   const out: string[] = [];
@@ -14,11 +14,25 @@ function listFiles(dir: string): string[] {
   return out;
 }
 
-export const SPELL_GARDEN_CACHE = 'spell-garden-v15';
+const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as { version: string };
+
+function gitValue(command: string, fallback: string): string {
+  try {
+    return execSync(command, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim() || fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+export const APP_VERSION = process.env.SPELL_VERSION || pkg.version;
+export const APP_DATE = process.env.SPELL_BUILD_DATE || gitValue('git log -1 --format=%cs', new Date().toISOString().slice(0, 10));
+const versionJson = `${JSON.stringify({ version: APP_VERSION, sha: appCommit(), date: APP_DATE }, null, 2)}\n`;
+
+export const SPELL_GARDEN_CACHE = `spell-garden-v${APP_VERSION}`;
 
 /** Files the service worker installs up front. Story audio and 1x page art stay offline; 2x story art waits until it is shown. */
 export function precacheFile(file: string): boolean {
-  if (file === 'sw.js' || file.startsWith('splash-') || file.startsWith('art/places/')) return false;
+  if (file === 'sw.js' || file === 'version.json' || file.startsWith('splash-') || file.startsWith('art/places/')) return false;
   if (file.startsWith('art/stories/') && file.includes('@2x')) return false;
   if (file.startsWith('art/house/') && file.includes('@2x')) return false;
   if (file.startsWith('art/crystals/') && file.includes('@2x')) return false;
@@ -82,7 +96,8 @@ function spellGardenPwa(): Plugin {
       const source = `const CACHE='${SPELL_GARDEN_CACHE}';
 const ASSETS=${JSON.stringify(assets)};
 const HOME=${JSON.stringify(home)};
-self.addEventListener('install',(event)=>{event.waitUntil(caches.open(CACHE).then((cache)=>cache.addAll(ASSETS)).then(()=>self.skipWaiting()))});
+self.addEventListener('install',(event)=>{event.waitUntil(caches.open(CACHE).then((cache)=>cache.addAll(ASSETS)))});
+self.addEventListener('message',(event)=>{if(event.data==='skip-waiting') self.skipWaiting()});
 self.addEventListener('activate',(event)=>{event.waitUntil(caches.keys().then((keys)=>Promise.all(keys.filter((key)=>key!==CACHE).map((key)=>caches.delete(key)))).then(()=>self.clients.claim()))});
 self.addEventListener('fetch',(event)=>{
   if(event.request.method!=='GET') return;
@@ -111,6 +126,43 @@ self.addEventListener('fetch',(event)=>{
   };
 }
 
+function noCache(req: Connect.IncomingMessage, res: { setHeader: (name: string, value: string) => void }, next: () => void) {
+  const path = req.url?.split('?')[0] ?? '';
+  if (path.endsWith('/sw.js') || path.endsWith('/version.json')) {
+    const setHeader = res.setHeader.bind(res);
+    res.setHeader = (name: string, value: string) => {
+      if (name.toLowerCase() === 'cache-control') return setHeader(name, 'no-cache');
+      return setHeader(name, value);
+    };
+    res.setHeader('Cache-Control', 'no-cache');
+  }
+  next();
+}
+
+function spellVersionPlugin(): Plugin {
+  return {
+    name: 'spell-garden-version',
+    generateBundle() {
+      this.emitFile({ type: 'asset', fileName: 'version.json', source: versionJson });
+    },
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        const path = req.url?.split('?')[0] ?? '';
+        if (path.endsWith('/version.json')) {
+          res.setHeader('Content-Type', 'application/json; charset=utf-8');
+          res.setHeader('Cache-Control', 'no-cache');
+          res.end(versionJson);
+          return;
+        }
+        noCache(req, res, next);
+      });
+    },
+    configurePreviewServer(server) {
+      server.middlewares.use(noCache);
+    },
+  };
+}
+
 function appCommit(): string {
   if (process.env.GITHUB_SHA) return process.env.GITHUB_SHA.slice(0, 7);
   try {
@@ -124,8 +176,10 @@ export default defineConfig({
   base: assetBase(),
   define: {
     __APP_COMMIT__: JSON.stringify(appCommit()),
+    __APP_VERSION__: JSON.stringify(APP_VERSION),
+    __APP_DATE__: JSON.stringify(APP_DATE),
   },
-  plugins: [react(), spellGardenPwa()],
+  plugins: [react(), spellVersionPlugin(), spellGardenPwa()],
   server: { host: '127.0.0.1', port: 43123, strictPort: true },
   preview: { host: '127.0.0.1', port: 43123, strictPort: true },
 });

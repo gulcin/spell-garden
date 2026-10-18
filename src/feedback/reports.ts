@@ -54,6 +54,8 @@ export function saveReport(report: Report): Report[] {
   return next;
 }
 
+export const MUM_EMAIL = 'gulcin.yildirim@clickhouse.com';
+
 /** `${VITE_FEEDBACK_URL}/feedback`, or null while that env var is unset. */
 export function feedbackUrl(): string | null {
   const raw = import.meta.env.VITE_FEEDBACK_URL;
@@ -70,7 +72,7 @@ export function deviceContext(live: Omit<ReportContext, 'commit' | 'version' | '
   return {
     ...live,
     commit: __APP_COMMIT__,
-    version: '1.0.0',
+    version: __APP_VERSION__,
     userAgent: navigator.userAgent,
     viewport: `${width}x${height}`,
     orientation,
@@ -95,11 +97,41 @@ export function formatReport(report: Report): string {
   ].join('\n');
 }
 
+function clipBody(body: string): string {
+  return body.length > 1800 ? body.slice(0, 1800) : body;
+}
+
+function kindWord(kind: ReportKind): string {
+  if (kind === 'broken') return 'bug';
+  if (kind === 'idea') return 'idea';
+  return 'love';
+}
+
+/** One note, ready for Mum's mailbox, even before the Worker is live. */
+export function reportMailto(report: Report): string {
+  const place = report.context.placeName || report.context.placeId || 'garden';
+  const activity = report.context.activity || 'garden';
+  const subject = `Spell Garden report – ${report.context.version} – ${place}/${activity}`;
+  const body = clipBody(
+    [
+      report.text || '(no extra words)',
+      `Type: ${kindWord(report.kind)}`,
+      `Screen: ${report.context.screen}`,
+      `Activity: ${activity}`,
+      `Place: ${place}`,
+      `Version: ${report.context.version}`,
+      `Device: ${report.context.viewport} ${report.context.orientation}`,
+      `Time: ${report.context.time}`,
+    ].join('\n'),
+  );
+  return `mailto:${MUM_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+
 export function mumMailto(reports: Report[]): string {
   const body = reports.map(formatReport).join('\n\n---\n\n');
   const clipped = body.length > 1800 ? `${body.slice(0, 1800)}\n\n(${reports.length} notes; the newest fit in this letter.)` : body;
   const subject = "Aida's Spell Garden notes";
-  return `mailto:yildirim.gulcin88@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(clipped)}`;
+  return `mailto:${MUM_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(clipped)}`;
 }
 
 const sending = new Set<string>();

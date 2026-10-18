@@ -92,9 +92,11 @@ export function Home({
                   style={{ left: `${place.x}%`, top: `${place.y}%` }}
                   data-testid={index === here ? 'map-stop-current' : `map-stop-${place.id}`}
                   aria-current={index === here ? 'step' : undefined}
+                  aria-label={place.name}
                   onClick={() => onVisit(place.id)}
                 >
-                  <span>{place.name}</span>
+                  <span className="label-full">{place.name}</span>
+                  <span className="label-short">{place.short}</span>
                 </button>
               );
             })}
@@ -105,7 +107,8 @@ export function Home({
               data-testid="map-shop"
               onClick={onShop}
             >
-              <span>Crystal shop</span>
+              <span className="label-full">Crystal shop</span>
+              <span className="label-short">Shop</span>
             </button>
             <button
               type="button"
@@ -115,7 +118,8 @@ export function Home({
               aria-label="Witch's house"
               onClick={onHouse}
             >
-              <span>Witch's house</span>
+              <span className="label-full">Witch's house</span>
+              <span className="label-short">House</span>
             </button>
             <button
               type="button"
@@ -125,7 +129,8 @@ export function Home({
               aria-label="Colouring corner"
               onClick={onColour}
             >
-              <span>Colouring</span>
+              <span className="label-full">Colouring</span>
+              <span className="label-short">Colour</span>
             </button>
           </div>
         </div>

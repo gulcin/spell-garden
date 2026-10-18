@@ -7,6 +7,8 @@ import { applyStartAge, gradeLabel, startAgeChoices } from '../progress/placemen
 import { PROGRESS_KEY, freshProgress, type Progress, type Status } from '../progress/types.ts';
 import { parseProgress } from '../progress/storage.ts';
 import { flushReportQueue, loadReports, mumMailto, type Report } from '../feedback/reports.ts';
+import { checkForUpdates } from '../swUpdates.ts';
+import { versionLabel } from '../version.ts';
 import { PageBanner, Prop } from './pictures.tsx';
 
 const STATUS_WORD: Record<Status, string> = {
@@ -87,6 +89,8 @@ export function Parent({
 function ReportList() {
   const [reports, setReports] = useState<Report[]>(() => loadReports());
   const [note, setNote] = useState<string | null>(null);
+  const [updateNote, setUpdateNote] = useState('');
+  const [checking, setChecking] = useState(false);
 
   async function send() {
     const latest = loadReports();
@@ -106,6 +110,29 @@ function ReportList() {
 
   return (
     <section className="reports" data-testid="report-list">
+      <p className="version-stamp" data-testid="app-version">
+        {versionLabel()}
+      </p>
+      <button
+        type="button"
+        className="btn quiet"
+        data-testid="check-updates"
+        disabled={checking}
+        onClick={() => {
+          setChecking(true);
+          void checkForUpdates().then((line) => {
+            setUpdateNote(line);
+            setChecking(false);
+          });
+        }}
+      >
+        {checking ? 'Looking…' : 'Check for updates'}
+      </button>
+      {updateNote ? (
+        <p className="note" role="status" data-testid="update-status">
+          {updateNote}
+        </p>
+      ) : null}
       <h2>Notes for Mum</h2>
       {reports.length === 0 ? <p>No notes yet. The Tell us button keeps them on this iPad.</p> : null}
       <ul className="sessions">

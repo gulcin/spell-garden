@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { allTopics } from './curriculum/data.ts';
+import { allTopics, topicById } from './curriculum/data.ts';
 import { applyPlacement } from './progress/placement.ts';
 import { loadProgress, saveProgress } from './progress/storage.ts';
 import { DEFAULT_LEARNER_NAME, type Progress } from './progress/types.ts';
@@ -24,6 +24,8 @@ import { storyById, STORIES } from './stories/library.ts';
 import { crystalGain } from './wardrobe/catalog.ts';
 import { WardrobeProvider } from './ui/DressedApprentice.tsx';
 import { WardrobeMirror } from './ui/Wardrobe.tsx';
+import { UpdateBanner } from './ui/UpdateBanner.tsx';
+import { setLessonInProgress } from './updateState.ts';
 
 type Screen =
   | 'home'
@@ -40,9 +42,10 @@ type Screen =
   | 'colour'
   | 'shelf'
   | 'story'
-  | 'story-offer';
+  | 'story-offer'
+  | 'practice';
 
-type HistoryState = { spellGarden?: Screen };
+type HistoryState = { spellGarden?: Screen; practiceId?: string | null };
 
 export function App() {
   return (
@@ -56,7 +59,6 @@ function GardenApp() {
   const { setLive } = useReportLive();
   const [progress, setProgress] = useState<Progress>(() => loadProgress());
   const [telling, setTelling] = useState(false);
-  const [screen, setScreen] = useState<Screen>('home');
   const [reward, setReward] = useState<Reward | null>(null);
   const [placedCorrect, setPlacedCorrect] = useState(0);
   const [placeId, setPlaceId] = useState<(typeof PLACES)[number]['id']>('lantern-grove');
@@ -65,12 +67,22 @@ function GardenApp() {
   const [readingBook, setReadingBook] = useState<string | null>(null);
   const [bedtime, setBedtime] = useState(false);
   const [resume, setResume] = useState<Screen>('home');
+  const [practiceId, setPracticeId] = useState<string | null>(() => {
+    const id = new URLSearchParams(window.location.search).get('practice');
+    return id && topicById(id) ? id : null;
+  });
+  const [screen, setScreen] = useState<Screen>(() => (practiceId ? 'practice' : 'home'));
   const leaving = useRef(false);
+
+  useEffect(() => {
+    setLessonInProgress(screen !== 'home');
+  }, [screen]);
 
   useEffect(() => {
     const onPop = (event: PopStateEvent) => {
       leaving.current = false;
       const state = event.state as HistoryState | null;
+      if (state && 'practiceId' in state) setPracticeId(state.practiceId ?? null);
       setScreen(state?.spellGarden ?? 'home');
     };
     window.addEventListener('popstate', onPop);
@@ -85,8 +97,9 @@ function GardenApp() {
     });
   }
 
-  function show(next: Screen) {
+  function show(next: Screen, extra: Partial<HistoryState> = {}) {
     setLive({ screen: next });
+    const historyState: HistoryState = { spellGarden: next, practiceId, ...extra };
     if (next === 'home') {
       saveProgress(progress);
       setScreen('home');
@@ -100,8 +113,8 @@ function GardenApp() {
     leaving.current = false;
     setScreen(next);
     const state = window.history.state as HistoryState | null;
-    if (state?.spellGarden) window.history.replaceState({ spellGarden: next }, '');
-    else window.history.pushState({ spellGarden: next }, '');
+    if (state?.spellGarden) window.history.replaceState(historyState, '');
+    else window.history.pushState(historyState, '');
   }
 
   function maybeOffer(id: string, next: Screen) {
@@ -225,7 +238,8 @@ function GardenApp() {
     <WardrobeProvider wardrobe={progress.wardrobe}>
     <main className={screen === 'home' ? 'app' : 'app away'}>
       <div className="corner-tools">
-        {screen !== 'home' ? <GardenMapButton onHome={() => show('home')} /> : null}
+        <UpdateBanner />
+      {screen !== 'home' ? <GardenMapButton onHome={() => show('home')} /> : null}
         <TellUsButton onOpen={() => setTelling(true)} />
       </div>
       {screen === 'home' ? (
@@ -281,7 +295,18 @@ function GardenApp() {
       {screen === 'wardrobe' ? (
         <WardrobeMirror progress={progress} update={update} onShop={() => show('shop')} />
       ) : null}
-      {screen === 'garden' ? <Garden progress={progress} onHome={() => show('home')} /> : null}
+      {screen === 'garden' ? (
+        <Garden
+          progress={progress}
+          onHome={() => show('home')}
+          onTry={(id) => {
+            setPracticeId(id);
+            const spot = PLACES[0];
+            setLive({ screen: 'practice', placeId: spot.id, placeName: spot.name, activity: topicById(id)?.name ?? '', question: '' });
+            show('practice', { practiceId: id });
+          }}
+        />
+      ) : null}
       {screen === 'about' ? <About onHome={() => show('home')} /> : null}
       {screen === 'parent' ? <Parent progress={progress} update={update} onHome={() => show('home')} /> : null}
       {screen === 'placement' ? (
@@ -327,6 +352,17 @@ function GardenApp() {
             Start the first chapter
           </button>
         </section>
+      ) : null}
+      {screen === 'practice' && practiceId ? (
+        <Quest
+          key={practiceId}
+          mode="practice"
+          progress={progress}
+          practiceTopicId={practiceId}
+          placeId="lantern-grove"
+          update={update}
+          onFinish={() => show('garden')}
+        />
       ) : null}
       {screen === 'chapter' ? (
         <Quest

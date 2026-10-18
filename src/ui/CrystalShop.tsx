@@ -35,10 +35,18 @@ export function CrystalShop({
   onHouse?: () => void;
 }) {
   const [shelf, setShelf] = useState<Shelf>(category);
+  const [page, setPage] = useState(0);
   const [cheer, setCheer] = useState<string | null>(null);
   const [paySelf, setPaySelf] = useState(false);
   const [paying, setPaying] = useState<PendingPay | null>(null);
   const items = SHOP_ITEMS.filter((item) => item.category === shelf);
+  const homeItems = shopFurniture();
+  const pageSize = 2;
+  const shelfItems = shelf === 'home' ? homeItems : items;
+  const pageCount = Math.max(1, Math.ceil(shelfItems.length / pageSize));
+  const pageIndex = Math.min(page, pageCount - 1);
+  const visibleHome = homeItems.slice(pageIndex * pageSize, pageIndex * pageSize + pageSize);
+  const visibleWear = items.slice(pageIndex * pageSize, pageIndex * pageSize + pageSize);
 
   function say(line: string) {
     setCheer(line);
@@ -130,7 +138,10 @@ export function CrystalShop({
             aria-selected={shelf === entry.id}
             className={shelf === entry.id ? 'on' : ''}
             data-testid={`shelf-${entry.id}`}
-            onClick={() => setShelf(entry.id)}
+            onClick={() => {
+              setShelf(entry.id);
+              setPage(0);
+            }}
           >
             {entry.label}
           </button>
@@ -147,7 +158,7 @@ export function CrystalShop({
       ) : null}
       {shelf === 'home' ? (
         <div className="shop-grid" data-testid="home-shelf">
-          {shopFurniture().map((item) => {
+          {visibleHome.map((item) => {
             const owned = progress.house.owned.includes(item.id);
             const placed = progress.house.placed.some((piece) => piece.itemId === item.id);
             const short = Math.max(0, item.price - progress.crystals);
@@ -165,6 +176,7 @@ export function CrystalShop({
                   <button
                     type="button"
                     className="btn gold"
+                    data-testid={`buy-${item.id}`}
                     disabled={short > 0}
                     onClick={() => (paySelf ? beginPay({ id: item.id, name: item.name, price: item.price, kind: 'home' }) : purchaseHome(item.id))}
                   >
@@ -177,7 +189,7 @@ export function CrystalShop({
         </div>
       ) : null}
       {shelf !== 'home' ? <div className="shop-grid">
-        {items.map((item) => {
+        {visibleWear.map((item) => {
           const owned = progress.wardrobe.owned.includes(item.id);
           const wearing = progress.wardrobe.equipped[item.slot] === item.id;
           const short = Math.max(0, item.price - progress.crystals);
@@ -195,6 +207,7 @@ export function CrystalShop({
                 <button
                   type="button"
                   className="btn gold"
+                  data-testid={`buy-${item.id}`}
                   disabled={short > 0}
                   onClick={() => (paySelf ? beginPay({ id: item.id, name: item.name, price: item.price, kind: 'wear' }) : purchase(item.id))}
                 >
@@ -205,6 +218,14 @@ export function CrystalShop({
           );
         })}
       </div> : null}
+      <div className="spell-pager shop-pager">
+        <button type="button" data-testid="shop-prev" disabled={pageIndex === 0} onClick={() => setPage((current) => Math.max(0, current - 1))}>
+          Back
+        </button>
+        <button type="button" data-testid="shop-next" disabled={pageIndex >= pageCount - 1} onClick={() => setPage((current) => current + 1)}>
+          More
+        </button>
+      </div>
       <div className="shop-mirror-preview">
         <DressedApprentice className="guide guide-small" alt="" />
         <button type="button" className="btn xl" data-testid="open-wardrobe" onClick={onWardrobe}>
