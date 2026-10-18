@@ -69,9 +69,26 @@ export function ShapeGlyph({ shape }: { shape: ShapeName }) {
       {shape === 'rectangle' ? <rect x="10" y="24" width="60" height="34" rx="8" {...common} fill="#d5edcf" /> : null}
       {shape === 'pentagon' ? <polygon points="40,10 70,32 58,66 22,66 10,32" {...common} fill="#e4d4f6" /> : null}
       {shape === 'hexagon' ? <polygon points="40,10 66,24 66,54 40,70 14,54 14,24" {...common} fill="#f8dfc4" /> : null}
-      {shape === 'cube' ? <polygon points="24,28 40,18 56,28 56,52 40,62 24,52" {...common} fill="#d9c7ff" /> : null}
-      {shape === 'cone' ? <polygon points="40,12 64,60 16,60" {...common} fill="#f0c56b" /> : null}
-      {shape === 'sphere' ? <ellipse cx="40" cy="42" rx="22" ry="20" {...common} fill="#c5e4f8" /> : null}
+      {shape === 'cube' ? (
+        <>
+          <polygon points="40,14 66,28 40,42 14,28" fill="#efe4ff" stroke="#5c457e" strokeWidth="3" />
+          <polygon points="14,28 40,42 40,68 14,54" fill="#d9c7ff" stroke="#5c457e" strokeWidth="3" />
+          <polygon points="40,42 66,28 66,54 40,68" fill="#b9a2e8" stroke="#5c457e" strokeWidth="3" />
+        </>
+      ) : null}
+      {shape === 'cone' ? (
+        <>
+          <ellipse cx="40" cy="62" rx="22" ry="8" fill="#e7b84a" stroke="#5c457e" strokeWidth="3" />
+          <polygon points="40,14 62,60 18,60" fill="#f0c56b" stroke="#5c457e" strokeWidth="3" />
+          <ellipse cx="40" cy="62" rx="22" ry="8" fill="#f8dc9a" stroke="#5c457e" strokeWidth="3" />
+        </>
+      ) : null}
+      {shape === 'sphere' ? (
+        <>
+          <circle cx="40" cy="42" r="22" fill="#c5e4f8" stroke="#5c457e" strokeWidth="3" />
+          <ellipse cx="32" cy="34" rx="7" ry="5" fill="#fff" opacity="0.9" />
+        </>
+      ) : null}
     </svg>
   );
 }

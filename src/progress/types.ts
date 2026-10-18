@@ -72,6 +72,8 @@ export type Progress = {
   /** Crystals spent at the crystal shop. Never negative. */
   crystals: number;
   wardrobe: WardrobeState;
+  /** Places she has opened. Stars on the map come from this list. */
+  visitedPlaces: string[];
   updatedAt: number;
 };
 
@@ -104,6 +106,7 @@ export function freshProgress(name = DEFAULT_LEARNER_NAME): Progress {
     rewards: [],
     crystals: 0,
     wardrobe: { owned: [], equipped: {} },
+    visitedPlaces: [],
     updatedAt: Date.now(),
   };
 }

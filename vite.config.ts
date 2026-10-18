@@ -1,4 +1,5 @@
 import react from '@vitejs/plugin-react';
+import { execSync } from 'node:child_process';
 import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { defineConfig, type Plugin } from 'vite';
@@ -66,7 +67,7 @@ function spellGardenPwa(): Plugin {
         .filter((file) => file !== 'sw.js' && !file.startsWith('art/places/') && !file.startsWith('splash-'));
       const assets = files.map((file) => `${prefix}${file}`);
       const home = `${prefix}index.html`;
-      const source = `const CACHE='spell-garden-v6';
+      const source = `const CACHE='spell-garden-v7';
 const ASSETS=${JSON.stringify(assets)};
 const HOME=${JSON.stringify(home)};
 self.addEventListener('install',(event)=>{event.waitUntil(caches.open(CACHE).then((cache)=>cache.addAll(ASSETS)).then(()=>self.skipWaiting()))});
@@ -98,8 +99,20 @@ self.addEventListener('fetch',(event)=>{
   };
 }
 
+function appCommit(): string {
+  if (process.env.GITHUB_SHA) return process.env.GITHUB_SHA.slice(0, 7);
+  try {
+    return execSync('git rev-parse --short HEAD', { encoding: 'utf8' }).trim();
+  } catch {
+    return 'dev';
+  }
+}
+
 export default defineConfig({
   base: assetBase(),
+  define: {
+    __APP_COMMIT__: JSON.stringify(appCommit()),
+  },
   plugins: [react(), spellGardenPwa()],
   server: { host: '127.0.0.1', port: 43123, strictPort: true },
   preview: { host: '127.0.0.1', port: 43123, strictPort: true },

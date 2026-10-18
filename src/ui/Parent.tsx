@@ -6,6 +6,7 @@ import { markMastered, masteredIds, statusOf } from '../progress/mastery.ts';
 import { applyStartAge, gradeLabel, startAgeChoices } from '../progress/placement.ts';
 import { PROGRESS_KEY, freshProgress, type Progress, type Status } from '../progress/types.ts';
 import { parseProgress } from '../progress/storage.ts';
+import { loadReports, mumMailto, postReports, type Report } from '../feedback/reports.ts';
 import { PageBanner, Prop } from './pictures.tsx';
 
 const STATUS_WORD: Record<Status, string> = {
@@ -83,6 +84,53 @@ export function Parent({
   );
 }
 
+function ReportList() {
+  const [reports, setReports] = useState<Report[]>(() => loadReports());
+  const [note, setNote] = useState<string | null>(null);
+
+  async function send() {
+    const latest = loadReports();
+    setReports(latest);
+    if (latest.length === 0) {
+      setNote('No notes yet.');
+      return;
+    }
+    try {
+      const posted = await postReports(latest);
+      if (posted) setNote('Sent to the garden post box, and the letter is ready.');
+    } catch {
+      setNote('The post box is quiet. The letter is still ready.');
+    }
+    window.location.href = mumMailto(latest);
+  }
+
+  return (
+    <section className="reports" data-testid="report-list">
+      <h2>Notes for Mum</h2>
+      {reports.length === 0 ? <p>No notes yet. The Tell us button keeps them on this iPad.</p> : null}
+      <ul className="sessions">
+        {reports.map((report) => (
+          <li key={report.id}>
+            <strong>{report.kind === 'love' ? 'I love this' : report.kind === 'broken' ? 'Something is broken' : 'Idea'}</strong>
+            <span>
+              {new Date(report.createdAt).toLocaleString()} · {report.context.placeName || 'garden'} · {report.context.activity || 'no activity'}
+            </span>
+            <span>{report.text || 'No extra words.'}</span>
+            <span>
+              {report.context.question ? `Question: ${report.context.question}` : 'No question on screen.'}{' '}
+              {report.context.lastAnswer ? `Answer: ${report.context.lastAnswer}` : ''}
+            </span>
+          </li>
+        ))}
+      </ul>
+      <button type="button" className="btn gold" data-testid="send-mum" onClick={() => void send()}>
+        Send to Mum
+      </button>
+      {note ? <p className="note">{note}</p> : null}
+    </section>
+  );
+}
+
 function Journal({
   progress,
   update,
@@ -141,6 +189,7 @@ function Journal({
       </button>
       <h1>{progress.learnerName}'s journal</h1>
       <p className="lede">Mastered, practising, ready, or locked. Success counts stay on this device.</p>
+      <ReportList />
       <label className="start-level">
         Starting level
         <select

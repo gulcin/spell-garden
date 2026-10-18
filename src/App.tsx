@@ -4,11 +4,13 @@ import { applyPlacement } from './progress/placement.ts';
 import { loadProgress, saveProgress } from './progress/storage.ts';
 import { DEFAULT_LEARNER_NAME, type Progress } from './progress/types.ts';
 import { chapterFor, nextReward, type Reward } from './story.ts';
+import { ReportLiveProvider, useReportLive } from './feedback/live.tsx';
 import { About } from './ui/About.tsx';
 import { CrystalShop } from './ui/CrystalShop.tsx';
 import { Garden } from './ui/Garden.tsx';
 import { GardenMapButton } from './ui/GardenMapButton.tsx';
 import { Home } from './ui/Home.tsx';
+import { TellSheet, TellUsButton } from './ui/TellUs.tsx';
 import { Parent } from './ui/Parent.tsx';
 import { PLACES, placeStyle } from './ui/pictures.tsx';
 import { Quest } from './ui/Quest.tsx';
@@ -21,7 +23,17 @@ type Screen = 'home' | 'placement' | 'placed' | 'chapter' | 'reward' | 'parent' 
 type HistoryState = { spellGarden?: Screen };
 
 export function App() {
+  return (
+    <ReportLiveProvider>
+      <GardenApp />
+    </ReportLiveProvider>
+  );
+}
+
+function GardenApp() {
+  const { setLive } = useReportLive();
   const [progress, setProgress] = useState<Progress>(() => loadProgress());
+  const [telling, setTelling] = useState(false);
   const [screen, setScreen] = useState<Screen>('home');
   const [reward, setReward] = useState<Reward | null>(null);
   const [placedCorrect, setPlacedCorrect] = useState(0);
@@ -48,11 +60,7 @@ export function App() {
   }
 
   function show(next: Screen) {
-    if (next === 'placement' || next === 'chapter') {
-      const count = progress.sessions.length;
-      setPlaceId(PLACES[count % PLACES.length]!.id);
-      if (next === 'chapter') setChapterIndex(count);
-    }
+    setLive({ screen: next });
     if (next === 'home') {
       saveProgress(progress);
       setScreen('home');
@@ -70,19 +78,39 @@ export function App() {
     else window.history.pushState({ spellGarden: next }, '');
   }
 
-  function start() {
+  function start(chosen?: string) {
+    const count = progress.sessions.length;
+    const id = (chosen ?? PLACES[count % PLACES.length]!.id) as (typeof PLACES)[number]['id'];
+    setPlaceId(id);
+    const spot = PLACES.find((place) => place.id === id);
+    setLive({ screen: progress.placement.done ? 'chapter' : 'placement', placeId: id, placeName: spot?.name ?? id });
+    if (progress.placement.done) setChapterIndex(count);
     show(progress.placement.done ? 'chapter' : 'placement');
+  }
+
+  function openShop() {
+    update((current) =>
+      current.visitedPlaces.includes('crystal-shop')
+        ? current
+        : { ...current, visitedPlaces: [...current.visitedPlaces, 'crystal-shop'] },
+    );
+    setLive({ screen: 'shop', placeId: 'crystal-shop', placeName: 'Crystal shop', activity: '', question: '' });
+    show('shop');
   }
 
   return (
     <WardrobeProvider wardrobe={progress.wardrobe}>
     <main className={screen === 'home' ? 'app' : 'app away'}>
-      {screen !== 'home' ? <GardenMapButton onHome={() => show('home')} /> : null}
+      <div className="corner-tools">
+        {screen !== 'home' ? <GardenMapButton onHome={() => show('home')} /> : null}
+        <TellUsButton onOpen={() => setTelling(true)} />
+      </div>
       {screen === 'home' ? (
         <Home
           progress={progress}
-          onStart={start}
-          onShop={() => show('shop')}
+          onStart={() => start()}
+          onVisit={(placeId) => start(placeId)}
+          onShop={openShop}
           onGarden={() => show('garden')}
           onAbout={() => show('about')}
           onParent={() => show('parent')}
@@ -153,6 +181,7 @@ export function App() {
           <RewardScreen reward={reward} name={progress.learnerName} onHome={() => show('home')} />
         </div>
       ) : null}
+      {telling ? <TellSheet onClose={() => setTelling(false)} /> : null}
     </main>
     </WardrobeProvider>
   );

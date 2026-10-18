@@ -7,6 +7,7 @@ import { DressedApprentice } from './DressedApprentice.tsx';
 export function Home({
   progress,
   onStart,
+  onVisit,
   onShop,
   onGarden,
   onAbout,
@@ -15,6 +16,7 @@ export function Home({
 }: {
   progress: Progress;
   onStart: () => void;
+  onVisit: (placeId: string) => void;
   onShop: () => void;
   onGarden: () => void;
   onAbout: () => void;
@@ -74,16 +76,17 @@ export function Home({
               />
             </picture>
             {PLACES.map((place, index) => {
-              const state = index === here ? 'now' : index < progress.sessions.length ? 'visited' : 'ahead';
+              const visited = progress.visitedPlaces.includes(place.id);
+              const state = index === here ? 'now' : visited ? 'visited' : 'open';
               return (
                 <button
                   key={place.id}
                   type="button"
-                  className={`hotspot hotspot-${state}${place.x > 80 ? ' hotspot-edge' : ''}`}
+                  className={`hotspot hotspot-${state}${visited ? ' has-star' : ''}${place.x > 80 ? ' hotspot-edge' : ''}`}
                   style={{ left: `${place.x}%`, top: `${place.y}%` }}
-                  data-testid={state === 'now' ? 'map-stop-current' : 'map-stop'}
-                  aria-current={state === 'now' ? 'step' : undefined}
-                  onClick={state === 'now' ? onStart : undefined}
+                  data-testid={index === here ? 'map-stop-current' : `map-stop-${place.id}`}
+                  aria-current={index === here ? 'step' : undefined}
+                  onClick={() => onVisit(place.id)}
                 >
                   <span>{place.name}</span>
                 </button>
@@ -91,7 +94,7 @@ export function Home({
             })}
             <button
               type="button"
-              className="hotspot hotspot-shop"
+              className={`hotspot hotspot-shop${progress.visitedPlaces.includes('crystal-shop') ? ' has-star' : ''}`}
               style={{ left: '50%', top: '78%' }}
               data-testid="map-shop"
               onClick={onShop}

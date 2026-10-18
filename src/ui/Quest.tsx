@@ -8,6 +8,8 @@ import { planChapter, type ChapterSlot } from '../progress/select.ts';
 import type { Progress } from '../progress/types.ts';
 import { DEMO_LINE, type Chapter } from '../story.ts';
 import { speak } from '../speech.ts';
+import { useReportLive } from '../feedback/live.tsx';
+import type { BoardState } from '../activities/types.ts';
 import { crystalGain, crystalLine } from '../wardrobe/catalog.ts';
 import { awardCrystals } from '../wardrobe/economy.ts';
 import { CrystalCounter } from './CrystalCounter.tsx';
@@ -15,6 +17,18 @@ import { DressedApprentice } from './DressedApprentice.tsx';
 import { PLACES, placeStyle, Prop } from './pictures.tsx';
 
 type Mode = 'placement' | 'chapter';
+
+function describeBoard(item: Item, state: BoardState): string {
+  if (item.template === 'clock') return `Clock ${state.clock.hour}:${String(state.clock.minute).padStart(2, '0')}.`;
+  if (item.template === 'angle') return `Wand at ${state.angle} degrees.`;
+  if (state.choice) return `Chose ${state.choice}.`;
+  if (state.shaded.length > 0) return `Coloured ${state.shaded.length} parts.`;
+  if (state.toggled.length > 0) return `Tapped ${state.toggled.join(', ')}.`;
+  const placed = item.pieces
+    .filter((piece) => state.at[piece.id])
+    .map((piece) => `${piece.label || piece.art} in ${state.at[piece.id]}`);
+  return placed.length > 0 ? placed.join('; ') : 'Nothing placed yet.';
+}
 
 const PRAISE = [
   'The spell worked. The garden glows a little warmer.',
@@ -57,6 +71,7 @@ export function Quest({
   const [correct, setCorrect] = useState(0);
   const [asked, setAsked] = useState(0);
   const api = useRef<BoardHandle | null>(null);
+  const { setLive } = useReportLive();
   const progressRef = useRef(progress);
   progressRef.current = progress;
   const slot = slots[index];
@@ -69,6 +84,17 @@ export function Quest({
     if (!item || phase === 'intro' || phase === 'demo') return;
     window.__prague = { item, getState: () => api.current?.getState() };
   }, [item, phase]);
+
+  useEffect(() => {
+    const spot = PLACES.find((entry) => entry.id === placeId);
+    setLive({
+      screen: mode,
+      placeId,
+      placeName: spot?.name ?? placeId,
+      activity: item?.template ?? '',
+      question: phase === 'intro' || phase === 'demo' ? '' : (item?.prompt ?? ''),
+    });
+  }, [setLive, mode, placeId, item, phase]);
 
   if (!slot || !item) {
     return (
@@ -102,6 +128,7 @@ export function Quest({
     if (mode === 'chapter') {
       update((current) => ({
         ...current,
+        visitedPlaces: current.visitedPlaces.includes(placeId) ? current.visitedPlaces : [...current.visitedPlaces, placeId],
         sessions: [
           ...current.sessions,
           {
@@ -116,6 +143,11 @@ export function Quest({
           },
         ],
       }));
+    }
+    if (mode === 'placement') {
+      update((current) =>
+        current.visitedPlaces.includes(placeId) ? current : { ...current, visitedPlaces: [...current.visitedPlaces, placeId] },
+      );
     }
     if (!seen) {
       setPhase('demo');
@@ -160,12 +192,14 @@ export function Quest({
     if (isSolved(item, board)) {
       record(true, item);
       const praise = `${PRAISE[correct % PRAISE.length] ?? PRAISE[0]} ${crystalLine(placeId)}`;
+      setLive({ lastAnswer: `Correct. ${describeBoard(item, board)}` });
       setNote(praise);
       setPhase('ok');
       speak(praise);
       return;
     }
     const fizzle = 'That spell fizzled softly. Nothing is hurt. Change one thing and try again.';
+    setLive({ lastAnswer: `Not yet. ${describeBoard(item, board)}` });
     setNote(fizzle);
     speak(fizzle);
   }
@@ -181,6 +215,8 @@ export function Quest({
 
   function idk() {
     if (!item) return;
+    const board = api.current?.getState();
+    setLive({ lastAnswer: board ? `She said I don't know. ${describeBoard(item, board)}` : "She said I don't know." });
     record(false, item);
     setPhase('walk');
     setNote(null);

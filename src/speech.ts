@@ -26,6 +26,6 @@ export function speak(text: string): void {
 declare global {
   interface Window {
     __speechLog?: string[];
-    __prague?: { item: unknown; getState: () => unknown };
+    __prague?: { item: unknown; getState: () => unknown; solved?: () => boolean };
   }
 }

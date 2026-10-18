@@ -1,13 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import { Board, type BoardHandle } from '../activities/Board.tsx';
 import { generateItem, sampleItem } from '../activities/generate.ts';
+import { isSolved } from '../activities/logic.ts';
 import type { Item } from '../activities/types.ts';
 import { classify, TEMPLATE_LABEL, type TemplateId } from '../curriculum/classify.ts';
 import { allTopics } from '../curriculum/data.ts';
 import { freshProgress, type Progress } from '../progress/types.ts';
 import { REWARDS } from '../story.ts';
 import type { ShopCategory } from '../wardrobe/catalog.ts';
+import { ReportLiveProvider } from '../feedback/live.tsx';
 import { About } from './About.tsx';
+import { TellSheet, TellUsButton } from './TellUs.tsx';
 import { CrystalShop } from './CrystalShop.tsx';
 import { WardrobeProvider } from './DressedApprentice.tsx';
 import { DressedApprentice } from './DressedApprentice.tsx';
@@ -74,16 +77,21 @@ export function Gallery() {
   const category = (params.get('category') ?? 'dress') as ShopCategory;
   const dressed = params.get('dressed') === '1' || screen === 'wardrobe';
   const [progress, setProgress] = useState<Progress>(() => previewProgress(screen, dressed));
+  const [telling, setTelling] = useState(params.get('tell') === '1');
   const away = screen !== 'home';
   function update(recipe: (current: Progress) => Progress) {
     setProgress((current) => recipe(current));
   }
   return (
+    <ReportLiveProvider>
     <WardrobeProvider wardrobe={progress.wardrobe}>
     <main className={away ? 'app away' : 'app'}>
-      {away ? <GardenMapButton onHome={() => undefined} /> : null}
+      <div className="corner-tools">
+        {away ? <GardenMapButton onHome={() => undefined} /> : null}
+        <TellUsButton onOpen={() => setTelling(true)} />
+      </div>
       {screen === 'home' ? (
-        <Home progress={progress} onStart={() => undefined} onShop={() => undefined} onGarden={() => undefined} onAbout={() => undefined} onParent={() => undefined} onRename={() => undefined} />
+        <Home progress={progress} onStart={() => undefined} onVisit={() => undefined} onShop={() => undefined} onGarden={() => undefined} onAbout={() => undefined} onParent={() => undefined} onRename={() => undefined} />
       ) : null}
       {screen === 'shop' ? (
         <CrystalShop progress={progress} update={update} category={category} onWardrobe={() => undefined} />
@@ -110,10 +118,17 @@ export function Gallery() {
       ) : null}
       {screen === 'intro' ? <Intro place={params.get('place') ?? place} /> : null}
       {screen === 'demo' || screen === 'play' || screen === 'ok' || screen === 'hint' || screen === 'walk' || screen === 'example' ? (
-        <Activity screen={screen} template={screen === 'example' ? 'fallback' : template} named={params.get('named') === 'colours'} />
+        <Activity
+          screen={screen}
+          template={screen === 'example' ? 'fallback' : template}
+          named={params.get('named') === 'colours'}
+          topicQuery={params.get('topic')}
+        />
       ) : null}
+      {telling ? <TellSheet onClose={() => setTelling(false)} /> : null}
     </main>
     </WardrobeProvider>
+    </ReportLiveProvider>
   );
 }
 
@@ -139,7 +154,14 @@ function Intro({ place }: { place: string }) {
   );
 }
 
-function previewItem(template: TemplateId, named: boolean): Item {
+function previewItem(template: TemplateId, named: boolean, topicQuery: string | null): Item {
+  if (topicQuery) {
+    const needle = topicQuery.toLowerCase();
+    const topic =
+      allTopics().find((entry) => entry.id === topicQuery || entry.name.toLowerCase() === needle) ??
+      allTopics().find((entry) => entry.name.toLowerCase().includes(needle));
+    if (topic) return generateItem(topic, `art-preview-${topic.id}`);
+  }
   if (named) {
     const topic = allTopics().find((entry) => classify(entry) === template && /blue|pink|cloudy/.test(generateItem(entry, 'colour-check').prompt));
     if (topic) return generateItem(topic, 'colour-check');
@@ -147,12 +169,29 @@ function previewItem(template: TemplateId, named: boolean): Item {
   return sampleItem(template);
 }
 
-function Activity({ screen, template, named }: { screen: string; template: TemplateId; named: boolean }) {
-  const item = previewItem(template, named);
+function Activity({
+  screen,
+  template,
+  named,
+  topicQuery,
+}: {
+  screen: string;
+  template: TemplateId;
+  named: boolean;
+  topicQuery: string | null;
+}) {
+  const item = previewItem(template, named, topicQuery);
   const place = PLACE_OF[item.template] ?? 'lantern-grove';
   const api = useRef<BoardHandle | null>(null);
   useEffect(() => {
-    window.__prague = { item, getState: () => api.current?.getState() };
+    window.__prague = {
+      item,
+      getState: () => api.current?.getState(),
+      solved: () => {
+        const state = api.current?.getState();
+        return state ? isSolved(item, state) : false;
+      },
+    };
   }, [item]);
   const star = `${import.meta.env.BASE_URL}art/star.webp`;
   if (screen === 'walk') {

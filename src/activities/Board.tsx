@@ -322,7 +322,7 @@ export function Board({ item, api }: Props) {
           <Stage item={item} inZone={inZone} onPieceDown={onPieceDown} onZoneUp={onZoneUp} selected={selected} />
         </>
       ) : null}
-      {item.template === 'base-ten' ? (
+      {item.template === 'base-ten' && item.solution.some((action) => action.op === 'bundle') ? (
         <button
           type="button"
           className="btn gold snap"

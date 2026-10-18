@@ -1,6 +1,29 @@
 import { normalizeCrystals, normalizeWardrobe } from '../wardrobe/economy.ts';
 import { freshProgress, learnerNameFrom, PROGRESS_FORMAT, PROGRESS_KEY, type Progress } from './types.ts';
 
+const PLACE_TRAIL = [
+  'lantern-grove',
+  'potion-cottage',
+  'crystal-cave',
+  'observatory',
+  'lily-pond',
+  'greenhouse',
+  'wizard-tower',
+  'mushroom-ring',
+];
+
+const KNOWN_PLACES = new Set([...PLACE_TRAIL, 'crystal-shop']);
+
+/** Older saves visited places in map order. A missing list keeps those stars. */
+export function normalizeVisited(value: unknown, sessions: number): string[] {
+  if (Array.isArray(value)) {
+    return value.filter((id): id is string => typeof id === 'string' && KNOWN_PLACES.has(id));
+  }
+  const count = Number.isFinite(sessions) ? Math.max(0, Math.floor(sessions)) : 0;
+  if (count >= PLACE_TRAIL.length) return [...PLACE_TRAIL];
+  return PLACE_TRAIL.slice(0, count);
+}
+
 /** Fills crystals and the wardrobe without dropping a save from before the shop. */
 export function withWardrobe(parsed: Progress): Progress {
   const learnerName = learnerNameFrom(parsed.learnerName);
@@ -14,6 +37,7 @@ export function withWardrobe(parsed: Progress): Progress {
     topics: parsed.topics ?? {},
     crystals: normalizeCrystals(parsed.crystals),
     wardrobe: normalizeWardrobe(parsed.wardrobe),
+    visitedPlaces: normalizeVisited(parsed.visitedPlaces, parsed.sessions?.length ?? 0),
   };
 }
 

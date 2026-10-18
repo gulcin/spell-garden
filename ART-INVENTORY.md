@@ -62,7 +62,7 @@ Every screen except the home map has a cream **Garden map** pill (painted map th
 | Wizard tower | `art/places/wizard-tower.webp` | painted |
 | Mushroom ring | `art/places/mushroom-ring.webp` | painted |
 
-Place scenes are WebP at 1x and 2x. The service worker does not precache them; they load with the chapter and are cached after that. Cache name: `spell-garden-v6`.
+Place scenes are WebP at 1x and 2x. The service worker does not precache them; they load with the chapter and are cached after that. Cache name: `spell-garden-v7`.
 
 The crystal shop is a painted cottage on the map. Clover the fox sells robes, hats, extras, and brooms. Solved spells add crystals (three in the crystal cave, one elsewhere). Purchases and what she is wearing live on the same progress save.
 
