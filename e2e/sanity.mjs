@@ -179,6 +179,20 @@ async function shot(page, name) {
   return file;
 }
 
+let touchSession = null;
+async function touchDrag(page, from, to) {
+  if (!touchSession) touchSession = await page.context().newCDPSession(page);
+  await touchSession.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: from.x, y: from.y, id: 1 }] });
+  const steps = 12;
+  for (let step = 1; step <= steps; step += 1) {
+    await touchSession.send('Input.dispatchTouchEvent', {
+      type: 'touchMove',
+      touchPoints: [{ x: from.x + ((to.x - from.x) * step) / steps, y: from.y + ((to.y - from.y) * step) / steps, id: 1 }],
+    });
+  }
+  await touchSession.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+}
+
 async function drag(page, pieceId, zoneId) {
   const boxes = await page.evaluate(
     ({ pieceId, zoneId }) => {
@@ -196,10 +210,7 @@ async function drag(page, pieceId, zoneId) {
     { pieceId, zoneId },
   );
   if (!boxes) throw new Error(`cannot drag ${pieceId} to ${zoneId}`);
-  await page.mouse.move(boxes.from.x, boxes.from.y);
-  await page.mouse.down();
-  await page.mouse.move(boxes.to.x, boxes.to.y, { steps: 12 });
-  await page.mouse.up();
+  await touchDrag(page, boxes.from, boxes.to);
 }
 
 async function twist(page, faceId, handId, degrees) {
@@ -239,10 +250,19 @@ async function twist(page, faceId, handId, degrees) {
     { faceId, handId, degrees },
   );
   if (!point || point.miss) throw new Error(`cannot grasp ${handId}`);
-  await page.mouse.move(point.startX, point.startY);
-  await page.mouse.down();
-  await page.mouse.move(point.x, point.y, { steps: 12 });
-  await page.mouse.up();
+  await touchDrag(page, { x: point.startX, y: point.startY }, { x: point.x, y: point.y });
+}
+
+async function missThenHint(page) {
+  await page.locator('[data-testid="cast"]').click();
+  const missed = await page.locator('.note').innerText();
+  if (!/fizzled softly/i.test(missed)) throw new Error(`harsh miss: ${missed.slice(0, 80)}`);
+  if (/scary|monster|ghost|blood/i.test(missed)) throw new Error(`scary miss: ${missed.slice(0, 80)}`);
+  await page.locator('[data-testid="hint"]').click();
+  const hint = await page.locator('.note').innerText();
+  if (!hint.trim() || /fizzled/i.test(hint)) throw new Error(`hint missing: ${hint.slice(0, 80)}`);
+  if ((await page.locator('[data-testid="cast"]').count()) === 0) throw new Error('dead end after a miss');
+  if ((await page.locator('[data-testid="skip"]').count()) === 0) throw new Error('skip missing after a miss');
 }
 
 async function applySolution(page) {
@@ -393,7 +413,7 @@ async function main() {
   const notes = await page.locator('[data-testid="report-list"]').innerText();
   if (!notes.includes('The robe was sitting')) record('grown-ups notes', 'still broken', notes.slice(0, 160));
   else record('grown-ups notes', 'pass');
-  if (!(await page.locator('[data-testid="app-version"]').innerText()).includes('1.1.0')) record('grown-ups version', 'still broken');
+  if (!(await page.locator('[data-testid="app-version"]').innerText()).includes('1.1.1')) record('grown-ups version', 'still broken');
   else record('grown-ups version', 'pass');
   await page.locator('[data-testid="check-updates"]').click();
   await page.waitForSelector('[data-testid="update-status"]');
@@ -583,7 +603,13 @@ async function main() {
         record(topic.name, 'still broken', problems[0]);
         continue;
       }
+      await missThenHint(page);
       await solveBoard(page);
+      await page.locator('[data-testid="next"]').click();
+      await page.waitForSelector('[data-testid="spell-beds"]');
+      await openPractice(page, topic.id);
+      await page.locator('[data-testid="skip"]').click();
+      await page.waitForSelector('[data-testid="spell-beds"]');
       record(topic.name, 'pass');
     } catch (error) {
       await shot(page, `fail-${topic.id}`);

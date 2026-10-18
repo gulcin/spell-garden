@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-10-18
+
+Every spell can be missed, hinted, skipped, and then cast correctly, including with a finger on the iPad.
+
+### Fixed
+
+- A wrong cast fizzles softly. Hint and Skip stay available, and Skip returns to the spell beds.
+- Prompts say “1 moth” and “1 rod”. Like terms are pink sparks she can count.
+- Dragging a piece or a clock hand follows a touch, the way a finger does on the iPad.
+
 ## [1.1.0] - 2026-10-18
 
 Outfits, notes, puzzles, and the spell beds fit the way Aida uses them, and a new copy can arrive without leaving the garden map.
@@ -25,4 +35,5 @@ Outfits, notes, puzzles, and the spell beds fit the way Aida uses them, and a ne
 - An update note that waits until she is on the garden map, and Check for updates for grown-ups.
 - The app version on every bug report.
 
+[1.1.1]: https://github.com/gulcin/spell-garden/releases/tag/v1.1.1
 [1.1.0]: https://github.com/gulcin/spell-garden/releases/tag/v1.1.0

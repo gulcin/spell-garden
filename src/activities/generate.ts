@@ -42,6 +42,10 @@ function hints(a: string, b: string, c: string): [string, string, string] {
   return [a, b, c];
 }
 
+function counted(n: number, one: string, many = `${one}s`): string {
+  return `${n} ${n === 1 ? one : many}`;
+}
+
 /** How many steps gentler the puzzle in progress should be. Set only inside generateItem. */
 let gentle = 0;
 
@@ -262,10 +266,13 @@ function tenFrame(topic: Topic, rand: () => number, salt: string): Item {
       prompt: `The ten-frame holds ${start} sparks. Move ${take} back to the nest.`,
       hints: hints(
         'Drag a spark from a box into the nest.',
-        `Count ${take} sparks as you move them.`,
+        `Count ${counted(take, 'spark')} as you move them.`,
         'The boxes that still glow are what is left.',
       ),
-      walkthrough: [`I move ${take} sparks to the nest.`, `${start - take} sparks stay in the frame.`],
+      walkthrough: [
+        `I move ${counted(take, 'spark')} to the nest.`,
+        `${counted(start - take, 'spark')} ${start - take === 1 ? 'stays' : 'stay'} in the frame.`,
+      ],
       pieces,
       zones,
       initial,
@@ -324,7 +331,7 @@ function hop(topic: Topic, salt: string, pads: number[], start: number, end: num
     prompt,
     hints: hints(
       'Drag the frog along the lilies, one hop at a time.',
-      more > 0 ? `Start at ${start} and count ${more} hops forward.` : `Start at ${start} and count ${-more} hops back.`,
+      more > 0 ? `Start at ${start} and count ${counted(more, 'hop')} forward.` : `Start at ${start} and count ${counted(-more, 'hop')} back.`,
       countUpHint(Math.min(start, end), Math.max(start, end)),
     ),
     walkthrough: [
@@ -407,7 +414,7 @@ function baseTen(topic: Topic, rand: () => number, salt: string): Item {
     pieces.push({ id: 'rbank', art: 'rod', value: 10 });
     pieces.push({ id: 'rbank2', art: 'rod', value: 10 });
     return pack(topic, 'base-ten', salt, {
-      prompt: `The mat has ${tens} rods and ${ones} loose ones. Snap 10 ones into a rod so fewer than 10 ones are left.`,
+      prompt: `The mat has ${counted(tens, 'rod')} and ${counted(ones, 'loose one', 'loose ones')}. Snap 10 ones into a rod so fewer than 10 ones are left.`,
       hints: hints(
         'Ten little cubes can snap into one rod.',
         'Press Snap when you see 10 loose ones.',
@@ -603,7 +610,7 @@ function fraction(topic: Topic, rand: () => number, salt: string): Item {
     if (/percent/.test(name)) {
       return shade(topic, salt, n, 10, 'bar', `Shade ${n * 10} percent of the potion bar. Each piece is 10 percent.`);
     }
-    return shade(topic, salt, n, 10, 'bar', `Shade ${n} tenths of the potion bar.`);
+    return shade(topic, salt, n, 10, 'bar', `Shade ${counted(n, 'tenth')} of the potion bar.`);
   }
   if (/add|sum/.test(name)) {
     const den = pick(rand, gentle > 0 ? [4] : [4, 5, 6, 8]);
@@ -672,7 +679,7 @@ function coins(topic: Topic, rand: () => number, salt: string): Item {
       'Watch the palm total as coins land.',
       'If you go past the number, drag a coin back to the purse.',
     ),
-    walkthrough: [`I need ${total} sparks exactly.`, 'I choose coins that add to that number and no more.'],
+    walkthrough: [`I need ${counted(total, 'spark')} exactly.`, 'I choose coins that add to that number and no more.'],
     pieces,
     zones: [{ id: 'palm', role: 'palm', label: 'Palm', capacity: 12 }],
     initial: {},
@@ -1063,7 +1070,7 @@ function barModel(topic: Topic, rand: () => number, salt: string): Item {
   const zones = slots(total, 'slot', 'bar');
   for (let i = 0; i < total; i++) counts[`slot${i}`] = 1;
   return pack(topic, 'bar-model', salt, {
-    prompt: `${known} moths are resting on the story bar. More arrive until there are ${total}. Fill the empty part.`,
+    prompt: `${counted(known, 'moth')} ${known === 1 ? 'is' : 'are'} resting on the story bar. More arrive until there are ${total}. Fill the empty part.`,
     hints: hints(
       'The whole bar is the total.',
       'The filled part is what you already know.',
@@ -1105,13 +1112,13 @@ function graph(topic: Topic, rand: () => number, salt: string): Item {
     for (let i = 0; i < cat.n; i++) pieces.push({ id: `${cat.id}${i}`, art: cat.art, group: cat.id });
   }
   return pack(topic, 'graph', salt, {
-    prompt: `Build a pictogram: ${cats.map((cat) => `${cat.n} ${cat.label.toLowerCase()}`).join(', ')}.`,
+    prompt: `Build a pictogram: ${cats.map((cat) => counted(cat.n, cat.label.toLowerCase().replace(/s$/, ''), cat.label.toLowerCase())).join(', ')}.`,
     hints: hints(
       'Each creature has its own column.',
       'Stack one picture for each visitor.',
       'Match the picture to the column name.',
     ),
-    walkthrough: cats.map((cat) => `I stack ${cat.n} ${cat.label.toLowerCase()}.`),
+    walkthrough: cats.map((cat) => `I stack ${counted(cat.n, cat.label.toLowerCase().replace(/s$/, ''), cat.label.toLowerCase())}.`),
     pieces,
     zones,
     initial: {},
@@ -1320,10 +1327,10 @@ function fallback(topic: Topic, rand: () => number, salt: string): Item {
     ], '11', ['9', '15', '1'], hints('Check whether something other than 1 multiplies to make it.', '9 is 3 × 3, so it is not prime.', '11 cannot be split that way.'), ['11 has no factors except 1 and 11.', 'So 11 is prime.']);
   }
   if (/like terms|collecting/.test(name)) {
-    return choice(topic, 'fallback', salt, 'Simplify 3a + 2a.', [
-      'Like terms have the same letter. Add their numbers.',
-      '4b + b is 5b.',
-    ], '5a', ['6a', '5', 'a^5'], hints('Both terms have the letter a.', 'Add 3 and 2.', 'The letter stays a.'), ['3a and 2a are like terms.', 'Together they are 5a.']);
+    return choice(topic, 'fallback', salt, '3 pink sparks join 2 more pink sparks. How many pink sparks?', [
+      'Things that match can be counted together.',
+      '4 blue sparks and 1 blue spark make 5 blue sparks.',
+    ], '5', ['6', '3', '2'], hints('They are the same kind, so they can join.', 'Start with 3.', 'Count on 2 more.'), ['3 pink sparks are here.', '2 more join them.', 'That is 5 pink sparks.']);
   }
   if (/expand/.test(name)) {
     return choice(topic, 'fallback', salt, 'Expand 3(x + 2).', [

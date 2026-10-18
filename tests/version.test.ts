@@ -10,11 +10,11 @@ const css = readFileSync(new URL('../src/styles.css', import.meta.url), 'utf8');
 const sw = readFileSync(new URL('../src/swUpdates.ts', import.meta.url), 'utf8');
 
 describe('Spell Garden version', () => {
-  it('stamps semver 1.1.0 and keeps the service worker waiting for a tap', () => {
-    expect(pkg.version).toBe('1.1.0');
-    expect(serviceWorkerCacheId(pkg.version)).toBe('spell-garden-v1.1.0');
-    expect(SPELL_GARDEN_CACHE).toBe('spell-garden-v1.1.0');
-    expect(versionLabel({ version: '1.1.0', sha: 'abc1234', date: '2026-10-18' })).toBe('v1.1.0 · abc1234 · 2026-10-18');
+  it('stamps semver 1.1.1 and keeps the service worker waiting for a tap', () => {
+    expect(pkg.version).toBe('1.1.1');
+    expect(serviceWorkerCacheId(pkg.version)).toBe('spell-garden-v1.1.1');
+    expect(SPELL_GARDEN_CACHE).toBe('spell-garden-v1.1.1');
+    expect(versionLabel({ version: '1.1.1', sha: 'abc1234', date: '2026-10-18' })).toBe('v1.1.1 · abc1234 · 2026-10-18');
     expect(css).toContain('-webkit-text-size-adjust: 100%');
     expect(css).toContain('text-size-adjust: 100%');
     expect(css).not.toContain('font-size: clamp');
@@ -22,9 +22,10 @@ describe('Spell Garden version', () => {
 
   it('reads the changelog', () => {
     const notes = parseChangelog(changelog);
-    expect(notes[0]?.version).toBe('1.1.0');
+    expect(notes[0]?.version).toBe('1.1.1');
     expect(notes[0]?.date).toBe('2026-10-18');
-    expect(notes[0]?.sections.flatMap((section) => section.items).join(' ')).toMatch(/Tell us/);
+    expect(notes.map((note) => note.sections.flatMap((section) => section.items).join(' ')).join(' ')).toMatch(/Tell us/);
+    expect(notes[0]?.sections.flatMap((section) => section.items).join(' ')).toMatch(/fizzles softly/);
   });
 
   it('shows a banner on the map and waits while a lesson is open', () => {
