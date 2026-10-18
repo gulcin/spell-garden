@@ -49,6 +49,8 @@ jobs:
         run: npx --yes playwright@1.64.1 install --with-deps chromium
 
       - name: Sanity
+        env:
+          BASE_PATH: ${{ steps.pages.outputs.base_path }}
         run: |
           npx vite preview --host 127.0.0.1 --port 43123 --strictPort &
           ready=0
