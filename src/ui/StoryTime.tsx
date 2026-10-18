@@ -3,6 +3,8 @@ import type { Progress } from '../progress/types.ts';
 import { wordIndexAt, type Adventure } from '../stories/adventure.ts';
 import { bookByPlace, bookPageCount, readBook, type BookLeaf, type PlaceBook } from '../stories/books.ts';
 import { pageArt, pageAudio, pageCues, storyById, STORIES } from '../stories/library.ts';
+import { setStoryAudible } from '../music/engine.ts';
+import { onAudioSettings, soundEnabled } from '../music/settings.ts';
 import { ADVENTURE_RATE, pickUsVoice } from '../speech.ts';
 import { HOUSE_PLACE_ID, HOUSE_PLACE_NAME } from '../house/catalog.ts';
 import { placeStyle } from './pictures.tsx';
@@ -331,6 +333,20 @@ function ReaderBody({
   const [cues, setCues] = useState<CueFile | null>(null);
   const [spokenIndex, setSpokenIndex] = useState(-1);
   const heardRef = useRef(false);
+
+  useEffect(() => {
+    setStoryAudible(playing);
+    return () => setStoryAudible(false);
+  }, [playing]);
+
+  useEffect(() => {
+    return onAudioSettings((settings) => {
+      if (settings.sound) return;
+      audioRef.current?.pause();
+      window.speechSynthesis?.cancel();
+      setPlaying(false);
+    });
+  }, []);
   const last = story.leaves.length - 1;
   const leaf = story.leaves[page] ?? story.leaves[0];
   const spoken = Boolean(leaf?.spoken);
@@ -351,7 +367,7 @@ function ReaderBody({
     audio.src = pageAudio(leaf?.audioId ?? story.id, leaf?.audioPage ?? page);
     audio.currentTime = 0;
     const start = async () => {
-      if (!autoplay) {
+      if (!autoplay || !soundEnabled()) {
         if (!gone) setPlaying(false);
         return;
       }
@@ -418,7 +434,7 @@ function ReaderBody({
     const words = text.split(/\s+/).filter(Boolean);
     setSpokenIndex(-1);
     const synth = window.speechSynthesis;
-    if (!synth || !autoplay) return;
+    if (!synth || !autoplay || !soundEnabled()) return;
     let gone = false;
     let usingBoundary = false;
     let started = false;
@@ -497,6 +513,7 @@ function ReaderBody({
   }
 
   function toggle() {
+    if (!soundEnabled()) return;
     if (spoken) {
       const synth = window.speechSynthesis;
       if (!synth) return;

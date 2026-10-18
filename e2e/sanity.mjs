@@ -481,6 +481,13 @@ async function main() {
   } else record('whats new', 'pass');
   await page.locator('[data-testid="whats-new-back"]').click();
   await page.waitForSelector('[data-testid="report-list"]');
+  if ((await page.locator('[data-testid="music-toggle"]').getAttribute('aria-pressed')) !== 'true') record('music toggle', 'still broken');
+  else record('music toggle', 'pass');
+  if ((await page.locator('[data-testid="sound-toggle"]').getAttribute('aria-pressed')) !== 'true') record('sound toggle', 'still broken');
+  else record('sound toggle', 'pass');
+  const placeMusic = await page.evaluate(() => document.documentElement.dataset.music ?? '');
+  if (placeMusic !== 'map') record('place music', 'still broken', placeMusic);
+  else record('place music', 'pass');
   await page.locator('[data-testid="check-updates"]').click();
   await page.waitForSelector('[data-testid="update-status"]');
   record('check for updates', 'pass');
