@@ -1,6 +1,7 @@
 import { normalizeHouse } from '../house/layout.ts';
 import { isAdventure } from '../stories/adventure.ts';
 import { normalizeBooks } from '../stories/books.ts';
+import { normalizeQuests, normalizeTalks } from '../cast/talk.ts';
 import { normalizeCrystals, normalizeWardrobe } from '../wardrobe/economy.ts';
 import { normalizePurse } from '../wardrobe/purse.ts';
 import {
@@ -97,6 +98,8 @@ export function withWardrobe(parsed: Progress): Progress {
     storyFavourites: stringList(parsed.storyFavourites),
     adventures: Array.isArray(parsed.adventures) ? parsed.adventures.filter(isAdventure).slice(0, 24) : [],
     house: normalizeHouse(parsed.house),
+    talks: normalizeTalks((parsed as Progress & { talks?: unknown }).talks),
+    quests: normalizeQuests((parsed as Progress & { quests?: unknown }).quests),
     books: normalizeBooks(
       parsed.books,
       (Array.isArray(parsed.adventures) ? parsed.adventures.filter(isAdventure) : []).map((adventure) => ({

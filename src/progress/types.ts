@@ -1,6 +1,7 @@
 import { freshHouse, type HouseState } from '../house/layout.ts';
 import type { Adventure } from '../stories/adventure.ts';
 import { emptyBooks, type PlaceBook } from '../stories/books.ts';
+import type { QuestRecord, TalkMemory } from '../cast/talk.ts';
 import { emptyPurse, type Purse } from '../wardrobe/purse.ts';
 
 export const PROGRESS_KEY = 'prague.wizard-math.progress.v1';
@@ -99,6 +100,10 @@ export type Progress = {
   books: PlaceBook[];
   /** Furniture she owns and where it sits in the witch's house. */
   house: HouseState;
+  /** How many times she has stopped to talk with each neighbour. */
+  talks: TalkMemory[];
+  /** Little quests a neighbour is waiting on, or has already thanked her for. */
+  quests: QuestRecord[];
   updatedAt: number;
 };
 
@@ -141,6 +146,8 @@ export function freshProgress(name = DEFAULT_LEARNER_NAME): Progress {
     adventures: [],
     books: emptyBooks(),
     house: freshHouse(),
+    talks: [],
+    quests: [],
     updatedAt: Date.now(),
   };
 }

@@ -13,6 +13,7 @@ import {
 } from '../house/layout.ts';
 import type { Progress } from '../progress/types.ts';
 import { CrystalCounter } from './CrystalCounter.tsx';
+import { TalkDock } from './TalkDock.tsx';
 import { DressedApprentice } from './DressedApprentice.tsx';
 import { PlaceBookButton } from './StoryTime.tsx';
 
@@ -151,6 +152,7 @@ export function WitchHouse({
           <CrystalCounter count={progress.crystals} />
         </div>
       </header>
+      <TalkDock progress={progress} update={update} placeId="witch-house" />
       <div className="house-papers" role="group" aria-label="Wallpaper">
         {WALLPAPERS.map((choice) => (
           <button

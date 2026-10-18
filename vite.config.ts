@@ -14,7 +14,7 @@ function listFiles(dir: string): string[] {
   return out;
 }
 
-export const SPELL_GARDEN_CACHE = 'spell-garden-v14';
+export const SPELL_GARDEN_CACHE = 'spell-garden-v15';
 
 /** Files the service worker installs up front. Story audio and 1x page art stay offline; 2x story art waits until it is shown. */
 export function precacheFile(file: string): boolean {
@@ -22,6 +22,7 @@ export function precacheFile(file: string): boolean {
   if (file.startsWith('art/stories/') && file.includes('@2x')) return false;
   if (file.startsWith('art/house/') && file.includes('@2x')) return false;
   if (file.startsWith('art/crystals/') && file.includes('@2x')) return false;
+  if (file.startsWith('art/cast/') && file.includes('@2x')) return false;
   return true;
 }
 

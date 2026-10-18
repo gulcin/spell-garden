@@ -62,7 +62,7 @@ Every screen except the home map has a cream **Garden map** pill (painted map th
 | Wizard tower | `art/places/wizard-tower.webp` | painted |
 | Mushroom ring | `art/places/mushroom-ring.webp` | painted |
 
-Place scenes are WebP at 1x and 2x. The service worker does not precache them; they load with the chapter and are cached after that. Cache name: `spell-garden-v14`.
+Place scenes are WebP at 1x and 2x. The service worker does not precache them; they load with the chapter and are cached after that. Cache name: `spell-garden-v15`.
 
 The colouring corner is a painted nook inside the wizard tower (`art/places/colouring-nook.webp`). Its sheets are closed line-art SVGs in `art/colouring/`. Drawings stay in IndexedDB on the iPad.
 

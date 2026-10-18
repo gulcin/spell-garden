@@ -1156,6 +1156,55 @@ code { font-size: 0.86em; background: #fff; padding: 0.1em 0.35em; border-radius
 .pay-sum { font-weight: 800; }
 .pay-actions { display: flex; gap: 8px; justify-content: flex-end; }
 .sheet-group { font-size: 1.25rem; margin: 12px 0 0; }
+.friend-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 56px;
+  width: fit-content;
+  margin: 8px 12px 0;
+  padding: 4px 16px 4px 4px;
+  border: 2px solid white;
+  border-radius: 999px;
+  background: rgba(255, 248, 241, 0.96);
+  box-shadow: 0 6px 14px rgba(58, 45, 74, 0.12);
+  font-weight: 800;
+}
+.friend-chip img { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; background: var(--cream); }
+.talk-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(58, 45, 74, 0.35);
+}
+.talk-card {
+  width: min(560px, 100%);
+  max-height: min(86vh, 760px);
+  overflow: auto;
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border-radius: 24px;
+  background: #fff8f1;
+  border: 2px solid white;
+}
+.talk-who { display: flex; gap: 12px; align-items: center; }
+.talk-who img { width: 112px; height: 112px; object-fit: contain; background: var(--cream); border-radius: 18px; }
+.talk-who h2 { margin: 0; font-size: 1.5rem; }
+.talk-who p { margin: 0; }
+.talk-line { margin: 0; font-size: 1.15rem; }
+.talk-replies { display: flex; flex-direction: column; gap: 8px; }
+.talk-replies .btn {
+  min-height: 52px;
+  text-align: left;
+  background: white;
+  color: var(--violet-deep);
+  box-shadow: 0 6px 0 var(--line);
+}
 .shopkeeper {
   width: min(148px, 34vw);
   flex: 0 0 auto;

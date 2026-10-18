@@ -12,8 +12,10 @@ import { useReportLive } from '../feedback/live.tsx';
 import type { BoardState } from '../activities/types.ts';
 import { crystalGain } from '../wardrobe/catalog.ts';
 import { rewardSpeech } from '../wardrobe/purse.ts';
+import { bumpPlaceQuests } from '../cast/talk.ts';
 import { awardCrystals } from '../wardrobe/economy.ts';
 import { CrystalCounter } from './CrystalCounter.tsx';
+import { TalkDock } from './TalkDock.tsx';
 import { DressedApprentice } from './DressedApprentice.tsx';
 import { PLACES, placeStyle, Prop } from './pictures.tsx';
 import { deedLine, visitIntro } from '../stories/adventure.ts';
@@ -205,7 +207,8 @@ export function Quest({
           : session,
       );
       const next = { ...current, topics: { ...current.topics, [currentItem.topicId]: nextTopic }, sessions };
-      const awarded = ok ? awardCrystals(next, crystalGain(placeId)) : next;
+      const bumped = ok ? bumpPlaceQuests(next, placeId) : next;
+      const awarded = ok ? awardCrystals(bumped, crystalGain(placeId)) : bumped;
       if (!ok) return awarded;
       return {
         ...awarded,
@@ -324,6 +327,7 @@ export function Quest({
           </div>
         </div>
       </header>
+      <TalkDock progress={progress} update={update} placeId={placeId} />
       {phase === 'intro' ? (
         <div className="panel story">
           <div className="intro-cast">

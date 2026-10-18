@@ -11,6 +11,7 @@ import { PayTill } from './PayTill.tsx';
 import { DressedApprentice } from './DressedApprentice.tsx';
 import { placeStyle, Prop } from './pictures.tsx';
 import { PlaceBookButton, StoryButton } from './StoryTime.tsx';
+import { TalkDock } from './TalkDock.tsx';
 
 type Shelf = ShopCategory | 'home';
 
@@ -113,6 +114,7 @@ export function CrystalShop({
           </button>
         </div>
       </div>
+      <TalkDock progress={progress} update={update} placeId="crystal-shop" />
       {onOpenBook ? <PlaceBookButton placeId="crystal-shop" books={progress.books} onOpen={onOpenBook} /> : null}
       {cheer ? (
         <p className="note good shop-cheer" role="status" data-testid="shop-cheer">

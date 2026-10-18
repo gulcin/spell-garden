@@ -23,9 +23,11 @@ import { listArtworks, loadArtwork, saveArtwork, type SavedArt } from '../colour
 import { useReportLive } from '../feedback/live.tsx';
 import type { Progress } from '../progress/types.ts';
 import { speak } from '../speech.ts';
+import { bumpPlaceQuests } from '../cast/talk.ts';
 import { awardCrystals } from '../wardrobe/economy.ts';
 import { rewardSpeech } from '../wardrobe/purse.ts';
 import { CrystalCounter } from './CrystalCounter.tsx';
+import { TalkDock } from './TalkDock.tsx';
 import type { PlaceBook } from '../stories/books.ts';
 import { placeStyle } from './pictures.tsx';
 import { PlaceBookButton, StoryButton } from './StoryTime.tsx';
@@ -78,7 +80,18 @@ export function ColouringCorner({
   }, [sheetId]);
 
   if (!sheetId) {
-    return <ColourLobby saved={saved} crystals={progress.crystals} books={progress.books} onOpen={setSheetId} onStory={onStory} onOpenBook={onOpenBook} />;
+    return (
+      <ColourLobby
+        progress={progress}
+        update={update}
+        saved={saved}
+        crystals={progress.crystals}
+        books={progress.books}
+        onOpen={setSheetId}
+        onStory={onStory}
+        onOpenBook={onOpenBook}
+      />
+    );
   }
 
   return (
@@ -87,16 +100,20 @@ export function ColouringCorner({
       sheetId={sheetId}
       crystals={progress.crystals}
       books={progress.books}
+      progress={progress}
+      update={update}
       demoPaint={demoPaint}
       onBack={() => setSheetId(null)}
       onStory={onStory}
       onOpenBook={onOpenBook}
-      onReward={(amount) => update((current) => awardCrystals(current, amount))}
+      onReward={(amount) => update((current) => awardCrystals(bumpPlaceQuests(current, 'colouring-nook'), amount))}
     />
   );
 }
 
 function ColourLobby({
+  progress,
+  update,
   saved,
   crystals,
   books,
@@ -104,6 +121,8 @@ function ColourLobby({
   onStory,
   onOpenBook,
 }: {
+  progress: Progress;
+  update: (recipe: (current: Progress) => Progress) => void;
   saved: SavedArt[];
   crystals: number;
   books: PlaceBook[];
@@ -124,6 +143,7 @@ function ColourLobby({
           <CrystalCounter count={crystals} />
         </div>
       </header>
+      <TalkDock progress={progress} update={update} placeId="colouring-nook" />
       {onOpenBook ? <PlaceBookButton placeId="colouring-nook" books={books} onOpen={onOpenBook} /> : null}
       <p className="colour-intro">
         A quiet table in the tower. Colour a page if you like. Nothing is marked, and you can stop whenever you want.
@@ -172,6 +192,8 @@ function ColourPage({
   sheetId,
   crystals,
   books,
+  progress,
+  update,
   demoPaint,
   onBack,
   onStory,
@@ -181,6 +203,8 @@ function ColourPage({
   sheetId: string;
   crystals: number;
   books: PlaceBook[];
+  progress: Progress;
+  update: (recipe: (current: Progress) => Progress) => void;
   demoPaint: boolean;
   onBack: () => void;
   onStory?: () => void;
@@ -486,6 +510,7 @@ function ColourPage({
           <CrystalCounter count={crystals} />
         </div>
       </header>
+      <TalkDock progress={progress} update={update} placeId="colouring-nook" />
       <div
         className="colour-viewport"
         ref={viewportRef}
