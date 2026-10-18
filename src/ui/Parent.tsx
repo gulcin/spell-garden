@@ -1,0 +1,292 @@
+import { useMemo, useState } from 'react';
+import { askHer } from '../curriculum/ask.ts';
+import { TEMPLATE_LABEL, classify } from '../curriculum/classify.ts';
+import { allPrereqs, allTopics, domains } from '../curriculum/data.ts';
+import { markMastered, masteredIds, statusOf } from '../progress/mastery.ts';
+import { applyStartAge, gradeLabel, startAgeChoices } from '../progress/placement.ts';
+import { PROGRESS_KEY, freshProgress, type Progress, type Status } from '../progress/types.ts';
+import { parseProgress } from '../progress/storage.ts';
+
+const STATUS_WORD: Record<Status, string> = {
+  mastered: 'Mastered',
+  practicing: 'Practising',
+  ready: 'Ready',
+  locked: 'Locked',
+};
+
+export function Parent({
+  progress,
+  update,
+  onHome,
+}: {
+  progress: Progress;
+  update: (recipe: (current: Progress) => Progress) => void;
+  onHome: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [answer, setAnswer] = useState('');
+  const [gateNote, setGateNote] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
+  const [domain, setDomain] = useState('All');
+  const [picked, setPicked] = useState<string | null>(null);
+  const [importNote, setImportNote] = useState<string | null>(null);
+
+  if (!open) {
+    return (
+      <section className="panel gate">
+        <button type="button" className="text-link" onClick={onHome}>
+          Back to the tower
+        </button>
+        <h1>For grown-ups</h1>
+        <p>A small gate, so the journal stays a parent place. What is 36 + 47?</p>
+        <input
+          inputMode="numeric"
+          data-testid="gate-answer"
+          value={answer}
+          onChange={(event) => setAnswer(event.target.value)}
+          aria-label="36 plus 47"
+        />
+        <button
+          type="button"
+          className="btn primary"
+          data-testid="gate-submit"
+          onClick={() => {
+            if (answer.trim() === '83') setOpen(true);
+            else setGateNote('Try the sum again.');
+          }}
+        >
+          Open the journal
+        </button>
+        {gateNote ? <p className="note">{gateNote}</p> : null}
+      </section>
+    );
+  }
+
+  return (
+    <Journal
+      progress={progress}
+      update={update}
+      onHome={onHome}
+      query={query}
+      setQuery={setQuery}
+      domain={domain}
+      setDomain={setDomain}
+      picked={picked}
+      setPicked={setPicked}
+      importNote={importNote}
+      setImportNote={setImportNote}
+    />
+  );
+}
+
+function Journal({
+  progress,
+  update,
+  onHome,
+  query,
+  setQuery,
+  domain,
+  setDomain,
+  picked,
+  setPicked,
+  importNote,
+  setImportNote,
+}: {
+  progress: Progress;
+  update: (recipe: (current: Progress) => Progress) => void;
+  onHome: () => void;
+  query: string;
+  setQuery: (value: string) => void;
+  domain: string;
+  setDomain: (value: string) => void;
+  picked: string | null;
+  setPicked: (value: string | null) => void;
+  importNote: string | null;
+  setImportNote: (value: string | null) => void;
+}) {
+  const mastered = masteredIds(progress);
+  const latest = [...progress.sessions].reverse().find((session) => session.endedAt);
+  const fresh = allTopics().filter((topic) => {
+    const state = progress.topics[topic.id];
+    return state?.via === 'practice' && state.masteredAt && latest && state.masteredAt >= latest.startedAt;
+  });
+  const rows = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return allTopics()
+      .filter((topic) => domain === 'All' || topic.domain === domain)
+      .filter((topic) => !q || `${topic.name} ${topic.domain} ${topic.description}`.toLowerCase().includes(q))
+      .sort((a, b) => a.domain.localeCompare(b.domain) || a.ageRangeStart - b.ageRangeStart || a.name.localeCompare(b.name));
+  }, [query, domain]);
+  const focus = allTopics().find((topic) => topic.id === picked) ?? null;
+
+  function download() {
+    const blob = new Blob([JSON.stringify(progress, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'prague-spell-garden-progress.json';
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  return (
+    <div className="journal">
+      <button type="button" className="text-link" onClick={onHome}>
+        Back to the tower
+      </button>
+      <h1>{progress.learnerName}'s journal</h1>
+      <p className="lede">Mastered, practising, ready, or locked. Success counts stay on this device.</p>
+      <label className="start-level">
+        Starting level
+        <select
+          data-testid="start-age"
+          aria-label="Starting level"
+          value={progress.placement.frontierAge}
+          onChange={(event) => {
+            const age = Number(event.target.value);
+            update((current) => applyStartAge(current, age, allTopics(), Date.now()));
+          }}
+        >
+          {startAgeChoices().map((age) => (
+            <option key={age} value={age}>
+              {gradeLabel(age)}
+            </option>
+          ))}
+        </select>
+        <span>Chapters begin here. Missing ideas are practised first, and the path can climb past this age.</span>
+      </label>
+      {fresh.length > 0 ? (
+        <div className="banner" data-testid="new-mastery">
+          <strong>Newly mastered</strong>
+          <ul>
+            {fresh.map((topic) => (
+              <li key={topic.id}>
+                {topic.name} · {progress.topics[topic.id]?.correct ?? 0} correct
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+      <div className="journal-tools">
+        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search spells" aria-label="Search spells" />
+        <select value={domain} onChange={(event) => setDomain(event.target.value)} aria-label="Domain">
+          <option>All</option>
+          {domains().map((name) => (
+            <option key={name}>{name}</option>
+          ))}
+        </select>
+        <button type="button" className="btn quiet" onClick={download}>
+          Export JSON
+        </button>
+        <label className="btn quiet file">
+          Import JSON
+          <input
+            type="file"
+            accept="application/json"
+            onChange={async (event) => {
+              const file = event.target.files?.[0];
+              if (!file) return;
+              try {
+                const next = parseProgress(await file.text());
+                update(() => next);
+                setImportNote('Progress brought in.');
+              } catch (error) {
+                setImportNote(error instanceof Error ? error.message : 'Could not read that file.');
+              }
+            }}
+          />
+        </label>
+      </div>
+      {importNote ? <p className="note">{importNote}</p> : null}
+      <p className="fine">
+        Stored at <code>{PROGRESS_KEY}</code>. {rows.length} spells shown.
+      </p>
+      <ul className="journal-list">
+        {rows.map((topic) => {
+          const status = statusOf(topic, progress, mastered);
+          const state = progress.topics[topic.id];
+          return (
+            <li key={topic.id}>
+              <button type="button" className="topic-row" data-testid="topic-row" data-topic-id={topic.id} onClick={() => setPicked(topic.id)}>
+                <span className={`pill ${status}`} data-testid="status">
+                  {STATUS_WORD[status]}
+                </span>
+                <span>
+                  <strong>{topic.name}</strong>
+                  <em>
+                    {topic.domain} · ages {topic.ageRangeStart}–{topic.ageRangeEnd} · {TEMPLATE_LABEL[classify(topic)]}
+                  </em>
+                </span>
+                <span className="counts" data-testid="success-count">
+                  {state?.correct ?? 0} correct · {state?.incorrect ?? 0} missed
+                  {state?.via === 'placement' && state.masteredAt ? ' · placed' : ''}
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+      {rows.length === 0 ? <p>No spells match that search.</p> : null}
+      {focus ? (
+        <aside className="detail">
+          <h2>{focus.name}</h2>
+          <p>{focus.description}</p>
+          <h3>Builds on</h3>
+          {allPrereqs(focus.id).length === 0 ? <p>This spell can be a starting place.</p> : null}
+          <ul>
+            {allPrereqs(focus.id).map((dep) => {
+              const name = allTopics().find((topic) => topic.id === dep.prerequisiteId)?.name ?? dep.prerequisiteId;
+              return (
+                <li key={`${dep.strength}-${dep.prerequisiteId}`}>
+                  <strong>{name}</strong> · {dep.strength}. {dep.reason}
+                </li>
+              );
+            })}
+          </ul>
+          <h3>Ask her</h3>
+          <p className="ask">{askHer(focus, progress.learnerName)}</p>
+          <div className="dock">
+            <button
+              type="button"
+              className="btn gold"
+              onClick={() => update((current) => ({ ...current, topics: { ...current.topics, [focus.id]: markMastered(current.topics[focus.id], Date.now()) } }))}
+            >
+              Mark mastered
+            </button>
+            <button
+              type="button"
+              className="btn quiet"
+              onClick={() =>
+                update((current) => {
+                  const topics = { ...current.topics };
+                  delete topics[focus.id];
+                  return { ...current, topics };
+                })
+              }
+            >
+              Reset
+            </button>
+          </div>
+        </aside>
+      ) : null}
+      <section>
+        <h2>Chapters</h2>
+        {progress.sessions.length === 0 ? <p>No chapters yet. When she finishes a quest, it will rest here.</p> : null}
+        <ul className="sessions">
+          {progress.sessions.map((session) => (
+            <li key={session.id}>
+              <strong>{session.chapterTitle}</strong>
+              <span>
+                {new Date(session.startedAt).toLocaleString()} · {session.correct} kind spells · {session.incorrect} soft misses
+                {session.endedAt ? '' : ' · still open'}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </section>
+      <button type="button" className="btn quiet" data-testid="reset-all" onClick={() => update(() => freshProgress(progress.learnerName))}>
+        Reset everything
+      </button>
+    </div>
+  );
+}

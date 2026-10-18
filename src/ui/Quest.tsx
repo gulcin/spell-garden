@@ -1,0 +1,306 @@
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Board, type BoardHandle } from '../activities/Board.tsx';
+import { generateItem, placementPlan } from '../activities/generate.ts';
+import { isSolved } from '../activities/logic.ts';
+import type { Item } from '../activities/types.ts';
+import { recordAttempt } from '../progress/mastery.ts';
+import { planChapter, type ChapterSlot } from '../progress/select.ts';
+import type { Progress } from '../progress/types.ts';
+import { DEMO_LINE, type Chapter } from '../story.ts';
+import { speak } from '../speech.ts';
+
+type Mode = 'placement' | 'chapter';
+
+const PRAISE = [
+  'The spell worked. The garden glows a little warmer.',
+  'Yes. That was kind, careful magic.',
+  'Lovely. The numbers settled into place.',
+];
+
+export function Quest({
+  mode,
+  progress,
+  chapter,
+  update,
+  onFinish,
+}: {
+  mode: Mode;
+  progress: Progress;
+  chapter?: Chapter;
+  update: (recipe: (current: Progress) => Progress) => void;
+  onFinish: (correct: number, asked: number) => void;
+}) {
+  const sessionId = useRef(`s-${Date.now()}`);
+  const [slots] = useState<ChapterSlot[]>(() =>
+    mode === 'placement'
+      ? placementPlan().map((slot) => ({
+          topic: slot.topic,
+          salt: slot.salt,
+          focus: false,
+          review: false,
+          rescue: false,
+        }))
+      : planChapter(progress, Date.now(), sessionId.current),
+  );
+  const [index, setIndex] = useState(0);
+  const [retry, setRetry] = useState(0);
+  const [phase, setPhase] = useState<'intro' | 'demo' | 'play' | 'ok' | 'walk'>('intro');
+  const [hintLevel, setHintLevel] = useState(0);
+  const [note, setNote] = useState<string | null>(null);
+  const [correct, setCorrect] = useState(0);
+  const [asked, setAsked] = useState(0);
+  const api = useRef<BoardHandle | null>(null);
+  const progressRef = useRef(progress);
+  progressRef.current = progress;
+  const slot = slots[index];
+  const item = useMemo(() => {
+    if (!slot) return null;
+    return generateItem(slot.topic, retry ? `${slot.salt}:retry${retry}` : slot.salt);
+  }, [slot, retry]);
+
+  useEffect(() => {
+    if (!item || phase === 'intro' || phase === 'demo') return;
+    window.__prague = { item, getState: () => api.current?.getState() };
+  }, [item, phase]);
+
+  if (!slot || !item) {
+    return (
+      <section className="panel">
+        <h2>The garden is resting</h2>
+        <p>Every spell you can reach is already glowing. A grown-up can open a new path from the journal.</p>
+        <button type="button" className="btn primary" onClick={() => onFinish(correct, asked)}>
+          Back to the tower
+        </button>
+      </section>
+    );
+  }
+
+  const seen = progress.seenTemplates.includes(item.template);
+
+  function rememberTemplate(current: Progress, template: string): Progress {
+    if (current.seenTemplates.includes(template)) return current;
+    return { ...current, seenTemplates: [...current.seenTemplates, template] };
+  }
+
+  function begin() {
+    const line =
+      mode === 'placement'
+        ? `${progress.learnerName}, five tiny spells will find where your garden begins. There is no rush.`
+        : `${progress.learnerName}, ${chapter?.intro ?? 'A new chapter of kind magic is ready.'}`;
+    speak(line);
+    if (mode === 'chapter') {
+      update((current) => ({
+        ...current,
+        sessions: [
+          ...current.sessions,
+          {
+            id: sessionId.current,
+            startedAt: Date.now(),
+            endedAt: null,
+            chapterTitle: chapter?.title ?? 'A quiet chapter',
+            topicIds: [],
+            correct: 0,
+            incorrect: 0,
+            rewardId: null,
+          },
+        ],
+      }));
+    }
+    if (!seen) {
+      setPhase('demo');
+      speak(DEMO_LINE[item!.template] ?? 'Watch once, then it is your turn.');
+    } else {
+      setPhase('play');
+      speak(item!.prompt);
+    }
+  }
+
+  function skipDemo() {
+    update((current) => rememberTemplate(current, item!.template));
+    setPhase('play');
+    speak(item!.prompt);
+  }
+
+  function record(ok: boolean, currentItem: Item) {
+    setAsked((value) => value + 1);
+    if (ok) setCorrect((value) => value + 1);
+    update((current) => {
+      const prev = current.topics[currentItem.topicId];
+      const nextTopic = recordAttempt(prev, ok, sessionId.current, currentItem.template, Date.now());
+      const sessions = current.sessions.map((session) =>
+        session.id === sessionId.current
+          ? {
+              ...session,
+              topicIds: session.topicIds.includes(currentItem.topicId) ? session.topicIds : [...session.topicIds, currentItem.topicId],
+              correct: session.correct + (ok ? 1 : 0),
+              incorrect: session.incorrect + (ok ? 0 : 1),
+            }
+          : session,
+      );
+      return { ...current, topics: { ...current.topics, [currentItem.topicId]: nextTopic }, sessions };
+    });
+  }
+
+  function cast() {
+    if (!item) return;
+    const board = api.current?.getState();
+    if (!board) return;
+    if (isSolved(item, board)) {
+      record(true, item);
+      const praise = PRAISE[correct % PRAISE.length] ?? PRAISE[0];
+      setNote(praise);
+      setPhase('ok');
+      speak(praise);
+      return;
+    }
+    const fizzle = 'That spell fizzled softly. Nothing is hurt. Change one thing and try again.';
+    setNote(fizzle);
+    speak(fizzle);
+  }
+
+  function hint() {
+    if (!item) return;
+    const level = Math.min(2, hintLevel);
+    const text = item.hints[level] ?? item.hints[0];
+    setHintLevel(level + 1);
+    setNote(text);
+    speak(text);
+  }
+
+  function idk() {
+    if (!item) return;
+    record(false, item);
+    setPhase('walk');
+    setNote(null);
+    speak(item.walkthrough.join(' '));
+  }
+
+  function freshTry() {
+    if (!slot) return;
+    const nextRetry = retry + 1;
+    setRetry(nextRetry);
+    setHintLevel(0);
+    setNote(null);
+    setPhase('play');
+    const fresh = generateItem(slot.topic, `${slot.salt}:retry${nextRetry}`);
+    speak(fresh.prompt);
+  }
+
+  function next() {
+    if (index + 1 >= slots.length) {
+      onFinish(correct, asked);
+      return;
+    }
+    const upcoming = slots[index + 1];
+    if (!upcoming) return;
+    const upcomingItem = generateItem(upcoming.topic, upcoming.salt);
+    const showDemo = !progressRef.current.seenTemplates.includes(upcomingItem.template);
+    setIndex(index + 1);
+    setRetry(0);
+    setHintLevel(0);
+    setNote(null);
+    if (showDemo) {
+      setPhase('demo');
+      speak(DEMO_LINE[upcomingItem.template] ?? 'Watch once, then it is your turn.');
+    } else {
+      setPhase('play');
+      speak(upcomingItem.prompt);
+    }
+  }
+
+  return (
+    <section className="quest">
+      <header className="quest-top">
+        <p className="kicker">{mode === 'placement' ? 'Finding your path' : chapter?.title}</p>
+        <div className="pips" aria-label={`Spell ${index + 1} of ${slots.length}`}>
+          {slots.map((entry, pip) => (
+            <i key={`${entry.topic.id}-${pip}`} className={pip < index ? 'done' : pip === index ? 'now' : ''} />
+          ))}
+        </div>
+      </header>
+      {phase === 'intro' ? (
+        <div className="panel story">
+          <h2>{mode === 'placement' ? 'A quiet beginning' : chapter?.title}</h2>
+          <p>
+            {mode === 'placement'
+              ? `Five tiny spells, ${progress.learnerName}. They are not a test you can fail. They only show the garden where to open the gate.`
+              : chapter?.intro}
+          </p>
+          <button type="button" className="btn gold xl" data-testid={mode === 'placement' ? 'begin-placement' : 'begin-puzzles'} onClick={begin}>
+            {mode === 'placement' ? "I'm ready" : 'Begin the spells'}
+          </button>
+        </div>
+      ) : null}
+      {phase === 'demo' ? (
+        <div className="panel demo" data-testid="demo">
+          <p className="kicker">Watch first</p>
+          <h2>{item.template.replace('-', ' ')}</h2>
+          <p>{DEMO_LINE[item.template]}</p>
+          <div className={`demo-art demo-${item.template}`} aria-hidden>
+            <span className="ghost-hand" />
+          </div>
+          <button type="button" className="btn gold xl" data-testid="skip-demo" onClick={skipDemo}>
+            Your turn
+          </button>
+        </div>
+      ) : null}
+      {phase === 'play' || phase === 'ok' ? (
+        <div
+          className="play"
+          data-testid="activity"
+          data-template={item.template}
+          data-topic={item.topicId}
+          data-focus={slot.focus ? 'yes' : 'no'}
+        >
+          <h2 className="prompt">{item.prompt}</h2>
+          <button type="button" className="replay" data-testid="replay" onClick={() => speak(note && phase === 'play' ? note : item.prompt)}>
+            Hear it again
+          </button>
+          <Board item={item} api={api} />
+          {note ? <p className={phase === 'ok' ? 'note good' : 'note'}>{note}</p> : null}
+          <div className="dock">
+            {phase === 'play' ? (
+              <>
+                <button type="button" className="btn quiet" data-testid="hint" onClick={hint}>
+                  Hint
+                </button>
+                <button type="button" className="btn quiet" data-testid="idk" onClick={idk}>
+                  I don't know
+                </button>
+                <button type="button" className="btn gold xl" data-testid="cast" onClick={cast}>
+                  Cast the spell
+                </button>
+              </>
+            ) : (
+              <button type="button" className="btn primary xl" data-testid="next" onClick={next}>
+                {index + 1 >= slots.length ? 'See what woke up' : 'On we go'}
+              </button>
+            )}
+          </div>
+        </div>
+      ) : null}
+      {phase === 'walk' ? (
+        <div className="panel walk">
+          <p className="kicker">A gentle look</p>
+          <h2>Let's walk it together</h2>
+          <ol>
+            {item.walkthrough.map((step) => (
+              <li key={step}>{step}</li>
+            ))}
+          </ol>
+          <button
+            type="button"
+            className="btn gold xl"
+            data-testid="walk-done"
+            onClick={() => {
+              freshTry();
+              speak('Here is a fresh one, just for you.');
+            }}
+          >
+            I'll try a fresh one
+          </button>
+        </div>
+      ) : null}
+    </section>
+  );
+}

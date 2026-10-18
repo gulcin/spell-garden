@@ -1,0 +1,15 @@
+{
+  "name": "Prague's Spell Garden",
+  "short_name": "Spell Garden",
+  "description": "A gentle wizard adventure where maths casts kind magic.",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fff3e4",
+  "theme_color": "#6842b0",
+  "icons": [
+    { "src": "./icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

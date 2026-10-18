@@ -1,0 +1,18 @@
+Prague's Spell Garden includes a derived subset of the Marble Skill Taxonomy (v1).
+
+Marble Skill Taxonomy (v1) · © Generative Spark, Inc. (Marble) · https://withmarble.com · ODbL 1.0 (database) and CC BY-SA 4.0 (content)
+
+Included from https://github.com/withmarbleapp/os-taxonomy (tag v1):
+
+- Mathematics topics (id, type, subject, domain, name, description, age range, centrality, evidence, assessment prompt)
+- Dependencies between those mathematics topics (hard and soft, with reasons)
+- Cluster summaries for mathematics domains
+
+Standards codes and topics outside mathematics are not included. Dependencies that point at a non-mathematics prerequisite were dropped so this maths-only app cannot stay locked on another subject.
+
+Licences:
+
+- third_party/marble/LICENSE-ODbL — Open Database License 1.0 (database)
+- third_party/marble/LICENSE-CONTENT-CC-BY-SA — Creative Commons Attribution-ShareAlike 4.0 (content)
+
+The garden’s illustrations, puzzles, and program code are original. Redistributing the taxonomy text or the dependency data still requires the Marble attribution and the ODbL / CC BY-SA terms.
