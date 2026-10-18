@@ -6,7 +6,7 @@ import { markMastered, masteredIds, statusOf } from '../progress/mastery.ts';
 import { applyStartAge, gradeLabel, startAgeChoices } from '../progress/placement.ts';
 import { PROGRESS_KEY, freshProgress, type Progress, type Status } from '../progress/types.ts';
 import { parseProgress } from '../progress/storage.ts';
-import { loadReports, mumMailto, postReports, type Report } from '../feedback/reports.ts';
+import { flushReportQueue, loadReports, mumMailto, type Report } from '../feedback/reports.ts';
 import { PageBanner, Prop } from './pictures.tsx';
 
 const STATUS_WORD: Record<Status, string> = {
@@ -96,7 +96,7 @@ function ReportList() {
       return;
     }
     try {
-      const posted = await postReports(latest);
+      const posted = await flushReportQueue();
       if (posted) setNote('Sent to the garden post box, and the letter is ready.');
     } catch {
       setNote('The post box is quiet. The letter is still ready.');

@@ -6,9 +6,12 @@ import '@fontsource/fredoka/latin-700.css';
 import '@fontsource/nunito/latin-400.css';
 import '@fontsource/nunito/latin-700.css';
 import '@fontsource/nunito/latin-800.css';
+import { watchReportQueue } from './feedback/reports.ts';
 import { App } from './App.tsx';
 import { Gallery } from './ui/Gallery.tsx';
 import './styles.css';
+
+watchReportQueue();
 
 const preview = new URLSearchParams(window.location.search).get('preview');
 const root = document.getElementById('root');

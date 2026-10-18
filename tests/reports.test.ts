@@ -1,7 +1,16 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { freshProgress } from '../src/progress/types.ts';
 import { normalizeVisited, withWardrobe } from '../src/progress/storage.ts';
-import { formatReport, mumMailto, postReports, type Report } from '../src/feedback/reports.ts';
+import {
+  feedbackUrl,
+  flushReportQueue,
+  formatReport,
+  mumMailto,
+  postReports,
+  REPORTS_QUEUE_KEY,
+  saveReport,
+  type Report,
+} from '../src/feedback/reports.ts';
 
 const sample: Report = {
   id: 'note-1',
@@ -54,6 +63,74 @@ describe('map stars and notes', () => {
     expect(decodeURIComponent(href)).toContain('The clock hand hid the other one.');
     expect(decodeURIComponent(href)).toContain('Observatory');
     expect(formatReport(sample)).toContain('clock');
+    expect(feedbackUrl()).toBeNull();
     expect(await postReports([sample])).toBe(false);
+  });
+});
+
+describe('feedback endpoint', () => {
+  const bag = new Map<string, string>();
+  const memory = {
+    get length() {
+      return bag.size;
+    },
+    clear: () => bag.clear(),
+    getItem: (key: string) => bag.get(key) ?? null,
+    key: (index: number) => [...bag.keys()][index] ?? null,
+    removeItem: (key: string) => {
+      bag.delete(key);
+    },
+    setItem: (key: string, value: string) => {
+      bag.set(key, value);
+    },
+  };
+  let online = true;
+  const posts: { url: string; body: string }[] = [];
+
+  beforeEach(() => {
+    bag.clear();
+    posts.length = 0;
+    online = true;
+    vi.stubGlobal('localStorage', memory);
+    vi.stubGlobal('navigator', {
+      get onLine() {
+        return online;
+      },
+      userAgent: 'test',
+    });
+    vi.stubGlobal('fetch', async (url: string, init: RequestInit) => {
+      posts.push({ url: String(url), body: String(init?.body ?? '') });
+      return new Response('ok', { status: 200 });
+    });
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+  });
+
+  it('posts each report as JSON when VITE_FEEDBACK_URL is set', async () => {
+    vi.stubEnv('VITE_FEEDBACK_URL', 'https://lumi-api.gulcin-lumi.workers.dev/');
+    expect(feedbackUrl()).toBe('https://lumi-api.gulcin-lumi.workers.dev/feedback');
+    saveReport(sample);
+    await vi.waitFor(() => expect(posts).toHaveLength(1));
+    expect(posts[0]?.url).toBe('https://lumi-api.gulcin-lumi.workers.dev/feedback');
+    expect(JSON.parse(posts[0]?.body ?? '')).toMatchObject({ id: sample.id, kind: 'broken', text: sample.text });
+    expect(JSON.parse(memory.getItem(REPORTS_QUEUE_KEY) ?? '[]')).toEqual([]);
+  });
+
+  it('keeps a report queued while offline and sends it once the iPad is back', async () => {
+    vi.stubEnv('VITE_FEEDBACK_URL', 'https://lumi-api.gulcin-lumi.workers.dev');
+    online = false;
+    saveReport(sample);
+    await Promise.resolve();
+    expect(posts).toHaveLength(0);
+    expect(JSON.parse(memory.getItem(REPORTS_QUEUE_KEY) ?? '[]')).toEqual([sample.id]);
+    expect(await flushReportQueue()).toBe(false);
+    online = true;
+    expect(await flushReportQueue()).toBe(true);
+    expect(posts).toHaveLength(1);
+    expect(JSON.parse(posts[0]?.body ?? '').context.placeName).toBe('Observatory');
+    expect(JSON.parse(memory.getItem(REPORTS_QUEUE_KEY) ?? '[]')).toEqual([]);
   });
 });
