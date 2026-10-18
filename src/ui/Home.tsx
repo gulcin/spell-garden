@@ -9,6 +9,7 @@ export function Home({
   onStart,
   onVisit,
   onShop,
+  onHouse,
   onColour,
   onStories,
   onGarden,
@@ -20,6 +21,7 @@ export function Home({
   onStart: () => void;
   onVisit: (placeId: string) => void;
   onShop: () => void;
+  onHouse: () => void;
   onColour: () => void;
   onStories: () => void;
   onGarden: () => void;
@@ -104,6 +106,16 @@ export function Home({
               onClick={onShop}
             >
               <span>Crystal shop</span>
+            </button>
+            <button
+              type="button"
+              className={`hotspot hotspot-house${progress.visitedPlaces.includes('witch-house') ? ' has-star' : ''}`}
+              style={{ left: '24%', top: '48%' }}
+              data-testid="map-house"
+              aria-label="Witch's house"
+              onClick={onHouse}
+            >
+              <span>Witch's house</span>
             </button>
             <button
               type="button"

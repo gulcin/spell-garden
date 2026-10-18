@@ -359,6 +359,11 @@ code { font-size: 0.86em; background: #fff; padding: 0.1em 0.35em; border-radius
   background: radial-gradient(circle, rgba(232, 246, 255, 0.96) 0 22%, rgba(142, 196, 230, 0.55) 23% 58%, transparent 59%);
   box-shadow: 0 0 16px 6px rgba(120, 180, 220, 0.5);
 }
+.hotspot-house {
+  width: clamp(58px, 12%, 88px);
+  background: radial-gradient(circle, rgba(255, 244, 220, 0.96) 0 22%, rgba(214, 164, 96, 0.55) 23% 58%, transparent 59%);
+  box-shadow: 0 0 16px 6px rgba(196, 140, 70, 0.45);
+}
 .hotspot-colour {
   width: clamp(58px, 12%, 88px);
   background: radial-gradient(circle, rgba(255, 236, 248, 0.96) 0 22%, rgba(214, 150, 196, 0.55) 23% 58%, transparent 59%);
@@ -1478,4 +1483,108 @@ code { font-size: 0.86em; background: #fff; padding: 0.1em 0.35em; border-radius
 }
 @media (prefers-reduced-motion: reduce) {
   .story-art, .story-sparkles i, .story-moth, .turn-next, .turn-back { animation: none; }
+}
+
+.witch-house { display: flex; flex-direction: column; gap: 12px; }
+.house-top .place-book { width: 76px; }
+.house-papers { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+.house-paper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 56px;
+  padding: 4px 14px 4px 4px;
+  border-radius: 999px;
+  border: 2px solid white;
+  background: rgba(255, 248, 241, 0.94);
+  font-weight: 800;
+  white-space: nowrap;
+  box-shadow: 0 4px 0 var(--line);
+}
+.house-paper img { width: 64px; height: 40px; object-fit: cover; border-radius: 999px; }
+.house-paper.on { background: var(--violet); color: white; box-shadow: 0 4px 0 var(--violet-deep); }
+.house-room {
+  position: relative;
+  width: min(100%, 920px);
+  margin: 0 auto;
+  aspect-ratio: 16 / 9;
+  border-radius: 28px;
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
+  box-shadow: 0 16px 32px rgba(58, 45, 74, 0.16);
+  touch-action: none;
+}
+.house-piece {
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: grab;
+  touch-action: none;
+}
+.house-piece.floor { transform: translate(-50%, -100%); }
+.house-piece.wall { transform: translate(-50%, -50%); }
+.house-piece img { width: 100%; height: auto; display: block; pointer-events: none; filter: drop-shadow(0 8px 6px rgba(58, 45, 74, 0.18)); }
+.house-piece.flip img { transform: scaleX(-1); }
+.house-piece.on img { filter: drop-shadow(0 0 8px rgba(255, 196, 80, 0.95)) drop-shadow(0 8px 6px rgba(58, 45, 74, 0.18)); }
+.house-girl {
+  position: absolute;
+  left: 61%;
+  bottom: 5%;
+  width: 22%;
+  z-index: 24;
+  pointer-events: none;
+}
+.house-girl img:not(.wear) { width: 100%; height: auto; display: block; }
+.house-nim {
+  position: absolute;
+  left: 76%;
+  top: 16%;
+  width: 11% !important;
+  height: auto !important;
+  z-index: 36;
+}
+.house-ghost {
+  position: fixed;
+  width: 120px;
+  height: auto;
+  transform: translate(-50%, -80%);
+  pointer-events: none;
+  z-index: 80;
+}
+.house-tools { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.house-tools .btn { min-height: 56px; min-width: 120px; }
+.house-hint { margin: 0; text-align: center; color: var(--muted); }
+.house-tray {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 2px 8px;
+}
+.house-chip {
+  flex: 0 0 auto;
+  width: 112px;
+  min-height: 112px;
+  border-radius: 18px;
+  border: 2px solid white;
+  background: rgba(255, 248, 241, 0.96);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-weight: 800;
+  touch-action: none;
+}
+.house-chip img { width: 72px; height: 64px; object-fit: contain; pointer-events: none; }
+.house-chip span { font-size: 0.82rem; line-height: 1.1; }
+@media (max-width: 640px) {
+  .shop-top.house-top { flex-direction: column; align-items: stretch; gap: 8px; }
+  .house-top .shop-tools { justify-content: flex-end; }
+  .house-papers { flex-wrap: wrap; }
+  .house-room { aspect-ratio: 5 / 4; }
+  .house-girl { width: 28%; left: 68%; bottom: 1%; }
+  .house-nim { top: 18%; left: 78%; width: 14% !important; }
 }

@@ -1,3 +1,4 @@
+import { normalizeHouse } from '../house/layout.ts';
 import { isAdventure } from '../stories/adventure.ts';
 import { normalizeBooks } from '../stories/books.ts';
 import { normalizeCrystals, normalizeWardrobe } from '../wardrobe/economy.ts';
@@ -14,7 +15,7 @@ const PLACE_TRAIL = [
   'mushroom-ring',
 ];
 
-const KNOWN_PLACES = new Set([...PLACE_TRAIL, 'crystal-shop', 'colouring-nook']);
+const KNOWN_PLACES = new Set([...PLACE_TRAIL, 'crystal-shop', 'colouring-nook', 'witch-house']);
 
 /** Older saves visited places in map order. A missing list keeps those stars. */
 export function normalizeVisited(value: unknown, sessions: number): string[] {
@@ -49,6 +50,7 @@ export function withWardrobe(parsed: Progress): Progress {
     storiesHeard: stringList(parsed.storiesHeard),
     storyFavourites: stringList(parsed.storyFavourites),
     adventures: Array.isArray(parsed.adventures) ? parsed.adventures.filter(isAdventure).slice(0, 24) : [],
+    house: normalizeHouse(parsed.house),
     books: normalizeBooks(
       parsed.books,
       (Array.isArray(parsed.adventures) ? parsed.adventures.filter(isAdventure) : []).map((adventure) => ({

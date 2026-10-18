@@ -33,7 +33,13 @@ export type BookLeaf = {
 const MAX_CHAPTERS = 24;
 const MAX_PAGES = 40;
 
-export const BOOK_PLACE_IDS: string[] = STORIES.map((story) => story.id);
+const EXTRA_BOOKS = ['witch-house'] as const;
+
+const BOOK_NAMES: Record<string, string> = {
+  'witch-house': "Witch's house",
+};
+
+export const BOOK_PLACE_IDS: string[] = [...STORIES.map((story) => story.id), ...EXTRA_BOOKS];
 
 export function emptyBooks(): PlaceBook[] {
   return BOOK_PLACE_IDS.map((placeId) => ({ placeId, chapters: [] }));
@@ -133,6 +139,16 @@ export function appendPuzzlePage(
   });
 }
 
+/** One dated page, such as a piece of furniture she brought home. The same page id is kept once. */
+export function appendNote(books: PlaceBook[], input: { placeId: string; at: number; page: BookPage }): PlaceBook[] {
+  if (!BOOK_PLACE_IDS.includes(input.placeId) || !input.page.text.trim()) return normalizeBooks(books, []);
+  return withBook(books, input.placeId, (book) => {
+    if (book.chapters.some((chapter) => chapter.pages.some((page) => page.id === input.page.id))) return book;
+    const chapters = [...book.chapters, { id: `note-${input.page.id}`, at: input.at, pages: [input.page] }];
+    return { ...book, chapters: chapters.slice(-MAX_CHAPTERS) };
+  });
+}
+
 export function sealVisit(books: PlaceBook[], input: { placeId: string; chapterId: string; pages: BookPage[] }): PlaceBook[] {
   if (!BOOK_PLACE_IDS.includes(input.placeId)) return normalizeBooks(books, []);
   return withBook(books, input.placeId, (book) => ({
@@ -151,7 +167,8 @@ export function sealVisit(books: PlaceBook[], input: { placeId: string; chapterI
 
 export function readBook(placeId: string, book: PlaceBook | null | undefined): BookLeaf[] {
   const tale = storyById(placeId);
-  const place = tale?.place ?? 'This place';
+  const place = tale?.place ?? BOOK_NAMES[placeId] ?? 'This place';
+  const home = placeId === 'witch-house';
   const chapters = book?.chapters ?? [];
   if (chapters.length === 0) {
     const leaves: BookLeaf[] = [
@@ -159,7 +176,9 @@ export function readBook(placeId: string, book: PlaceBook | null | undefined): B
         key: `${placeId}-welcome`,
         kicker: place,
         title: 'Your story starts here',
-        text: `Your story starts here. This book is for the ${place.toLowerCase()}. When you play here, each spell you finish turns into a new page.`,
+        text: home
+          ? "Your story starts here. This book is for the witch's house. When you bring something home, it becomes a new page."
+          : `Your story starts here. This book is for the ${place.toLowerCase()}. When you play here, each spell you finish turns into a new page.`,
         artId: placeId,
         artPage: 0,
         spoken: true,
@@ -187,10 +206,10 @@ export function readBook(placeId: string, book: PlaceBook | null | undefined): B
       leaves.push({
         key: `${chapter.id}-${page.id}`,
         kicker: when,
-        title: "Today's adventure",
+        title: home ? "Witch's house" : "Today's adventure",
         text: page.text,
         artId: placeId,
-        artPage: index % 4,
+        artPage: home ? 0 : index % 4,
         spoken: true,
       });
     });

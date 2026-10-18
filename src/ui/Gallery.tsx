@@ -8,11 +8,13 @@ import { allTopics } from '../curriculum/data.ts';
 import { freshProgress, type Progress } from '../progress/types.ts';
 import { REWARDS } from '../story.ts';
 import type { ShopCategory } from '../wardrobe/catalog.ts';
+import { buyFurniture } from '../house/buy.ts';
 import { ReportLiveProvider } from '../feedback/live.tsx';
 import { About } from './About.tsx';
 import { TellSheet, TellUsButton } from './TellUs.tsx';
 import { ColouringCorner } from './ColouringCorner.tsx';
 import { CrystalShop } from './CrystalShop.tsx';
+import { WitchHouse } from './WitchHouse.tsx';
 import { WardrobeProvider } from './DressedApprentice.tsx';
 import { DressedApprentice } from './DressedApprentice.tsx';
 import { Garden } from './Garden.tsx';
@@ -28,8 +30,20 @@ import { WardrobeMirror } from './Wardrobe.tsx';
 
 function previewProgress(screen: string, dressed: boolean): Progress {
   const progress = freshProgress('Aida');
-  if (screen === 'shop') {
-    progress.crystals = 24;
+  if (screen === 'shop' || screen === 'house') {
+    progress.crystals = 40;
+    if (dressed) {
+      progress.wardrobe = {
+        owned: ['robe-rose', 'hat-mushroom', 'extra-crown'],
+        equipped: { dress: 'robe-rose', hat: 'hat-mushroom', crown: 'extra-crown' },
+      };
+    }
+    if (screen === 'house') {
+      const bought = buyFurniture(progress, 'rose-armchair', Date.UTC(2026, 9, 18));
+      progress.house = bought.progress.house;
+      progress.books = bought.progress.books;
+      progress.crystals = bought.progress.crystals;
+    }
     return progress;
   }
   if (dressed) {
@@ -102,7 +116,7 @@ export function Gallery() {
   const screen = params.get('screen') ?? 'home';
   const template = (params.get('template') ?? 'ten-frame') as TemplateId;
   const place = PLACE_OF[template] ?? 'lantern-grove';
-  const category = (params.get('category') ?? 'dress') as ShopCategory;
+  const category = (params.get('category') ?? 'dress') as ShopCategory | 'home';
   const dressed = params.get('dressed') === '1' || screen === 'wardrobe';
   const [progress, setProgress] = useState<Progress>(() => previewProgress(screen, dressed));
   const [telling, setTelling] = useState(params.get('tell') === '1');
@@ -119,10 +133,10 @@ export function Gallery() {
         <TellUsButton onOpen={() => setTelling(true)} />
       </div>
       {screen === 'home' ? (
-        <Home progress={progress} onStart={() => undefined} onVisit={() => undefined} onShop={() => undefined} onColour={() => undefined} onStories={() => undefined} onGarden={() => undefined} onAbout={() => undefined} onParent={() => undefined} onRename={() => undefined} />
+        <Home progress={progress} onStart={() => undefined} onVisit={() => undefined} onShop={() => undefined} onHouse={() => undefined} onColour={() => undefined} onStories={() => undefined} onGarden={() => undefined} onAbout={() => undefined} onParent={() => undefined} onRename={() => undefined} />
       ) : null}
       {screen === 'shop' ? (
-        <CrystalShop progress={progress} update={update} category={category} onWardrobe={() => undefined} onStory={() => undefined} onOpenBook={() => undefined} />
+        <CrystalShop progress={progress} update={update} category={category} onWardrobe={() => undefined} onHouse={() => undefined} onStory={() => undefined} onOpenBook={() => undefined} />
       ) : null}
       {screen === 'shelf' ? (
         <StoryShelf
@@ -174,6 +188,7 @@ export function Gallery() {
           }
         />
       ) : null}
+      {screen === 'house' ? <WitchHouse progress={progress} update={update} onShop={() => undefined} onOpenBook={() => undefined} /> : null}
       {screen === 'colour' || screen === 'sheet' ? (
         <ColouringCorner
           progress={progress}

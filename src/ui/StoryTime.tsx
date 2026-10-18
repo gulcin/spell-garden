@@ -4,6 +4,7 @@ import { wordIndexAt, type Adventure } from '../stories/adventure.ts';
 import { bookByPlace, bookPageCount, readBook, type BookLeaf, type PlaceBook } from '../stories/books.ts';
 import { pageArt, pageAudio, pageCues, storyById, STORIES } from '../stories/library.ts';
 import { ADVENTURE_RATE, pickUsVoice } from '../speech.ts';
+import { HOUSE_PLACE_ID, HOUSE_PLACE_NAME } from '../house/catalog.ts';
 import { placeStyle } from './pictures.tsx';
 
 type CueFile = { duration: number; words: { text: string; start: number; end: number }[] };
@@ -101,6 +102,7 @@ export function StoryShelf({
   onFavourite: (id: string) => void;
 }) {
   const base = import.meta.env.BASE_URL;
+  const housePages = bookPageCount(bookByPlace(progress.books, HOUSE_PLACE_ID));
   return (
     <section
       className="shelf-room place-scene"
@@ -149,6 +151,16 @@ export function StoryShelf({
             </article>
           );
         })}
+        <article className="book-card">
+          <button type="button" className="book-open" data-testid={`shelf-book-${HOUSE_PLACE_ID}`} onClick={() => onOpenBook(HOUSE_PLACE_ID)}>
+            <img src={`${base}art/storybook.webp`} alt="" />
+            <strong>{HOUSE_PLACE_NAME}</strong>
+            <span>Her cottage</span>
+            <em className="adventure-date" data-testid={`shelf-pages-${HOUSE_PLACE_ID}`}>
+              {housePages === 0 ? 'Your story starts here' : `${housePages} ${housePages === 1 ? 'page' : 'pages'}`}
+            </em>
+          </button>
+        </article>
       </div>
     </section>
   );

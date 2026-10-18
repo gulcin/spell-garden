@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildAdventure } from '../src/stories/adventure.ts';
-import { appendPuzzlePage, bookPageCount, emptyBooks, normalizeBooks, readBook, sealVisit } from '../src/stories/books.ts';
+import { appendNote, appendPuzzlePage, bookPageCount, emptyBooks, normalizeBooks, readBook, sealVisit } from '../src/stories/books.ts';
 import { freshProgress, type Progress } from '../src/progress/types.ts';
 import { withWardrobe } from '../src/progress/storage.ts';
 import { STORIES } from '../src/stories/library.ts';
@@ -8,7 +8,7 @@ import { STORIES } from '../src/stories/library.ts';
 describe('place books', () => {
   it('keeps a book for every place, with the authored story as chapter one until she plays', () => {
     const books = emptyBooks();
-    expect(books.map((book) => book.placeId)).toEqual(STORIES.map((story) => story.id));
+    expect(books.map((book) => book.placeId)).toEqual([...STORIES.map((story) => story.id), 'witch-house']);
     const leaves = readBook('crystal-cave', books[2]);
     expect(leaves[0]?.title).toBe('Your story starts here');
     expect(leaves[0]?.text.startsWith('Your story starts here')).toBe(true);
@@ -91,10 +91,33 @@ describe('place books', () => {
     });
     const raw = { ...saved, adventures: [newer, older], books: [{ placeId: 'nope' }] } as Progress;
     const loaded = withWardrobe(raw);
-    expect(loaded.books).toHaveLength(10);
+    expect(loaded.books).toHaveLength(11);
     const grove = loaded.books.find((book) => book.placeId === 'lantern-grove');
     expect(grove?.chapters.map((chapter) => chapter.at)).toEqual([older.at, newer.at]);
     expect(readBook('lantern-grove', grove).at(-1)?.kicker).toBe('18 October 2026');
     expect(loaded.books.find((book) => book.placeId === 'crystal-shop')?.chapters).toEqual([]);
+    expect(loaded.books.find((book) => book.placeId === 'witch-house')?.chapters).toEqual([]);
+  });
+
+  it('gives the witch house a welcome page, then a dated page for new furniture', () => {
+    const welcome = readBook('witch-house', emptyBooks().find((book) => book.placeId === 'witch-house'));
+    expect(welcome).toHaveLength(1);
+    expect(welcome[0]?.text).toContain("witch's house");
+    expect(welcome[0]?.spoken).toBe(true);
+    const books = appendNote(emptyBooks(), {
+      placeId: 'witch-house',
+      at: Date.UTC(2026, 9, 18),
+      page: { id: 'buy-rose-armchair', text: "You brought home the rose armchair for the witch's house." },
+    });
+    const again = appendNote(books, {
+      placeId: 'witch-house',
+      at: Date.UTC(2026, 9, 18),
+      page: { id: 'buy-rose-armchair', text: "You brought home the rose armchair for the witch's house." },
+    });
+    const leaves = readBook('witch-house', again.find((book) => book.placeId === 'witch-house'));
+    expect(leaves).toHaveLength(1);
+    expect(leaves[0]?.kicker).toBe('18 October 2026');
+    expect(leaves[0]?.text).toContain('rose armchair');
+    expect(leaves[0]?.artPage).toBe(0);
   });
 });

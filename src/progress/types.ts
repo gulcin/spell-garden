@@ -1,3 +1,4 @@
+import { freshHouse, type HouseState } from '../house/layout.ts';
 import type { Adventure } from '../stories/adventure.ts';
 import { emptyBooks, type PlaceBook } from '../stories/books.ts';
 
@@ -87,6 +88,8 @@ export type Progress = {
   adventures: Adventure[];
   /** One storybook for every place. Chapters are her visits, newest last. */
   books: PlaceBook[];
+  /** Furniture she owns and where it sits in the witch's house. */
+  house: HouseState;
   updatedAt: number;
 };
 
@@ -125,6 +128,7 @@ export function freshProgress(name = DEFAULT_LEARNER_NAME): Progress {
     storyFavourites: [],
     adventures: [],
     books: emptyBooks(),
+    house: freshHouse(),
     updatedAt: Date.now(),
   };
 }

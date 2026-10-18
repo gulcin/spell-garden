@@ -60,11 +60,13 @@ describe('story shelf', () => {
   });
 
   it('keeps story audio in the offline cache and leaves the heavy page art for later', () => {
-    expect(SPELL_GARDEN_CACHE).toBe('spell-garden-v12');
+    expect(SPELL_GARDEN_CACHE).toBe('spell-garden-v13');
     expect(precacheFile('audio/stories/crystal-cave/0.mp3')).toBe(true);
     expect(precacheFile('audio/stories/crystal-cave/0.json')).toBe(true);
     expect(precacheFile('art/stories/crystal-cave-0.webp')).toBe(true);
     expect(precacheFile('art/stories/crystal-cave-0@2x.webp')).toBe(false);
     expect(precacheFile('art/places/crystal-cave.webp')).toBe(false);
+    expect(precacheFile('art/house/quilt-bed.webp')).toBe(true);
+    expect(precacheFile('art/house/quilt-bed@2x.webp')).toBe(false);
   });
 });

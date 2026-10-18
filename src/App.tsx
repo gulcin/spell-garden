@@ -8,6 +8,7 @@ import { ReportLiveProvider, useReportLive } from './feedback/live.tsx';
 import { About } from './ui/About.tsx';
 import { ColouringCorner } from './ui/ColouringCorner.tsx';
 import { CrystalShop } from './ui/CrystalShop.tsx';
+import { WitchHouse } from './ui/WitchHouse.tsx';
 import { Garden } from './ui/Garden.tsx';
 import { GardenMapButton } from './ui/GardenMapButton.tsx';
 import { Home } from './ui/Home.tsx';
@@ -34,6 +35,7 @@ type Screen =
   | 'about'
   | 'garden'
   | 'shop'
+  | 'house'
   | 'wardrobe'
   | 'colour'
   | 'shelf'
@@ -137,6 +139,16 @@ function GardenApp() {
     maybeOffer('crystal-shop', 'shop');
   }
 
+  function openHouse() {
+    update((current) =>
+      current.visitedPlaces.includes('witch-house')
+        ? current
+        : { ...current, visitedPlaces: [...current.visitedPlaces, 'witch-house'] },
+    );
+    setLive({ screen: 'house', placeId: 'witch-house', placeName: "Witch's house", activity: '', question: '' });
+    show('house');
+  }
+
   function openColour() {
     update((current) =>
       current.visitedPlaces.includes('colouring-nook')
@@ -222,6 +234,7 @@ function GardenApp() {
           onStart={() => start()}
           onVisit={(placeId) => start(placeId)}
           onShop={openShop}
+          onHouse={openHouse}
           onColour={openColour}
           onStories={() => show('shelf')}
           onGarden={() => show('garden')}
@@ -231,7 +244,10 @@ function GardenApp() {
         />
       ) : null}
       {screen === 'shop' ? (
-        <CrystalShop progress={progress} update={update} onWardrobe={() => show('wardrobe')} onStory={() => openStory('crystal-shop', 'shop')} onOpenBook={() => openBook('crystal-shop')} />
+        <CrystalShop progress={progress} update={update} onWardrobe={() => show('wardrobe')} onHouse={openHouse} onStory={() => openStory('crystal-shop', 'shop')} onOpenBook={() => openBook('crystal-shop')} />
+      ) : null}
+      {screen === 'house' ? (
+        <WitchHouse progress={progress} update={update} onShop={openShop} onOpenBook={() => openBook('witch-house')} />
       ) : null}
       {screen === 'colour' ? (
         <ColouringCorner progress={progress} update={update} onStory={() => openStory('colouring-nook', 'colour')} onOpenBook={() => openBook('colouring-nook')} />

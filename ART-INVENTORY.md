@@ -62,15 +62,17 @@ Every screen except the home map has a cream **Garden map** pill (painted map th
 | Wizard tower | `art/places/wizard-tower.webp` | painted |
 | Mushroom ring | `art/places/mushroom-ring.webp` | painted |
 
-Place scenes are WebP at 1x and 2x. The service worker does not precache them; they load with the chapter and are cached after that. Cache name: `spell-garden-v12`.
+Place scenes are WebP at 1x and 2x. The service worker does not precache them; they load with the chapter and are cached after that. Cache name: `spell-garden-v13`.
 
 The colouring corner is a painted nook inside the wizard tower (`art/places/colouring-nook.webp`). Its sheets are closed line-art SVGs in `art/colouring/`. Drawings stay in IndexedDB on the iPad.
 
-The crystal shop is a painted cottage on the map. Clover the fox sells robes, hats, extras, and brooms. Solved spells add crystals (three in the crystal cave, one elsewhere). Purchases and what she is wearing live on the same progress save.
+The crystal shop is a painted cottage on the map. Clover the fox sells robes, hats, extras, and brooms, and a Home shelf of furniture. Solved spells add crystals (three in the crystal cave, one elsewhere). Purchases and what she is wearing live on the same progress save.
+
+The witch's house is an unlocked room on the garden map. The interior is a painted cottage (`art/house/cottage-cream.webp`, with rose paper and a starry azulejo look). Furniture cutouts live in `art/house/`. A moss rug, a sprout, and a lantern start in the room. The rest are bought with crystals. The layout is saved with her progress. Her storybook page for the house mentions each new piece.
 
 ## Story time
 
-Each place, the crystal shop, and the colouring corner has a four-page story. Page paintings live in `art/stories/{place}-{page}.webp` (1x 600×800, 2x 1200×1600). The shelf background is `art/bookshelf.webp`. Narration for those stories is `audio/stories/{place}/{page}.mp3` with word cues in the matching JSON. A visit also saves Today's adventure, using the same place paintings and the device's en-US voice. Each place keeps a painted storybook (`art/storybook.webp`). Solving a puzzle adds a page to that place's book straight away, and the Story Shelf gathers all ten books. The service worker precaches the audio and the 1x page art. The 2x page art is cached after it is shown.
+Each place, the crystal shop, and the colouring corner has a four-page story. Page paintings live in `art/stories/{place}-{page}.webp` (1x 600×800, 2x 1200×1600). The shelf background is `art/bookshelf.webp`. Narration for those stories is `audio/stories/{place}/{page}.mp3` with word cues in the matching JSON. A visit also saves Today's adventure, using the same place paintings and the device's en-US voice. Each place keeps a painted storybook (`art/storybook.webp`). Solving a puzzle adds a page to that place's book straight away, and the Story Shelf gathers the ten place books plus the witch's house. The service worker precaches the audio and the 1x page art. The 2x page art is cached after it is shown.
 
 ## Rewards and creatures
 
