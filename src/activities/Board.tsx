@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, ty
 import type { BoardState, Item, Piece, Zone } from './types.ts';
 import { applyAction, initialState } from './logic.ts';
 import { Glyph, ShapeGlyph, wedgePath } from './art.tsx';
+import { Prop } from '../ui/pictures.tsx';
 
 export type BoardHandle = { getState: () => BoardState };
 
@@ -366,15 +367,17 @@ function ZoneBox({
   children,
   onUp,
   className = '',
+  backdrop,
 }: {
   zone: Zone;
   children: ReactNode;
   onUp: (id: string) => void;
   className?: string;
+  backdrop?: 'jar' | 'pad';
 }) {
   return (
     <div
-      className={`zone zone-${zone.role} ${className}`}
+      className={`zone zone-${zone.role} ${className} ${backdrop ? `zone-back-${backdrop}` : ''}`}
       data-testid={`zone:${zone.id}`}
       data-dropzone={zone.id}
       onPointerUp={(event) => {
@@ -382,6 +385,13 @@ function ZoneBox({
         onUp(zone.id);
       }}
     >
+      {backdrop === 'jar' ? <Prop name="jar" className="jar-art" /> : null}
+      {backdrop === 'pad' ? (
+        <svg className="lily-pad" viewBox="0 0 64 64" aria-hidden>
+          <ellipse cx="32" cy="36" rx="26" ry="18" fill="#b7dd9a" stroke="#5f8f58" strokeWidth="2" />
+          <path d="M32 22 L32 50" stroke="#5f8f58" strokeWidth="2" />
+        </svg>
+      ) : null}
       {zone.label ? <span className="zone-label">{zone.label}</span> : null}
       <div className="zone-pieces">{children}</div>
     </div>
@@ -443,9 +453,12 @@ function Stage({
   if (item.template === 'number-line') {
     return (
       <div className="stage line">
-        <div className="brook" />
+        <svg className="lily-water" viewBox="0 0 600 80" preserveAspectRatio="none" aria-hidden>
+          <path d="M0 48 C 80 20 140 70 220 42 C 300 14 380 68 460 40 C 520 22 560 58 600 36 L 600 80 L 0 80 Z" fill="#8ec8d8" opacity="0.85" />
+          <path d="M0 58 C 90 36 160 72 250 50 C 340 28 420 70 600 46 L 600 80 L 0 80 Z" fill="#c5e7ef" />
+        </svg>
         {item.zones.map((zone) => (
-          <ZoneBox key={zone.id} zone={zone} onUp={onZoneUp}>
+          <ZoneBox key={zone.id} zone={zone} onUp={onZoneUp} backdrop="pad">
             {renderPieces(zone.id)}
           </ZoneBox>
         ))}
@@ -521,10 +534,18 @@ function Stage({
     );
   }
 
+  const backdrop = item.template === 'sharing' || item.template === 'chance' ? 'jar' : undefined;
   return (
     <div className={`stage plain stage-${item.template}`}>
+      {item.template === 'balance' ? (
+        <svg className="scale-beam" viewBox="0 0 320 48" aria-hidden>
+          <polygon points="160,4 172,28 148,28" fill="#c4a06a" />
+          <rect x="24" y="24" width="272" height="10" rx="5" fill="#e7d3a4" stroke="#a8753a" strokeWidth="2" />
+          <circle cx="160" cy="29" r="7" fill="#f0c56b" stroke="#8a6230" strokeWidth="2" />
+        </svg>
+      ) : null}
       {item.zones.map((zone) => (
-        <ZoneBox key={zone.id} zone={zone} onUp={onZoneUp}>
+        <ZoneBox key={zone.id} zone={zone} onUp={onZoneUp} backdrop={backdrop}>
           {renderPieces(zone.id)}
         </ZoneBox>
       ))}
@@ -547,6 +568,18 @@ function ClockFace({
   const minuteDeg = minute * 6;
   return (
     <div className="clock" data-testid="clock-face" ref={faceRef}>
+      <svg className="clock-ring" viewBox="0 0 100 100" aria-hidden>
+        <circle cx="50" cy="50" r="46" fill="#fffaf3" stroke="#c4a06a" strokeWidth="4" />
+        <circle cx="50" cy="50" r="40" fill="none" stroke="#e7d3a8" strokeWidth="2" />
+        {Array.from({ length: 12 }, (_, i) => {
+          const a = ((i * 30 - 90) * Math.PI) / 180;
+          const x1 = 50 + Math.cos(a) * 34;
+          const y1 = 50 + Math.sin(a) * 34;
+          const x2 = 50 + Math.cos(a) * 40;
+          const y2 = 50 + Math.sin(a) * 40;
+          return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#8b6bb5" strokeWidth={i % 3 === 0 ? 2.4 : 1.2} strokeLinecap="round" />;
+        })}
+      </svg>
       {Array.from({ length: 12 }, (_, i) => (
         <span key={i} className="clock-num" style={{ transform: `rotate(${i * 30}deg) translateY(-72px) rotate(${-i * 30}deg)` }}>
           {i === 0 ? 12 : i}

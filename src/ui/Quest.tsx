@@ -8,6 +8,7 @@ import { planChapter, type ChapterSlot } from '../progress/select.ts';
 import type { Progress } from '../progress/types.ts';
 import { DEMO_LINE, type Chapter } from '../story.ts';
 import { speak } from '../speech.ts';
+import { Prop } from './pictures.tsx';
 
 type Mode = 'placement' | 'chapter';
 
@@ -220,6 +221,7 @@ export function Quest({
       </header>
       {phase === 'intro' ? (
         <div className="panel story">
+          <Prop name="apprentice" className="guide guide-small" alt="" />
           <h2>{mode === 'placement' ? 'A quiet beginning' : chapter?.title}</h2>
           <p>
             {mode === 'placement'
@@ -252,6 +254,13 @@ export function Quest({
           data-topic={item.topicId}
           data-focus={slot.focus ? 'yes' : 'no'}
         >
+          {phase === 'ok' ? (
+            <div className="sparkles" aria-hidden>
+              {Array.from({ length: 8 }, (_, i) => (
+                <i key={i} style={{ ['--i' as string]: i }} />
+              ))}
+            </div>
+          ) : null}
           <h2 className="prompt">{item.prompt}</h2>
           <button type="button" className="replay" data-testid="replay" onClick={() => speak(note && phase === 'play' ? note : item.prompt)}>
             Hear it again

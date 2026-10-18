@@ -1,10 +1,19 @@
 import type { Reward } from '../story.ts';
+import { Prop, REWARD_ART } from './pictures.tsx';
 
 export function RewardScreen({ reward, name, onHome }: { reward: Reward; name: string; onHome: () => void }) {
   return (
     <section className="reward panel" data-testid="reward">
+      <div className="sparkles" aria-hidden>
+        {Array.from({ length: 10 }, (_, i) => (
+          <i key={i} style={{ ['--i' as string]: i }} />
+        ))}
+      </div>
       <p className="kicker">A cosy reward</p>
-      <div className={`reward-art reward-${reward.kind}`} aria-hidden />
+      <div className="reward-row">
+        <Prop name="apprentice" className="guide guide-small" alt="" />
+        <Prop name={REWARD_ART[reward.id] ?? 'star'} className="reward-prop" alt="" />
+      </div>
       <h1>{reward.name}</h1>
       <p>{reward.line}</p>
       <p>{name}, the tower is a little more itself now. Rest whenever you like.</p>
