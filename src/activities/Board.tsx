@@ -58,25 +58,24 @@ export function Board({ item, api }: Props) {
     const board = boardRef.current;
     const manip = manipRef.current;
     if (!board || !manip) return;
-    let frame = 0;
+    const stage = board;
+    const pieces = manip;
+    const observer = new ResizeObserver(() => fit());
     let fitting = false;
-    const fit = () => {
+    function fit() {
       if (fitting) return;
       fitting = true;
-      manip.style.zoom = '1';
-      const scale = scaleToFit(board.clientWidth, board.clientHeight, manip.scrollWidth, manip.scrollHeight);
-      manip.style.zoom = String(scale);
+      observer.disconnect();
+      pieces.style.zoom = '1';
+      const scale = scaleToFit(stage.clientWidth, stage.clientHeight, pieces.scrollWidth, pieces.scrollHeight);
+      pieces.style.zoom = String(scale);
+      observer.observe(stage);
       fitting = false;
-    };
-    const schedule = () => {
-      cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(fit);
-    };
-    const observer = new ResizeObserver(schedule);
-    observer.observe(board);
-    schedule();
+    }
+    fit();
+    window.addEventListener('resize', fit);
     return () => {
-      cancelAnimationFrame(frame);
+      window.removeEventListener('resize', fit);
       observer.disconnect();
     };
   }, [item, state]);
