@@ -945,7 +945,7 @@ code { font-size: 0.86em; background: #fff; padding: 0.1em 0.35em; border-radius
 .stage-balance .zone { background: linear-gradient(#fffaf3, #f4e0c0); border-radius: 0 0 36px 36px; border-style: solid; border-color: #c4a06a; box-shadow: 0 8px 0 #e7d3a8; min-height: 0; }
 .stage-coins .zone { background: #fff4d8; border-color: #e7c98a; }
 .stage-graph .zone, .stage-sort .zone { min-height: 0; }
-.stage-base-ten .zone { overflow: visible; min-height: 140px; height: 100%; display: flex; flex-direction: column; }
+.stage-base-ten .zone { overflow: visible; min-height: 96px; height: 100%; display: flex; flex-direction: column; }
 .stage-base-ten .zone-pieces { min-height: 80px; flex: 1 1 auto; align-content: center; align-items: flex-end; justify-content: center; }
 .stage-base-ten .piece,
 .stage-base-ten .piece:has(.block-rod) { width: auto; min-height: 0; flex: 0 0 auto; }
@@ -1850,7 +1850,7 @@ code { font-size: 0.86em; background: #fff; padding: 0.1em 0.35em; border-radius
 .board-base-ten .block-unit .glyph-photo,
 .board-base-ten .block-unit .glyph-photo img { width: 44px; height: 44px; }
 .board-base-ten .piece em { font-size: 0.7rem; line-height: 1; }
-.board-base-ten .stage { flex: 1 1 auto; min-height: 160px; height: auto; }
+.board-base-ten .stage { flex: 1 1 auto; min-height: 0; height: auto; }
 .board-base-ten .btn.snap { flex: 0 0 auto; min-height: 44px; margin: 0; }
 .garden { position: relative; z-index: 1; }
 .spell-row, .spell-pager button {
@@ -1978,6 +1978,6 @@ code { font-size: 0.86em; background: #fff; padding: 0.1em 0.35em; border-radius
   .board-base-ten .block-rod .glyph-photo img { width: 22px; height: 64px; }
   .board-base-ten .block-unit .glyph-photo,
   .board-base-ten .block-unit .glyph-photo img { width: 40px; height: 40px; }
-  .board-base-ten .stage { min-height: 120px; }
+  .board-base-ten .stage { min-height: 0; }
   .clock, .angle-face { width: min(220px, 42dvh); height: min(220px, 42dvh); }
 }
