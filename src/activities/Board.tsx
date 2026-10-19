@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import type { BoardState, Item, Piece, Zone } from './types.ts';
 import { applyAction, initialState } from './logic.ts';
+import { scaleToFit } from './fitBoard.ts';
 import { Glyph, ShapeGlyph, wedgePath } from './art.tsx';
 import { Prop } from '../ui/pictures.tsx';
 
@@ -37,6 +38,8 @@ export function Board({ item, api }: Props) {
   stateRef.current = state;
   const itemRef = useRef(item);
   itemRef.current = item;
+  const boardRef = useRef<HTMLDivElement | null>(null);
+  const manipRef = useRef<HTMLDivElement | null>(null);
   const faceRef = useRef<HTMLDivElement | null>(null);
   const angleRef = useRef<HTMLDivElement | null>(null);
   const handRef = useRef<'hour' | 'minute' | null>(null);
@@ -50,6 +53,33 @@ export function Board({ item, api }: Props) {
     setSelected(null);
     setGhost(null);
   }, [item]);
+
+  useLayoutEffect(() => {
+    const board = boardRef.current;
+    const manip = manipRef.current;
+    if (!board || !manip) return;
+    let frame = 0;
+    let fitting = false;
+    const fit = () => {
+      if (fitting) return;
+      fitting = true;
+      manip.style.zoom = '1';
+      const scale = scaleToFit(board.clientWidth, board.clientHeight, manip.scrollWidth, manip.scrollHeight);
+      manip.style.zoom = String(scale);
+      fitting = false;
+    };
+    const schedule = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(fit);
+    };
+    const observer = new ResizeObserver(schedule);
+    observer.observe(board);
+    schedule();
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
+  }, [item, state]);
 
   useEffect(() => {
     api.current = { getState: () => stateRef.current };
@@ -157,7 +187,8 @@ export function Board({ item, api }: Props) {
   const inZone = (zoneId: string) => item.pieces.filter((piece) => state.at[piece.id] === zoneId);
 
   return (
-    <div className={`board board-${item.template}`} data-testid="board">
+    <div className={`board board-${item.template}`} data-testid="board" ref={boardRef}>
+      <div className="manip" ref={manipRef}>
       {item.example && item.example.length > 0 ? (
         <div className="example">
           <Prop name="book" className="example-book" alt="" />
@@ -333,6 +364,7 @@ export function Board({ item, api }: Props) {
         </button>
       ) : null}
       {item.template === 'coins' ? <p className="sum-read">Palm: {sumZone(item, state, 'palm')} sparks</p> : null}
+      </div>
       {ghost && ghostPiece ? (
         <div className="ghost" style={{ left: ghost.x, top: ghost.y }}>
           <Glyph art={ghostPiece.art} label={ghostPiece.label} tone={ghostPiece.tone} />

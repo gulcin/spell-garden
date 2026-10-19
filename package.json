@@ -1,7 +1,7 @@
 {
   "name": "prague-spell-garden",
   "private": true,
-  "version": "1.1.3",
+  "version": "1.1.4",
   "description": "A gentle, touch-first wizard-apprentice maths garden for Aida, built on the Marble Skill Taxonomy.",
   "type": "module",
   "scripts": {
@@ -9,6 +9,7 @@
     "build": "tsc -b && vite build",
     "test": "vitest run",
     "sanity": "node e2e/sanity.mjs",
+    "fit": "node e2e/fit.mjs",
     "lint": "oxlint",
     "preview": "vite preview"
   },

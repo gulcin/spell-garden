@@ -419,10 +419,12 @@ export function Quest({
               ))}
             </div>
           ) : null}
-          <h2 className="prompt">{item.prompt}</h2>
-          <button type="button" className="replay" data-testid="replay" onClick={() => speak(note && phase === 'play' ? note : item.prompt)}>
-            Hear it again
-          </button>
+          <div className="play-ask">
+            <h2 className="prompt">{item.prompt}</h2>
+            <button type="button" className="replay" data-testid="replay" onClick={() => speak(note && phase === 'play' ? note : item.prompt)}>
+              Hear it again
+            </button>
+          </div>
           <Board item={item} api={api} />
           {note ? <p className={phase === 'ok' ? 'note good' : 'note'}>{note}</p> : null}
           <DressedApprentice className="play-guide" alt="" />

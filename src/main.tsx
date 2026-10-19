@@ -8,12 +8,14 @@ import '@fontsource/nunito/latin-700.css';
 import '@fontsource/nunito/latin-800.css';
 import { watchReportQueue } from './feedback/reports.ts';
 import { startUpdateChecks } from './swUpdates.ts';
+import { lockVisibleViewport } from './viewport.ts';
 import { App } from './App.tsx';
 import { Gallery } from './ui/Gallery.tsx';
 import './styles.css';
 
 watchReportQueue();
 startUpdateChecks();
+lockVisibleViewport();
 
 const preview = new URLSearchParams(window.location.search).get('preview');
 const root = document.getElementById('root');

@@ -30,8 +30,12 @@
 
 * { box-sizing: border-box; }
 html {
+  height: 100svh;
   height: 100dvh;
-  min-height: 100dvh;
+  max-height: 100svh;
+  height: var(--app-h, 100svh);
+  max-height: var(--app-h, 100svh);
+  overflow: hidden;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
   font-size: 17px;
@@ -41,14 +45,19 @@ html {
   background-repeat: no-repeat;
 }
 body, #root {
-  height: 100dvh;
-  min-height: 100dvh;
+  height: var(--app-h, 100svh);
+  max-height: var(--app-h, 100svh);
+  min-height: 0;
   max-width: 100%;
 }
 body {
   margin: 0;
   overflow: hidden;
   background: transparent;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
 }
 body::before {
   content: "";
@@ -80,7 +89,7 @@ code { font-size: 0.86em; background: #fff; padding: 0.1em 0.35em; border-radius
   flex-direction: column;
   height: 100%;
   min-height: 0;
-  max-height: 100dvh;
+  max-height: 100%;
   overflow: hidden;
   position: relative;
   padding:
@@ -505,8 +514,12 @@ code { font-size: 0.86em; background: #fff; padding: 0.1em 0.35em; border-radius
   border-radius: 18px;
   background: rgba(255, 248, 241, 0.96);
   color: #241c33;
-  line-height: 1.3;
+  line-height: 1.25;
   box-shadow: 0 8px 18px rgba(58, 45, 74, 0.1);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
 }
 .quest-top .kicker {
   background: rgba(255, 248, 241, 0.96);
@@ -524,7 +537,10 @@ code { font-size: 0.86em; background: #fff; padding: 0.1em 0.35em; border-radius
   font-weight: 800;
   color: var(--violet);
 }
-.play { display: flex; flex-direction: column; gap: 10px; flex: 1; min-height: 0; }
+.play { display: flex; flex-direction: column; gap: 10px; flex: 1; min-height: 0; overflow: hidden; }
+.play-ask { display: flex; align-items: center; gap: 8px; flex: 0 1 auto; min-height: 0; min-width: 0; }
+.play-ask .prompt { flex: 1 1 auto; min-width: 0; }
+.play-ask .replay { flex: 0 0 auto; }
 .play-guide {
   position: absolute;
   width: 64px;
@@ -562,6 +578,18 @@ code { font-size: 0.86em; background: #fff; padding: 0.1em 0.35em; border-radius
   padding: 12px 14px;
   border: 2px dashed var(--gold-deep);
 }
+.play > .note {
+  position: absolute;
+  z-index: 8;
+  left: 50%;
+  bottom: 58px;
+  transform: translateX(-50%);
+  width: min(460px, calc(100% - 28px));
+  margin: 0;
+  padding: 8px 12px;
+  pointer-events: none;
+  box-shadow: 0 10px 24px rgba(58, 45, 74, 0.16);
+}
 .note.good { border-style: solid; border-color: var(--moss); background: #f3fff7; }
 .demo-art, .reward-art {
   min-height: 120px;
@@ -589,7 +617,8 @@ code { font-size: 0.86em; background: #fff; padding: 0.1em 0.35em; border-radius
   50% { transform: translate(90px, -16px); }
 }
 
-.board { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: stretch; gap: 2px; min-height: 0; overflow: hidden; }
+.board { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: stretch; gap: 0; min-height: 0; min-width: 0; overflow: hidden; }
+.manip { flex: 1 1 auto; min-height: 0; min-width: 0; width: 100%; height: 100%; display: flex; flex-direction: column; gap: 4px; }
 .example { display: flex; gap: 10px; align-items: center; background: #fff; border-radius: 14px; padding: 10px 12px; color: var(--muted); }
 .example p:last-child { margin-bottom: 0; }
 .example-book { width: 54px; flex: 0 0 auto; }
@@ -648,7 +677,7 @@ code { font-size: 0.86em; background: #fff; padding: 0.1em 0.35em; border-radius
   border: 2px dashed #d7c2a4;
   padding: 6px;
 }
-.tray { display: flex; flex-wrap: nowrap; gap: 4px; align-items: center; position: relative; z-index: 1; flex: 0 1 auto; overflow: hidden; min-height: 0; max-height: 28%; }
+.tray { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; justify-content: center; align-content: center; position: relative; z-index: 1; flex: 0 0 auto; overflow: visible; min-height: 0; max-height: none; }
 /* Colourise from a flat sepia so a child can match the word: blue stays blue on a star or a seed. */
 .tone-0 .glyph-photo img { filter: grayscale(1) sepia(1) saturate(18) hue-rotate(172deg) brightness(0.82) contrast(1.3); }
 .tone-1 .glyph-photo img { filter: sepia(1) saturate(5) hue-rotate(6deg) brightness(1.14) contrast(1.08); }
@@ -916,13 +945,13 @@ code { font-size: 0.86em; background: #fff; padding: 0.1em 0.35em; border-radius
 .stage-balance .zone { background: linear-gradient(#fffaf3, #f4e0c0); border-radius: 0 0 36px 36px; border-style: solid; border-color: #c4a06a; box-shadow: 0 8px 0 #e7d3a8; min-height: 0; }
 .stage-coins .zone { background: #fff4d8; border-color: #e7c98a; }
 .stage-graph .zone, .stage-sort .zone { min-height: 0; }
-.stage-base-ten .zone { overflow: hidden; min-height: 88px; }
-.stage-base-ten .zone-pieces { min-height: 0; align-content: center; }
+.stage-base-ten .zone { overflow: visible; min-height: 140px; height: 100%; display: flex; flex-direction: column; }
+.stage-base-ten .zone-pieces { min-height: 80px; flex: 1 1 auto; align-content: center; align-items: flex-end; justify-content: center; }
 .stage-base-ten .piece,
-.stage-base-ten .piece:has(.block-rod) { width: auto; min-height: 0; }
-.stage-base-ten .zone-label { position: absolute; top: 2px; left: 0; right: 0; pointer-events: none; }
+.stage-base-ten .piece:has(.block-rod) { width: auto; min-height: 0; flex: 0 0 auto; }
+.stage-base-ten .zone-label { position: absolute; top: 6px; left: 0; right: 0; pointer-events: none; }
 .stage-base-ten .block-rod .glyph-photo,
-.stage-base-ten .block-rod .glyph-photo img { width: 26px; height: 56px; }
+.stage-base-ten .block-rod .glyph-photo img { width: 26px; height: 78px; }
 .stage-bar-model .piece, .stage-graph .piece { min-height: 0; max-height: 100%; max-width: 100%; }
 .stage-bar-model .glyph-photo, .stage-bar-model .glyph-photo img,
 .stage-graph .glyph-photo, .stage-graph .glyph-photo img { width: 48px; height: 48px; }
@@ -1802,15 +1831,27 @@ code { font-size: 0.86em; background: #fff; padding: 0.1em 0.35em; border-radius
 .example { padding: 6px 8px; }
 .example p { margin: 0; }
 .choice, .compare-card { min-height: 48px; padding: 6px 8px; }
-.tray .piece { flex: 1 1 0; width: auto; }
-.tray .glyph-photo, .tray .glyph-photo img { width: 40px; height: 40px; }
-.stage-base-ten .zone { min-height: 0; }
-.stage-base-ten .block-rod .glyph-photo,
-.stage-base-ten .block-rod .glyph-photo img { width: 16px; height: 32px; }
-.block-rod .glyph-photo, .block-rod .glyph-photo img { width: 20px; height: 48px; }
+.tray .piece { flex: 0 0 auto; width: auto; }
+.tray .glyph-photo, .tray .glyph-photo img { width: 44px; height: 44px; }
+.block-rod .glyph-photo, .block-rod .glyph-photo img { width: 24px; height: 72px; }
 .piece:has(.block-rod) { min-height: 0; width: auto; }
 .ten { padding: 6px; gap: 4px; }
-.board-base-ten .tray { max-height: 22%; }
+.board-base-ten .manip { height: 100%; min-height: 0; }
+.board-base-ten .tray {
+  flex: 0 0 auto;
+  max-height: none;
+  padding: 8px;
+  gap: 6px 8px;
+}
+.board-base-ten .block-flat .glyph-photo,
+.board-base-ten .block-flat .glyph-photo img { width: 68px; height: 68px; }
+.board-base-ten .block-rod .glyph-photo,
+.board-base-ten .block-rod .glyph-photo img { width: 26px; height: 78px; }
+.board-base-ten .block-unit .glyph-photo,
+.board-base-ten .block-unit .glyph-photo img { width: 44px; height: 44px; }
+.board-base-ten .piece em { font-size: 0.7rem; line-height: 1; }
+.board-base-ten .stage { flex: 1 1 auto; min-height: 160px; height: auto; }
+.board-base-ten .btn.snap { flex: 0 0 auto; min-height: 44px; margin: 0; }
 .garden { position: relative; z-index: 1; }
 .spell-row, .spell-pager button {
   width: 100%;
@@ -1882,4 +1923,61 @@ code { font-size: 0.86em; background: #fff; padding: 0.1em 0.35em; border-radius
   .home .guide { width: 68px; }
   .home h1 { font-size: 1.25rem; }
   .home .lede { display: none; }
+  .play > .note { bottom: 108px; }
+}
+
+/* Landscape: the block tray sits beside the mat, and both stay large enough to drag. */
+@media (min-aspect-ratio: 1 / 1) {
+  .board-base-ten .manip {
+    flex-direction: row;
+    align-items: stretch;
+    height: 100%;
+  }
+  .board-base-ten .tray {
+    flex: 0 0 38%;
+    width: 38%;
+    max-width: 440px;
+    align-self: stretch;
+    height: auto;
+    max-height: none;
+    overflow: hidden;
+  }
+  .board-base-ten .stage {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
+  }
+  .board-base-ten .btn.snap { align-self: center; width: auto; }
+}
+
+@media (max-height: 780px) {
+  .app { padding-top: 4px; padding-bottom: 6px; }
+  .corner-tools { margin-bottom: 2px; gap: 6px; }
+  .corner-tools .tell-us, .map-home { min-height: 36px; }
+  .map-home { padding: 2px 10px 2px 2px; }
+  .map-home img { width: 32px; height: 32px; }
+  .quest { gap: 2px; }
+  .quest-top { padding-top: 0; padding-bottom: 0; }
+  .quest .prompt { font-size: 0.95rem; padding: 4px 8px; }
+  .friend-chip { min-height: 32px; margin: 0 4px; padding: 1px 8px 1px 1px; font-size: 0.9rem; }
+  .friend-chip img { width: 28px; height: 28px; }
+  .replay { min-height: 32px; padding: 0 10px; font-size: 0.85rem; }
+  .play { gap: 2px; }
+  .dock { padding-top: 2px; gap: 6px; }
+  .dock .btn { min-height: 40px; padding: 0 8px; }
+  .crystal-wallet { min-height: 32px; }
+  .crystal-wallet .coin { min-width: 22px; }
+  .crystal-wallet .coin img { width: 14px; height: 24px; }
+  .crystal-total { font-size: 0.95rem; }
+  .pips i { width: 10px; height: 10px; }
+  .play-guide { display: none; }
+  .board-base-ten .block-flat .glyph-photo,
+  .board-base-ten .block-flat .glyph-photo img { width: 56px; height: 56px; }
+  .board-base-ten .block-rod .glyph-photo,
+  .board-base-ten .block-rod .glyph-photo img { width: 22px; height: 64px; }
+  .board-base-ten .block-unit .glyph-photo,
+  .board-base-ten .block-unit .glyph-photo img { width: 40px; height: 40px; }
+  .board-base-ten .stage { min-height: 120px; }
+  .clock, .angle-face { width: min(220px, 42dvh); height: min(220px, 42dvh); }
 }

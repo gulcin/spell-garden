@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.4] - 2026-10-19
+
+Every spell fits the visible screen, including base-ten on an iPad with the browser bar showing.
+
+### Fixed
+
+- Activities stay inside the visible screen on iPad landscape, iPad portrait, and iPhone. The page does not scroll to reach the pieces.
+- The base-ten tray sits beside the mat in landscape, and the flats, rods, and cubes stay big enough to drag.
+- A hint or a miss floats as a note and no longer covers the mat or pushes it off the screen.
+- The prompt wraps smaller when the screen is short.
+
 ## [1.1.3] - 2026-10-18
 
 Outfits are painted on Aida, and Tell us keeps a note from an iPad tap.
@@ -56,6 +67,7 @@ Outfits, notes, puzzles, and the spell beds fit the way Aida uses them, and a ne
 - An update note that waits until she is on the garden map, and Check for updates for grown-ups.
 - The app version on every bug report.
 
+[1.1.4]: https://github.com/gulcin/spell-garden/releases/tag/v1.1.4
 [1.1.3]: https://github.com/gulcin/spell-garden/releases/tag/v1.1.3
 [1.1.2]: https://github.com/gulcin/spell-garden/releases/tag/v1.1.2
 [1.1.1]: https://github.com/gulcin/spell-garden/releases/tag/v1.1.1

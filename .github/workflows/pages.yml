@@ -63,6 +63,7 @@ jobs:
           done
           test "$ready" = 1
           SANITY_URL="http://127.0.0.1:43123${{ steps.pages.outputs.base_path }}/" node e2e/sanity.mjs
+          SANITY_URL="http://127.0.0.1:43123${{ steps.pages.outputs.base_path }}/" node e2e/fit.mjs
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
