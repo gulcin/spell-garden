@@ -99,7 +99,7 @@ describe('pet shop', () => {
     const ids = ['clover-bunny', 'cloud-cat', 'ginger-tabby', 'slate-cat'];
     let pets = {
       ...freshProgress().pets,
-      owned: ids.map((id) => ({ id, name: id, at: 1, how: 'bought' as const })),
+      owned: ids.map((id) => ({ id, name: id, at: 1, how: 'bought' as const, solved: 0 })),
     };
     const spots = [];
     for (const id of ids) {

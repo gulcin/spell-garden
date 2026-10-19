@@ -1,6 +1,7 @@
 import type { HouseState } from '../house/layout.ts';
 import type { Progress } from '../progress/types.ts';
 import { spendCrystals } from '../wardrobe/economy.ts';
+import { solvedCount } from './growth.ts';
 import {
   PETS,
   freshPets,
@@ -38,6 +39,7 @@ export function normalizePets(value: unknown): PetState {
         name: cleanPetName(typeof (row as Partial<PetRecord>).name === 'string' ? (row as PetRecord).name : '', pet.name),
         at: typeof at === 'number' && Number.isFinite(at) ? at : 0,
         how,
+        solved: solvedCount((row as Partial<PetRecord>).solved),
       });
     }
   }
@@ -92,7 +94,7 @@ export function grantEarned(
     ...safe,
     owned: [
       ...safe.owned,
-      ...arriving.map((pet) => ({ id: pet.id, name: pet.name, at, how: 'earned' as const })),
+      ...arriving.map((pet) => ({ id: pet.id, name: pet.name, at, how: 'earned' as const, solved: 0 })),
     ],
   };
 }
@@ -108,7 +110,7 @@ export function buyPet(progress: Progress, id: string, at = Date.now()): Progres
   if (!pet || pet.price == null || progress.pets.owned.some((owned) => owned.id === id)) return progress;
   const spent = spendCrystals(progress, pet.price);
   if (!spent) return progress;
-  const owned = [...spent.pets.owned, { id: pet.id, name: pet.name, at, how: 'bought' as const }];
+  const owned = [...spent.pets.owned, { id: pet.id, name: pet.name, at, how: 'bought' as const, solved: 0 }];
   return {
     ...spent,
     pets: {

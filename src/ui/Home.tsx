@@ -1,5 +1,6 @@
 import { PLACES, Prop, REWARD_ART } from './pictures.tsx';
 import type { Progress } from '../progress/types.ts';
+import { stageOf } from '../pets/growth.ts';
 import { companionTitle } from '../pets/state.ts';
 import { REWARDS } from '../story.ts';
 import { CrystalCounter } from './CrystalCounter.tsx';
@@ -47,7 +48,7 @@ export function Home({
             className="guide"
             alt="Aida, a young wizard with long straight hair, an owl, and a star wand"
           />
-          {companion && companionId ? <PetArt id={companionId} className="hero-pet" alt={companion} /> : null}
+          {companion && companionId ? <PetArt id={companionId} stage={stageOf(progress.pets, companionId)} className="hero-pet" alt={companion} /> : null}
         </div>
         <div className="hero-copy">
           <CrystalCounter count={progress.crystals} />
@@ -161,7 +162,7 @@ export function Home({
                 data-testid="map-companion"
                 style={{ left: `${Math.min(84, herePlace.x + 8)}%`, top: `${Math.max(10, herePlace.y - 10)}%` }}
               >
-                <PetArt id={companionId} alt="" />
+                <PetArt id={companionId} stage={stageOf(progress.pets, companionId)} alt="" />
               </span>
             ) : null}
           </div>
