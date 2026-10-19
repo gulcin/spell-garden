@@ -183,9 +183,9 @@ export function restTrayStart(page: number, waiting: number): number {
 
 /** Floor spots keep going onto a lower row, so a fourth friend never stands on the first. */
 function floorSpot(taken: Set<string>): { x: number; y: number } {
-  for (let row = 0; row < 8; row += 1) {
-    for (let column = 0; column < 4; column += 1) {
-      const spot = { x: 78 - column * 18, y: Math.min(90, 70 + row * 8) };
+  for (let row = 0; row < 4; row += 1) {
+    for (let column = 0; column < 3; column += 1) {
+      const spot = { x: 18 + column * 14, y: Math.min(90, 86 + row * 2) };
       if (!taken.has(`${spot.x}:${spot.y}`)) return spot;
     }
   }
@@ -197,10 +197,10 @@ export function restPet(pets: PetState, house: HouseState, id: string): PetState
   const taken = new Set(pets.home.map((pet) => `${Math.round(pet.x)}:${Math.round(pet.y)}`));
   const perch = house.placed.find((piece) => {
     if (!PERCHES.includes(piece.itemId)) return false;
-    const y = Math.min(90, Math.max(64, piece.y - 8));
+    const y = Math.min(90, Math.max(78, piece.y - 2));
     return !taken.has(`${Math.round(piece.x)}:${Math.round(y)}`);
   });
-  const spot = perch ? { x: perch.x, y: Math.min(90, Math.max(64, perch.y - 8)) } : floorSpot(taken);
+  const spot = perch ? { x: perch.x, y: Math.min(90, Math.max(78, perch.y - 2)) } : floorSpot(taken);
   return { ...pets, home: [...pets.home, { id, x: spot.x, y: spot.y, flip: false }] };
 }
 

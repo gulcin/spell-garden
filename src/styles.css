@@ -433,27 +433,39 @@ code { font-size: 0.86em; background: #fff; padding: 0.1em 0.35em; border-radius
 .map-companion img { width: 100%; height: auto; display: block; filter: drop-shadow(0 4px 3px rgba(58, 45, 74, 0.25)); }
 .house-companion {
   position: absolute;
-  left: 52%;
-  bottom: 8%;
-  width: 14%;
-  z-index: 26;
+  left: 48%;
+  bottom: 5%;
+  width: 6.5%;
+  z-index: 23;
   pointer-events: none;
 }
-.house-pet img { width: 100%; height: auto; display: block; }
+.house-pet img, .house-companion { width: 100%; height: auto; display: block; }
 .house-pets {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  z-index: 40;
+  position: relative;
+  z-index: 2;
   display: flex;
-  gap: 4px;
+  gap: 6px;
   align-items: center;
-  max-width: 78%;
+  flex: 0 0 auto;
+  max-width: 100%;
+  padding: 4px 8px;
+  border-radius: 18px;
+  background: rgba(255, 248, 241, 0.96);
+  border: 2px solid white;
 }
-.house-pets .house-chip { width: 76px; min-height: 68px; background: rgba(255, 248, 241, 0.94); }
-.house-pets .house-chip img { width: 48px; height: 40px; }
+.house-pets-label { font-weight: 800; font-size: 0.95rem; white-space: nowrap; }
+.house-pets .house-chip {
+  width: auto;
+  min-width: 108px;
+  min-height: 52px;
+  flex-direction: row;
+  gap: 6px;
+  padding: 4px 10px 4px 4px;
+  background: white;
+}
+.house-pets .house-chip img { width: 44px; height: 40px; }
 .house-pets > button:not(.house-chip) {
-  width: 36px;
+  width: 40px;
   min-height: 44px;
   border-radius: 999px;
   border: 2px solid white;
@@ -1918,9 +1930,20 @@ code { font-size: 0.86em; background: #fff; padding: 0.1em 0.35em; border-radius
 }
 .house-piece.floor { transform: translate(-50%, -100%); }
 .house-piece.wall { transform: translate(-50%, -50%); }
-.house-piece img { width: 100%; height: auto; display: block; pointer-events: none; filter: drop-shadow(0 8px 6px rgba(58, 45, 74, 0.18)); }
+.house-piece.hang { top: 0 !important; transform: translate(-50%, 0); }
+.house-piece.floor::before {
+  content: '';
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  bottom: 1%;
+  height: 12%;
+  background: radial-gradient(ellipse at center, rgba(58, 40, 28, 0.38), transparent 72%);
+  pointer-events: none;
+}
+.house-piece img { width: 100%; height: auto; display: block; pointer-events: none; }
 .house-piece.flip img { transform: scaleX(-1); }
-.house-piece.on img { filter: drop-shadow(0 0 8px rgba(255, 196, 80, 0.95)) drop-shadow(0 8px 6px rgba(58, 45, 74, 0.18)); }
+.house-piece.on img { filter: drop-shadow(0 0 6px rgba(255, 196, 80, 0.9)); }
 .house-girl {
   position: absolute;
   left: 61%;
@@ -2201,37 +2224,67 @@ code { font-size: 0.86em; background: #fff; padding: 0.1em 0.35em; border-radius
   .board-base-ten .stage { min-height: 0; }
   .clock, .angle-face { width: min(220px, 42dvh); height: min(220px, 42dvh); }
 }
-.pet-shop .shopkeeper-row { padding: 6px 10px; }
-.pet-shop .shopkeeper { width: 64px; background: transparent; }
-@media (max-width: 700px) {
-  .pet-shop .shop-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-  .pet-shop .shop-card { padding: 8px; gap: 2px; }
-  .pet-shop .shop-card img { height: 56px; max-height: 56px; }
-  .pet-shop .shop-card h2 { font-size: 1rem; margin: 0; }
-  .pet-shop .shop-card p,
-  .pet-shop .shop-card span {
-    margin: 0;
-    font-size: 0.85rem;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-  .pet-shop .shopkeeper-row { padding: 6px 8px; gap: 8px; }
-  .pet-shop .shopkeeper { width: 48px; }
-}
-.pet-tabs { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.pet-tabs h2 { margin: 0; font-size: 1.2rem; }
+.pet-shop { gap: 6px; }
+.pet-shop .shopkeeper-row { padding: 4px 10px; gap: 8px; }
+.pet-shop .shopkeeper { width: 52px; background: transparent; }
+.pet-shop .shopkeeper-row p { font-size: 0.95rem; }
+.pet-tabs { display: flex; align-items: stretch; gap: 6px; flex: 0 0 auto; }
 .pet-tabs button {
-  min-width: 44px;
-  min-height: 44px;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 40px;
+  padding: 0 6px;
   border-radius: 999px;
   border: 2px solid white;
   background: rgba(255, 248, 241, 0.94);
   font-weight: 800;
+  font-size: 0.9rem;
 }
-.pet-name { display: flex; flex-direction: column; gap: 2px; font-weight: 800; font-size: 0.9rem; }
-.pet-name input { min-height: 40px; width: 100%; }
+.pet-tabs button.on { background: var(--violet); color: white; }
+.pet-shop .shop-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; align-content: stretch; }
+.pet-shop .shop-card { padding: 8px; gap: 2px; min-width: 0; }
+.pet-shop .shop-card img {
+  width: auto;
+  max-width: 100%;
+  height: 96px;
+  max-height: 96px;
+  margin: 0 auto;
+  object-fit: contain;
+  background: transparent;
+}
+.pet-shop .shop-card h2 { font-size: 1rem; margin: 0; line-height: 1.15; }
+.pet-shop .shop-card p { margin: 0; font-size: 0.85rem; line-height: 1.2; min-height: 2.4em; }
+.pet-shop .shop-card .btn {
+  min-height: 36px;
+  padding: 2px 8px;
+  box-shadow: 0 3px 0 var(--violet-deep);
+  font-size: 0.9rem;
+}
+.pet-shop .shop-card .btn.gold { box-shadow: 0 3px 0 var(--gold-deep); }
+.pet-name { gap: 0; }
+.pet-name input { min-height: 32px; font-size: 0.9rem; }
+.pet-state { font-weight: 800; color: var(--violet-deep); }
+@media (max-width: 1100px) and (orientation: portrait) {
+  .pet-shop .shop-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 700px) {
+  .pet-shop .shop-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+  .pet-shop .shop-card { padding: 6px; }
+  .pet-shop .shop-card img { height: 64px; max-height: 64px; }
+  .pet-shop .shopkeeper { width: 40px; }
+  .pet-tabs { flex-wrap: wrap; justify-content: center; gap: 4px; }
+  .pet-tabs button {
+    flex: 1 1 calc(33.33% - 6px);
+    max-width: calc(50% - 4px);
+    white-space: nowrap;
+    font-size: 0.85rem;
+    padding: 0 8px;
+    min-height: 36px;
+  }
+  .house-pets-label { display: none; }
+}
+.pet-name { display: flex; flex-direction: column; font-weight: 800; font-size: 0.9rem; }
+.pet-name input { width: 100%; }
 .pet-secret { filter: brightness(0); opacity: 0.38; }
 .pet-wait { color: var(--muted); font-weight: 800; }
 .pet-reveal {

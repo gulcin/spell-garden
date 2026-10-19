@@ -414,6 +414,7 @@ async function greetArrivals(page) {
 async function fits(page, label, musicId) {
   for (const viewport of VIEWPORTS) {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    await page.waitForTimeout(80);
     const problems = await layout(page);
     if (musicId) {
       const music = await page.evaluate(() => document.documentElement.dataset.music ?? '');
@@ -610,22 +611,16 @@ async function main() {
 
   await page.locator('[data-testid="map-pets"]').click({ force: true });
   await page.waitForSelector('[data-testid="pet-shop"]');
-  await page.locator('[data-testid="pet-book"]').click();
   const petGroups = [];
-  for (let group = 0; group < 5; group += 1) {
-    petGroups.push((await page.locator('[data-testid="pet-group-name"]').innerText()).trim());
-    if (group < 4) await page.locator('[data-testid="pet-group-next"]').click();
+  for (const id of ['cats', 'dogs', 'creatures', 'imaginary', 'fairies']) {
+    const tab = page.locator(`[data-testid="pet-group-${id}"]`);
+    await tab.click();
+    petGroups.push((await tab.innerText()).trim());
   }
   if (petGroups.join(',') !== 'Cats,Dogs,Creatures,Imaginary,Fairies') record('pet groups', 'still broken', petGroups.join(','));
   else record('pet groups', 'pass');
-  await page.locator('[data-testid="pet-shelf"]').click();
+  await page.locator('[data-testid="pet-group-cats"]').click();
   await page.locator('[data-testid="buy-pet-cloud-cat"]').click();
-  await page.locator('[data-testid="pet-book"]').click();
-  for (let back = 0; back < 5; back += 1) {
-    const label = (await page.locator('[data-testid="pet-group-name"]').innerText()).trim();
-    if (label === 'Cats') break;
-    await page.locator('[data-testid="pet-group-prev"]').click();
-  }
   await page.locator('[data-testid="pet-name-cloud-cat"]').fill('Pip');
   await page.locator('[data-testid="walk-pet-cloud-cat"]').click();
   const named = await page.locator('[data-testid="pet-name-cloud-cat"]').inputValue();
