@@ -1,4 +1,5 @@
 import { normalizeHouse } from '../house/layout.ts';
+import { migrateStoredProgress } from './migrations.ts';
 import { isAdventure } from '../stories/adventure.ts';
 import { normalizeBooks } from '../stories/books.ts';
 import { normalizeQuests, normalizeTalks } from '../cast/talk.ts';
@@ -124,7 +125,7 @@ export function loadProgress(): Progress {
     if (!raw) return freshProgress();
     const parsed: unknown = JSON.parse(raw);
     if (!isProgress(parsed)) return freshProgress();
-    return withWardrobe(parsed);
+    return migrateStoredProgress(parsed, withWardrobe);
   } catch {
     return freshProgress();
   }
@@ -140,7 +141,7 @@ export function parseProgress(raw: string): Progress {
   if (!isProgress(parsed)) {
     throw new Error('That file is not a Spell Garden progress export.');
   }
-  return withWardrobe(parsed);
+  return migrateStoredProgress(parsed, withWardrobe);
 }
 
 export { PROGRESS_KEY };

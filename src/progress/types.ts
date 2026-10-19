@@ -6,6 +6,8 @@ import { emptyPurse, type Purse } from '../wardrobe/purse.ts';
 
 export const PROGRESS_KEY = 'prague.wizard-math.progress.v1';
 export const PROGRESS_FORMAT = 'prague.wizard-math.progress.v1' as const;
+/** Newest save shape. Older saves stay on PROGRESS_KEY and step through PROGRESS_MIGRATIONS. */
+export const PROGRESS_SCHEMA = 1;
 
 /** The child this garden is for. Saved progress named Prague is migrated here. */
 export const DEFAULT_LEARNER_NAME = 'Aida';
@@ -74,6 +76,8 @@ export type WardrobeState = {
 
 export type Progress = {
   format: typeof PROGRESS_FORMAT;
+  /** Bumped by versioned migrations. Missing on saves from before the field existed. */
+  schema?: number;
   taxonomy: 'marble-skill-taxonomy-v1';
   learnerName: string;
   placement: PlacementState;
@@ -129,6 +133,7 @@ export function emptyTopicState(): TopicState {
 export function freshProgress(name = DEFAULT_LEARNER_NAME): Progress {
   return {
     format: PROGRESS_FORMAT,
+    schema: PROGRESS_SCHEMA,
     taxonomy: 'marble-skill-taxonomy-v1',
     learnerName: name,
     placement: { done: false, correct: 0, asked: 0, frontierAge: DEFAULT_FRONTIER_AGE, completedAt: null },

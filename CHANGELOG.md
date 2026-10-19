@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-10-19
+
+The app on the home screen brings in a new spell by itself.
+
+### Added
+
+- Spell Garden looks for a new version when it opens, when Aida comes back to it, and every half hour.
+- A painted note says “A new spell is ready!” The Update button is a large tap. If she is in the middle of something, the note waits until she is on the garden map. If she leaves it, the next opening brings the new spell in.
+- Progress, notes, and colouring stay in the same places across updates.
+
+### For Aida
+
+- A golden button says a new spell is ready. You can tap Update.
+
 ## [1.2.0] - 2026-10-19
 
 Grown-ups can read what changed, and Aida hears about it in her own words.
@@ -119,6 +133,7 @@ The garden as Aida first played it: painted places, a way home, a shop, and a no
 
 - The garden is painted, the shop is open, and you can tell us what you think.
 
+[1.3.0]: https://github.com/gulcin/spell-garden/releases/tag/v1.3.0
 [1.2.0]: https://github.com/gulcin/spell-garden/releases/tag/v1.2.0
 [1.1.4]: https://github.com/gulcin/spell-garden/releases/tag/v1.1.4
 [1.1.3]: https://github.com/gulcin/spell-garden/releases/tag/v1.1.3

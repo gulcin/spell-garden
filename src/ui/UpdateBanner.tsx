@@ -1,4 +1,5 @@
 import { useEffect, useSyncExternalStore } from 'react';
+import { createPortal } from 'react-dom';
 import { subscribeLesson } from '../updateState.ts';
 import { applyUpdate, currentUpdatePlan, noteUpdatePlan, subscribeUpdates } from '../swUpdates.ts';
 
@@ -17,12 +18,13 @@ export function UpdateBanner() {
     noteUpdatePlan(plan);
   }, [plan]);
   if (plan !== 'banner') return null;
-  return (
+  return createPortal(
     <aside className="update-banner" data-testid="update-banner" role="status">
-      <p>Spell Garden learned something new!</p>
-      <button type="button" className="btn gold" data-testid="update-apply" onClick={applyUpdate}>
+      <p>A new spell is ready! ✨</p>
+      <button type="button" className="btn gold update-go" data-testid="update-apply" onClick={applyUpdate}>
         Update
       </button>
-    </aside>
+    </aside>,
+    document.body,
   );
 }

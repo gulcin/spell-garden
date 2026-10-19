@@ -31,8 +31,8 @@ export type Report = {
 
 const KINDS = new Set<ReportKind>(['love', 'broken', 'idea']);
 
-const IDB_NAME = 'spell-garden-reports';
-const IDB_STORE = 'notes';
+export const REPORTS_DB = 'spell-garden-reports';
+export const REPORTS_STORE = 'notes';
 
 /** In-memory copy for this visit, used when the iPad refuses localStorage. */
 let memory: Report[] = [];
@@ -74,10 +74,10 @@ function openReportDb(): Promise<IDBDatabase> {
       reject(new Error('no indexedDB'));
       return;
     }
-    const request = indexedDB.open(IDB_NAME, 1);
+    const request = indexedDB.open(REPORTS_DB, 1);
     request.onupgradeneeded = () => {
       const db = request.result;
-      if (!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE);
+      if (!db.objectStoreNames.contains(REPORTS_STORE)) db.createObjectStore(REPORTS_STORE);
     };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error ?? new Error('indexedDB'));
@@ -89,8 +89,8 @@ function writeIdb(reports: Report[]): void {
     .then(
       (db) =>
         new Promise<void>((resolve, reject) => {
-          const tx = db.transaction(IDB_STORE, 'readwrite');
-          tx.objectStore(IDB_STORE).put(reports, 'saved');
+          const tx = db.transaction(REPORTS_STORE, 'readwrite');
+          tx.objectStore(REPORTS_STORE).put(reports, 'saved');
           tx.oncomplete = () => resolve();
           tx.onerror = () => reject(tx.error);
         }),
@@ -104,8 +104,8 @@ function readIdb(): Promise<Report[]> {
   return openReportDb().then(
     (db) =>
       new Promise((resolve, reject) => {
-        const tx = db.transaction(IDB_STORE, 'readonly');
-        const request = tx.objectStore(IDB_STORE).get('saved');
+        const tx = db.transaction(REPORTS_STORE, 'readonly');
+        const request = tx.objectStore(REPORTS_STORE).get('saved');
         request.onsuccess = () => {
           const parsed: unknown = request.result;
           resolve(Array.isArray(parsed) ? parsed.filter(isReport).slice(-40) : []);

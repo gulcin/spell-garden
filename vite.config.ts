@@ -1,7 +1,7 @@
 import react from '@vitejs/plugin-react';
 import { execSync } from 'node:child_process';
 import { readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { isAbsolute, join, relative } from 'node:path';
 import { defineConfig, type Connect, type Plugin } from 'vite';
 
 function listFiles(dir: string): string[] {
@@ -63,16 +63,88 @@ export function sitePrefix(base: string): string {
   return base.endsWith('/') ? base : `${base}/`;
 }
 
+/** Shell files are fetched with a version query so a stale Pages copy is not installed. */
+export function serviceWorkerSource(cacheName: string, assets: string[], home: string): string {
+  return `const CACHE=${JSON.stringify(cacheName)};
+const ASSETS=${JSON.stringify(assets)};
+const HOME=${JSON.stringify(home)};
+async function fresh(url){
+  const u=new URL(url, self.registration.scope);
+  u.searchParams.set('spell', CACHE);
+  return fetch(u.href,{cache:'reload'});
+}
+self.addEventListener('install',(event)=>{
+  event.waitUntil((async()=>{
+    const cache=await caches.open(CACHE);
+    const queue=ASSETS.slice();
+    async function take(){
+      while(queue.length){
+        const url=queue.shift();
+        const response=await fresh(url);
+        if(!response.ok) throw new Error(url);
+        await cache.put(url, response);
+      }
+    }
+    await Promise.all([take(),take(),take(),take(),take(),take()]);
+  })());
+});
+self.addEventListener('message',(event)=>{
+  const data=event.data;
+  if(data==='SKIP_WAITING'||data==='skip-waiting'||(data&&data.type==='SKIP_WAITING')) self.skipWaiting();
+});
+self.addEventListener('activate',(event)=>{event.waitUntil(caches.keys().then((keys)=>Promise.all(keys.filter((key)=>key!==CACHE).map((key)=>caches.delete(key)))).then(()=>self.clients.claim()))});
+self.addEventListener('fetch',(event)=>{
+  if(event.request.method!=='GET') return;
+  const url=new URL(event.request.url);
+  if(url.origin!==self.location.origin) return;
+  if(url.pathname.endsWith('/sw.js')||url.pathname.endsWith('/version.json')){
+    event.respondWith(fetch(event.request,{cache:'reload'}));
+    return;
+  }
+  if(event.request.mode==='navigate'){
+    event.respondWith((async()=>{
+      try{
+        const response=await fresh(HOME);
+        if(response.ok){
+          const cache=await caches.open(CACHE);
+          await cache.put(HOME, response.clone());
+          return response;
+        }
+      }catch{}
+      const cache=await caches.open(CACHE);
+      const home=await cache.match(HOME);
+      if(home) return home;
+      return new Response('Offline',{status:503});
+    })());
+    return;
+  }
+  event.respondWith((async()=>{
+    const cache=await caches.open(CACHE);
+    const hit=await cache.match(event.request);
+    if(hit) return hit;
+    try{
+      const response=await fetch(event.request);
+      if(response.ok) cache.put(event.request, response.clone());
+      return response;
+    }catch{
+      return new Response('Offline',{status:503});
+    }
+  })());
+});
+`;
+}
+
 function spellGardenPwa(): Plugin {
   let prefix = './';
+  let dist = join(process.cwd(), 'dist');
   return {
     name: 'spell-garden-pwa',
     apply: 'build',
     configResolved(config) {
       prefix = sitePrefix(config.base);
+      dist = isAbsolute(config.build.outDir) ? config.build.outDir : join(config.root, config.build.outDir);
     },
     closeBundle() {
-      const dist = join(process.cwd(), 'dist');
       const manifestPath = join(dist, 'manifest.webmanifest');
       const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as WebManifest;
       if (prefix.startsWith('/')) {
@@ -94,42 +166,18 @@ function spellGardenPwa(): Plugin {
         .filter(precacheFile);
       const assets = files.map((file) => `${prefix}${file}`);
       const home = `${prefix}index.html`;
-      const source = `const CACHE='${SPELL_GARDEN_CACHE}';
-const ASSETS=${JSON.stringify(assets)};
-const HOME=${JSON.stringify(home)};
-self.addEventListener('install',(event)=>{event.waitUntil(caches.open(CACHE).then((cache)=>cache.addAll(ASSETS)))});
-self.addEventListener('message',(event)=>{if(event.data==='skip-waiting') self.skipWaiting()});
-self.addEventListener('activate',(event)=>{event.waitUntil(caches.keys().then((keys)=>Promise.all(keys.filter((key)=>key!==CACHE).map((key)=>caches.delete(key)))).then(()=>self.clients.claim()))});
-self.addEventListener('fetch',(event)=>{
-  if(event.request.method!=='GET') return;
-  const url=new URL(event.request.url);
-  if(url.origin!==self.location.origin) return;
-  event.respondWith((async()=>{
-    const cache=await caches.open(CACHE);
-    const hit=await cache.match(event.request);
-    if(hit) return hit;
-    try{
-      const response=await fetch(event.request);
-      if(response.ok) cache.put(event.request, response.clone());
-      return response;
-    }catch{
-      if(event.request.mode==='navigate'){
-        const home=await cache.match(HOME);
-        if(home) return home;
-      }
-      return new Response('Offline',{status:503});
-    }
-  })());
-});
-`;
-      writeFileSync(join(dist, 'sw.js'), source);
+      writeFileSync(join(dist, 'sw.js'), serviceWorkerSource(SPELL_GARDEN_CACHE, assets, home));
     },
   };
 }
 
+function shellPath(path: string): boolean {
+  return path === '/' || path.endsWith('/') || path.endsWith('/index.html') || path.endsWith('/sw.js') || path.endsWith('/version.json');
+}
+
 function noCache(req: Connect.IncomingMessage, res: { setHeader: (name: string, value: string) => void }, next: () => void) {
   const path = req.url?.split('?')[0] ?? '';
-  if (path.endsWith('/sw.js') || path.endsWith('/version.json')) {
+  if (shellPath(path)) {
     const setHeader = res.setHeader.bind(res);
     res.setHeader = (name: string, value: string) => {
       if (name.toLowerCase() === 'cache-control') return setHeader(name, 'no-cache');
@@ -143,6 +191,11 @@ function noCache(req: Connect.IncomingMessage, res: { setHeader: (name: string, 
 function spellVersionPlugin(): Plugin {
   return {
     name: 'spell-garden-version',
+    transformIndexHtml(html) {
+      const meta = `<meta name="spell-garden-version" content="${APP_VERSION}" />`;
+      if (html.includes('name="spell-garden-version"')) return html;
+      return html.replace('</head>', `    ${meta}\n  </head>`);
+    },
     generateBundle() {
       this.emitFile({ type: 'asset', fileName: 'version.json', source: versionJson });
     },

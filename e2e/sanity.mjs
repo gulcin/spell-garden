@@ -423,7 +423,7 @@ async function main() {
   if (!notes.includes('The robe was sitting')) record('grown-ups notes', 'still broken', notes.slice(0, 160));
   else record('grown-ups notes', 'pass');
   const stamp = await page.locator('[data-testid="app-version"]').innerText();
-  if (!stamp.includes('Version 1.2.0 (')) record('grown-ups version', 'still broken', stamp);
+  if (!stamp.includes('Version 1.3.0 (')) record('grown-ups version', 'still broken', stamp);
   else record('grown-ups version', 'pass', stamp.trim());
   await page.locator('[data-testid="whats-new"]').click();
   await page.waitForSelector('[data-testid="whats-new-screen"]');

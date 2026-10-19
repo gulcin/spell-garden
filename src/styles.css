@@ -1872,20 +1872,24 @@ code { font-size: 0.86em; background: #fff; padding: 0.1em 0.35em; border-radius
 .tell-sheet a.btn { display: flex; align-items: center; justify-content: center; text-decoration: none; color: #3a2a08; }
 .update-banner {
   position: fixed;
-  z-index: 80;
-  left: 12px;
-  right: 12px;
-  bottom: 12px;
+  z-index: 90;
+  left: max(12px, env(safe-area-inset-left));
+  right: max(12px, env(safe-area-inset-right));
+  bottom: max(12px, env(safe-area-inset-bottom));
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
-  border-radius: 20px;
-  background: #fff8f1;
-  border: 2px solid white;
+  gap: 14px;
+  padding: 14px 14px 14px 18px;
+  border-radius: 28px;
+  background:
+    radial-gradient(180px 90px at 0% 0%, rgba(232, 210, 245, 0.95), transparent 70%),
+    radial-gradient(220px 120px at 100% 100%, rgba(247, 227, 196, 0.98), transparent 68%),
+    #fff8f1;
+  border: 3px solid white;
   box-shadow: var(--shadow);
 }
-.update-banner p { margin: 0; font-weight: 800; }
+.update-banner p { margin: 0; font-weight: 800; font-size: 1.15rem; flex: 1 1 auto; }
+.update-banner .update-go { min-height: 64px; min-width: 168px; font-size: 1.25rem; padding: 0 28px; }
 .version-stamp { margin: 0; color: var(--muted); font-size: 0.82rem; }
 .grownup-version { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: flex-start; gap: 4px 16px; }
 .grownup-version .text-link { font-size: 0.92rem; }

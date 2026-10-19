@@ -60,7 +60,7 @@ describe('story shelf', () => {
   });
 
   it('keeps story audio in the offline cache and leaves the heavy page art for later', () => {
-    expect(SPELL_GARDEN_CACHE).toBe('spell-garden-v1.2.0');
+    expect(SPELL_GARDEN_CACHE).toBe('spell-garden-v1.3.0');
     expect(precacheFile('version.json')).toBe(false);
     expect(precacheFile('audio/stories/crystal-cave/0.mp3')).toBe(true);
     expect(precacheFile('audio/stories/crystal-cave/0.json')).toBe(true);

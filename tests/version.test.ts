@@ -1,6 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { SPELL_GARDEN_CACHE } from '../vite.config.ts';
+import { serviceWorkerSource, SPELL_GARDEN_CACHE } from '../vite.config.ts';
+import { STABLE_STORES, migrateStoredProgress, progressMigrations } from '../src/progress/migrations.ts';
+import { freshProgress, PROGRESS_KEY, PROGRESS_SCHEMA } from '../src/progress/types.ts';
+import { withWardrobe } from '../src/progress/storage.ts';
 import { CHECK_INTERVAL_MS, planUpdate } from '../src/updates.ts';
 import { gardenNewsPlan, kidHighlights, parseChangelog, serviceWorkerCacheId, versionLabel } from '../src/version.ts';
 
@@ -10,11 +13,11 @@ const css = readFileSync(new URL('../src/styles.css', import.meta.url), 'utf8');
 const sw = readFileSync(new URL('../src/swUpdates.ts', import.meta.url), 'utf8');
 
 describe('Spell Garden version', () => {
-  it('stamps semver 1.2.0 and keeps the service worker waiting for a tap', () => {
-    expect(pkg.version).toBe('1.2.0');
-    expect(serviceWorkerCacheId(pkg.version)).toBe('spell-garden-v1.2.0');
-    expect(SPELL_GARDEN_CACHE).toBe('spell-garden-v1.2.0');
-    expect(versionLabel({ version: '1.2.0', sha: 'abc1234', date: '2026-10-19' })).toBe('Version 1.2.0 (abc1234)');
+  it('stamps semver 1.3.0 and keeps the service worker waiting for a tap', () => {
+    expect(pkg.version).toBe('1.3.0');
+    expect(serviceWorkerCacheId(pkg.version)).toBe('spell-garden-v1.3.0');
+    expect(SPELL_GARDEN_CACHE).toBe('spell-garden-v1.3.0');
+    expect(versionLabel({ version: '1.3.0', sha: 'abc1234', date: '2026-10-19' })).toBe('Version 1.3.0 (abc1234)');
     expect(css).toContain('-webkit-text-size-adjust: 100%');
     expect(css).toContain('text-size-adjust: 100%');
     expect(css).not.toContain('font-size: clamp');
@@ -22,7 +25,7 @@ describe('Spell Garden version', () => {
 
   it('reads the changelog', () => {
     const notes = parseChangelog(changelog);
-    expect(notes[0]?.version).toBe('1.2.0');
+    expect(notes[0]?.version).toBe('1.3.0');
     expect(notes[0]?.date).toBe('2026-10-19');
     expect(notes.at(-1)?.version).toBe('1.0.0');
     const written = notes.map((note) => note.sections.flatMap((section) => section.items).join(' ')).join(' ');
@@ -33,6 +36,7 @@ describe('Spell Garden version', () => {
     expect(written).toMatch(/crystal shop/);
     expect(written).toMatch(/lets go/);
     expect(written).toMatch(/feedback address/);
+    expect(written).toMatch(/A new spell is ready/);
     expect(notes.find((note) => note.version === '1.1.4')?.sections.flatMap((section) => section.items).join(' ')).toMatch(/visible screen/);
     const forAida = kidHighlights(notes, '1.0.0').join(' ');
     expect(forAida).toMatch(/little note/);
@@ -49,11 +53,38 @@ describe('Spell Garden version', () => {
     expect(CHECK_INTERVAL_MS).toBe(30 * 60 * 1000);
     expect(planUpdate({ waiting: true, lesson: false, deferred: false, deferredThisSession: false, applying: false })).toBe('banner');
     expect(planUpdate({ waiting: true, lesson: true, deferred: false, deferredThisSession: false, applying: false })).toBe('defer');
-    expect(planUpdate({ waiting: true, lesson: false, deferred: true, deferredThisSession: true, applying: false })).toBe('idle');
+    expect(planUpdate({ waiting: true, lesson: true, deferred: true, deferredThisSession: false, applying: false })).toBe('defer');
+    expect(planUpdate({ waiting: true, lesson: false, deferred: true, deferredThisSession: true, applying: false })).toBe('banner');
     expect(planUpdate({ waiting: true, lesson: false, deferred: true, deferredThisSession: false, applying: false })).toBe('apply');
     expect(sw).toContain("cache: 'no-store'");
+    expect(sw).toContain('version.json?t=');
+    expect(sw).toContain("updateViaCache: 'none'");
     expect(sw).toContain('visibilitychange');
-    expect(sw).toContain('skip-waiting');
+    expect(sw).toContain('SKIP_WAITING');
+    expect(sw).toContain('controllerchange');
     expect(sw).not.toContain('prague.wizard-math.progress');
+    const worker = serviceWorkerSource('spell-garden-v1.3.0', ['./index.html'], './index.html');
+    expect(worker).toContain('SKIP_WAITING');
+    expect(worker).toContain("cache:'reload'");
+    expect(worker).toContain("searchParams.set('spell', CACHE)");
+    expect(worker).not.toContain('localStorage');
+  });
+
+  it('keeps progress keys stable and stamps a schema on an older save', () => {
+    expect(STABLE_STORES.progress).toBe(PROGRESS_KEY);
+    expect(STABLE_STORES.progress).toBe('prague.wizard-math.progress.v1');
+    expect(STABLE_STORES.reports).toBe('prague.wizard-math.reports.v1');
+    expect(STABLE_STORES.reportsDb).toBe('spell-garden-reports');
+    expect(STABLE_STORES.colouringDb).toBe('spell-garden-colouring');
+    expect(progressMigrations(withWardrobe).map((step) => step.to)).toEqual([1]);
+    const older = freshProgress('Aida');
+    delete older.schema;
+    delete older.purse;
+    older.crystals = 17;
+    const migrated = migrateStoredProgress(older, withWardrobe);
+    expect(migrated.schema).toBe(PROGRESS_SCHEMA);
+    expect(migrated.crystals).toBe(17);
+    expect(migrated.learnerName).toBe('Aida');
+    expect(PROGRESS_KEY).toBe('prague.wizard-math.progress.v1');
   });
 });

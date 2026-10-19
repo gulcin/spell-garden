@@ -6,7 +6,10 @@ export const CHECK_INTERVAL_MS = 30 * 60 * 1000;
 
 export type UpdatePlan = 'idle' | 'banner' | 'defer' | 'apply';
 
-/** A lesson keeps going. The banner waits until she is back on the garden map. */
+/**
+ * A lesson keeps going. The banner waits until she is back on the garden map.
+ * Once she has seen it and left it, the next launch applies the spell on the map.
+ */
 export function planUpdate(input: {
   waiting: boolean;
   lesson: boolean;
@@ -17,6 +20,5 @@ export function planUpdate(input: {
   if (input.applying || !input.waiting) return 'idle';
   if (input.lesson) return 'defer';
   if (input.deferred && !input.deferredThisSession) return 'apply';
-  if (input.deferred) return 'idle';
   return 'banner';
 }

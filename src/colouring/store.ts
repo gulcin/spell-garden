@@ -1,16 +1,16 @@
 import type { Artwork } from './model.ts';
 
-const DB_NAME = 'spell-garden-colouring';
-const STORE = 'artworks';
+export const COLOURING_DB = 'spell-garden-colouring';
+export const COLOURING_STORE = 'artworks';
 
 export type SavedArt = Artwork & { preview?: Blob };
 
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, 1);
+    const request = indexedDB.open(COLOURING_DB, 1);
     request.onupgradeneeded = () => {
       const db = request.result;
-      if (!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE, { keyPath: 'sheetId' });
+      if (!db.objectStoreNames.contains(COLOURING_STORE)) db.createObjectStore(COLOURING_STORE, { keyPath: 'sheetId' });
     };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
@@ -21,8 +21,8 @@ function run<T>(mode: IDBTransactionMode, op: (store: IDBObjectStore) => IDBRequ
   return openDb().then(
     (db) =>
       new Promise((resolve, reject) => {
-        const tx = db.transaction(STORE, mode);
-        const request = op(tx.objectStore(STORE));
+        const tx = db.transaction(COLOURING_STORE, mode);
+        const request = op(tx.objectStore(COLOURING_STORE));
         request.onsuccess = () => resolve(request.result);
         request.onerror = () => reject(request.error);
       }),
