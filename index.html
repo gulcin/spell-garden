@@ -19,6 +19,79 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      (function () {
+        var RELOADS = 'spell-garden.bootReloads';
+        var booted = false;
+        var root = document.getElementById('root');
+        if (window.MutationObserver && root) {
+          new MutationObserver(function () {
+            if (root.childElementCount > 0) {
+              booted = true;
+              try { sessionStorage.removeItem(RELOADS); } catch (error) {}
+            }
+          }).observe(root, { childList: true });
+        }
+        function startAgain() {
+          var pending = navigator.serviceWorker
+            ? navigator.serviceWorker.getRegistrations().then(function (regs) {
+                return Promise.all(regs.map(function (reg) { return reg.unregister(); }));
+              })
+            : Promise.resolve();
+          pending
+            .then(function () {
+              if (!window.caches) return;
+              return caches.keys().then(function (keys) {
+                return Promise.all(keys.map(function (key) { return caches.delete(key); }));
+              });
+            })
+            .then(function () {
+              try {
+                sessionStorage.removeItem(RELOADS);
+                sessionStorage.removeItem('spell-garden.swReloads');
+              } catch (error) {}
+              var next = new URL(location.href);
+              next.searchParams.delete('spell-fresh');
+              next.searchParams.set('spell-fresh', String(Date.now()));
+              location.replace(next.href);
+            })
+            .catch(function () { location.reload(); });
+        }
+        window.spellGardenStartAgain = startAgain;
+        function showRescue() {
+          if (document.getElementById('spell-rescue')) return;
+          var box = document.createElement('div');
+          box.id = 'spell-rescue';
+          box.setAttribute('role', 'alert');
+          box.style.cssText = 'position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;padding:24px;background:#f4ecdf;color:#3a2d4a;font-family:Nunito,sans-serif;text-align:center';
+          box.innerHTML = '<div><h1 style="font-size:28px;margin:0 0 8px">Spell Garden needs a fresh start</h1><p style="font-size:18px;margin:0 0 16px">Your garden is still saved on this phone.</p><button type="button" id="spell-start-again" data-testid="start-again" style="font:800 18px Nunito,sans-serif;min-height:52px;padding:12px 22px;border:0;border-radius:999px;background:#e7b45a;color:#3a2a08">Start again</button></div>';
+          document.body.appendChild(box);
+          document.getElementById('spell-start-again').addEventListener('click', startAgain);
+        }
+        function bootFailed() {
+          if (booted) return;
+          var count = 1;
+          try { count = Number(sessionStorage.getItem(RELOADS) || '0'); } catch (error) { count = 1; }
+          if (count < 1) {
+            try { sessionStorage.setItem(RELOADS, '1'); } catch (error) {}
+            var next = new URL(location.href);
+            next.searchParams.set('spell-fresh', String(Date.now()));
+            location.replace(next.href);
+            return;
+          }
+          showRescue();
+        }
+        window.addEventListener('error', function (event) {
+          var target = event.target;
+          if (!target || !target.tagName) return;
+          if (target.tagName === 'SCRIPT') bootFailed();
+          if (target.tagName === 'LINK' && String(target.rel || '').indexOf('stylesheet') !== -1) bootFailed();
+        }, true);
+        window.setTimeout(function () {
+          if (!booted && root && root.childElementCount === 0) bootFailed();
+        }, 15000);
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

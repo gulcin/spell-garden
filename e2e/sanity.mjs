@@ -471,7 +471,7 @@ async function main() {
   if (!notes.includes('The robe was sitting')) record('grown-ups notes', 'still broken', notes.slice(0, 160));
   else record('grown-ups notes', 'pass');
   const stamp = await page.locator('[data-testid="app-version"]').innerText();
-  if (!stamp.includes('Version 1.3.1 (')) record('grown-ups version', 'still broken', stamp);
+  if (!stamp.includes('Version 1.3.2 (')) record('grown-ups version', 'still broken', stamp);
   else record('grown-ups version', 'pass', stamp.trim());
   await page.locator('[data-testid="whats-new"]').click();
   await page.waitForSelector('[data-testid="whats-new-screen"]');
@@ -737,6 +737,14 @@ async function main() {
   else record('console errors', 'pass');
   if (missing.length) record('404s', 'still broken', [...new Set(missing)].slice(0, 5).join(' | '));
   else record('404s', 'pass');
+
+  try {
+    const { checkIphone } = await import('./webkit-iphone.mjs');
+    await checkIphone(process.env.SANITY_URL ?? 'http://127.0.0.1:43123/');
+    record('webkit iphone', 'pass');
+  } catch (error) {
+    record('webkit iphone', 'still broken', error instanceof Error ? error.message : 'error');
+  }
 
   writeFileSync(`${shotDir}/report.json`, JSON.stringify(report, null, 2));
   await browser.close();

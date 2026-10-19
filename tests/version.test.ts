@@ -13,11 +13,11 @@ const css = readFileSync(new URL('../src/styles.css', import.meta.url), 'utf8');
 const sw = readFileSync(new URL('../src/swUpdates.ts', import.meta.url), 'utf8');
 
 describe('Spell Garden version', () => {
-  it('stamps semver 1.3.1 and keeps the service worker waiting for a tap', () => {
-    expect(pkg.version).toBe('1.3.1');
-    expect(serviceWorkerCacheId(pkg.version)).toBe('spell-garden-v1.3.1');
-    expect(SPELL_GARDEN_CACHE).toBe('spell-garden-v1.3.1');
-    expect(versionLabel({ version: '1.3.1', sha: 'abc1234', date: '2026-10-19' })).toBe('Version 1.3.1 (abc1234)');
+  it('stamps semver 1.3.2 and keeps the service worker waiting for a tap', () => {
+    expect(pkg.version).toBe('1.3.2');
+    expect(serviceWorkerCacheId(pkg.version)).toBe('spell-garden-v1.3.2');
+    expect(SPELL_GARDEN_CACHE).toBe('spell-garden-v1.3.2');
+    expect(versionLabel({ version: '1.3.2', sha: 'abc1234', date: '2026-10-19' })).toBe('Version 1.3.2 (abc1234)');
     expect(css).toContain('-webkit-text-size-adjust: 100%');
     expect(css).toContain('text-size-adjust: 100%');
     expect(css).not.toContain('font-size: clamp');
@@ -25,7 +25,7 @@ describe('Spell Garden version', () => {
 
   it('reads the changelog', () => {
     const notes = parseChangelog(changelog);
-    expect(notes[0]?.version).toBe('1.3.1');
+    expect(notes[0]?.version).toBe('1.3.2');
     expect(notes[0]?.date).toBe('2026-10-19');
     expect(notes.at(-1)?.version).toBe('1.0.0');
     const written = notes.map((note) => note.sections.flatMap((section) => section.items).join(' ')).join(' ');
@@ -62,13 +62,15 @@ describe('Spell Garden version', () => {
     expect(sw).toContain('visibilitychange');
     expect(sw).toContain('SKIP_WAITING');
     expect(sw).toContain('controllerchange');
+    expect(sw).toContain('spell-garden.swReloads');
     expect(sw).toContain('reg.installing');
     expect(sw).not.toContain('prague.wizard-math.progress');
-    const worker = serviceWorkerSource('spell-garden-v1.3.1', ['./index.html'], './index.html');
+    const worker = serviceWorkerSource('spell-garden-v1.3.2', ['./index.html'], './index.html');
     expect(worker).toContain('SKIP_WAITING');
+    expect(worker).toContain('SPELL_PING');
     expect(worker).toContain("cache:'reload'");
     expect(worker).toContain("searchParams.set('spell', CACHE)");
-    expect(worker.indexOf('cache.match(HOME)')).toBeLessThan(worker.indexOf('fresh(HOME)'));
+    expect(worker.indexOf('fresh(HOME)')).toBeLessThan(worker.indexOf('cached(HOME)'));
     expect(worker).not.toContain('localStorage');
   });
 

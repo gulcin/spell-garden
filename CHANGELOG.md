@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.2] - 2026-10-19
+
+Spell Garden opens again on an iPhone that got stuck after an update.
+
+### Fixed
+
+- The home screen app was keeping an old copy of the page. After an update that copy asked for a script that was gone, and the iPhone stayed blank.
+- Opening the garden now asks the network for the page first. A saved copy is only used when the phone is offline.
+- If a new spell cannot load, the app reloads once. If it is still stuck, Start again clears the saved pages and keeps her garden.
+
+### For Aida
+
+- If the garden will not open, tap Start again. Your flowers and crystals stay.
+
 ## [1.3.1] - 2026-10-19
 
 The mirror shows one shelf at a time, and the block spell only names the blocks in the tray.
@@ -148,6 +162,7 @@ The garden as Aida first played it: painted places, a way home, a shop, and a no
 
 - The garden is painted, the shop is open, and you can tell us what you think.
 
+[1.3.2]: https://github.com/gulcin/spell-garden/releases/tag/v1.3.2
 [1.3.1]: https://github.com/gulcin/spell-garden/releases/tag/v1.3.1
 [1.3.0]: https://github.com/gulcin/spell-garden/releases/tag/v1.3.0
 [1.2.0]: https://github.com/gulcin/spell-garden/releases/tag/v1.2.0

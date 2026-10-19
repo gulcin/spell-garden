@@ -180,7 +180,19 @@ export function startUpdateChecks(): void {
   let reloading = false;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (!applying || reloading) return;
+    let count = 0;
+    try {
+      count = Number(sessionStorage.getItem('spell-garden.swReloads') || '0');
+    } catch {
+      return;
+    }
+    if (count >= 1) return;
     reloading = true;
+    try {
+      sessionStorage.setItem('spell-garden.swReloads', '1');
+    } catch {
+      /* A private mode that refuses sessionStorage still gets this one reload. */
+    }
     window.location.reload();
   });
   subscribeLesson(() => emit());

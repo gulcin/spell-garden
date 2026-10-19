@@ -46,7 +46,7 @@ jobs:
           BASE_PATH: ${{ steps.pages.outputs.base_path }}
 
       - name: Install Chrome
-        run: npx --yes playwright@1.64.1 install --with-deps chromium
+        run: npx --yes playwright@1.64.1 install --with-deps chromium webkit
 
       - name: Sanity
         env:
