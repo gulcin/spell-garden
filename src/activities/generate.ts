@@ -46,6 +46,28 @@ function counted(n: number, one: string, many = `${one}s`): string {
   return `${n} ${n === 1 ? one : many}`;
 }
 
+const TRAY_PHRASE = {
+  flat: 'a flat for a hundred',
+  rod: 'a rod for a ten',
+  unit: 'a cube for a one',
+} as const;
+
+/** Names only the block kinds sitting in the tray. */
+export function baseTenPrompt(total: number, pieces: { art: string }[]): string {
+  const phrases = (['flat', 'rod', 'unit'] as const)
+    .filter((art) => pieces.some((piece) => piece.art === art))
+    .map((art) => TRAY_PHRASE[art]);
+  const use =
+    phrases.length === 0
+      ? 'the blocks in the tray'
+      : phrases.length === 1
+        ? phrases[0]
+        : phrases.length === 2
+          ? `${phrases[0]} and ${phrases[1]}`
+          : `${phrases[0]}, ${phrases[1]}, and ${phrases[2]}`;
+  return `Build ${total} on the mat. Use ${use}.`;
+}
+
 /** How many steps gentler the puzzle in progress should be. Set only inside generateItem. */
 let gentle = 0;
 
@@ -436,13 +458,13 @@ function baseTen(topic: Topic, rand: () => number, salt: string): Item {
   for (let i = 0; i < hundreds + 1; i++) pieces.push({ id: `f${i}`, art: 'flat', value: 100, label: '100' });
   for (let i = 0; i < Math.max(tens + 2, 4); i++) pieces.push({ id: `r${i}`, art: 'rod', value: 10, label: '10' });
   for (let i = 0; i < Math.max(ones + 3, 8); i++) pieces.push({ id: `u${i}`, art: 'unit', value: 1, label: '1' });
-  if (!useHundreds) pieces.splice(0, hundreds + 1);
+  const offered = useHundreds ? pieces : pieces.filter((piece) => piece.art !== 'flat');
   const solution: Action[] = [];
   for (let i = 0; i < hundreds; i++) solution.push({ op: 'move', pieceId: `f${i}`, zoneId: 'mat' });
   for (let i = 0; i < tens; i++) solution.push({ op: 'move', pieceId: `r${i}`, zoneId: 'mat' });
   for (let i = 0; i < ones; i++) solution.push({ op: 'move', pieceId: `u${i}`, zoneId: 'mat' });
   return pack(topic, 'base-ten', salt, {
-    prompt: `Build ${total} on the mat. Use a flat for a hundred, a rod for a ten, and a cube for a one.`,
+    prompt: baseTenPrompt(total, offered),
     hints: hints(
       'Make the biggest blocks first.',
       hundreds ? `You need ${hundreds} flats, then the tens, then the ones.` : `Rods are tens. Cubes are ones.`,
@@ -453,7 +475,7 @@ function baseTen(topic: Topic, rand: () => number, salt: string): Item {
       `I take ${tens} rod${tens === 1 ? '' : 's'} and ${ones} cube${ones === 1 ? '' : 's'}.`,
       `Together they make ${total}.`,
     ],
-    pieces: useHundreds ? pieces : pieces.filter((piece) => piece.art !== 'flat'),
+    pieces: offered,
     zones: [{ id: 'mat', role: 'mat', label: 'Mat', capacity: 40 }],
     initial: {},
     goal: { kind: 'value', zoneId: 'mat', total, onesAtMost: 9, tensAtMost: useHundreds ? 9 : undefined },

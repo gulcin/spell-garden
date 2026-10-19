@@ -1,11 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import { freshProgress, type Progress } from '../src/progress/types.ts';
 import { withWardrobe } from '../src/progress/storage.ts';
-import { crystalGain, itemPreview, paintedLook } from '../src/wardrobe/catalog.ts';
+import { SHOP_CATEGORIES, SHOP_ITEMS, crystalGain, itemPreview, paintedLook } from '../src/wardrobe/catalog.ts';
 import { awardCrystals, buyItem, unequipSlot } from '../src/wardrobe/economy.ts';
 import { breakInto, paymentSpeech, purseTotal, rewardSpeech, tenderSpeech } from '../src/wardrobe/purse.ts';
 
 describe('crystal shop', () => {
+  it('keeps friends on their own shelf', () => {
+    expect(SHOP_CATEGORIES.map((entry) => entry.label)).toEqual(['Robes', 'Hats', 'Extras', 'Brooms', 'Friends']);
+    expect(SHOP_ITEMS.find((item) => item.id === 'extra-kitten')?.category).toBe('friend');
+    const fullest = Math.max(
+      ...SHOP_CATEGORIES.map((entry) => SHOP_ITEMS.filter((item) => item.category === entry.id).length),
+    );
+    expect(fullest).toBeLessThanOrEqual(4);
+  });
+
   it('stops at zero crystals and will not buy what she cannot afford', () => {
     const paid = awardCrystals(freshProgress(), 6);
     const first = buyItem(paid, 'robe-moon');

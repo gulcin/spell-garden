@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { Progress } from '../progress/types.ts';
-import { SHOP_ITEMS, itemById, itemPreview } from '../wardrobe/catalog.ts';
+import { SHOP_CATEGORIES, SHOP_ITEMS, itemById, itemPreview, type ShopCategory } from '../wardrobe/catalog.ts';
 import { equipItem, unequipSlot } from '../wardrobe/economy.ts';
 import { speak } from '../speech.ts';
 import { CrystalCounter } from './CrystalCounter.tsx';
@@ -17,7 +17,13 @@ export function WardrobeMirror({
   onShop: () => void;
 }) {
   const [note, setNote] = useState<string | null>(null);
-  const owned = SHOP_ITEMS.filter((item) => progress.wardrobe.owned.includes(item.id));
+  const [shelf, setShelf] = useState<ShopCategory>(() => {
+    const first = SHOP_CATEGORIES.find((entry) =>
+      SHOP_ITEMS.some((item) => item.category === entry.id && progress.wardrobe.owned.includes(item.id)),
+    );
+    return first?.id ?? 'dress';
+  });
+  const owned = SHOP_ITEMS.filter((item) => item.category === shelf && progress.wardrobe.owned.includes(item.id));
 
   function toggle(id: string) {
     const item = itemById(id);
@@ -38,38 +44,55 @@ export function WardrobeMirror({
         </div>
         <CrystalCounter count={progress.crystals} />
       </header>
-      <div className="mirror-stage">
-        <DressedApprentice className="guide mirror-figure" alt="Aida in the clothes she chose" />
+      <div className="shop-tabs" role="tablist" aria-label="Wardrobe shelves">
+        {SHOP_CATEGORIES.map((entry) => (
+          <button
+            key={entry.id}
+            type="button"
+            role="tab"
+            aria-selected={shelf === entry.id}
+            className={shelf === entry.id ? 'on' : ''}
+            data-testid={`wardrobe-shelf-${entry.id}`}
+            onClick={() => setShelf(entry.id)}
+          >
+            {entry.label}
+          </button>
+        ))}
       </div>
-      {note ? (
-        <p className="note good shop-cheer" role="status">
-          {note}
-        </p>
-      ) : null}
-      {owned.length === 0 ? (
-        <p className="mirror-empty">The mirror is quiet. Two spells in the crystal cave can buy the first robe.</p>
-      ) : (
-        <div className="shop-grid">
-          {owned.map((item) => {
-            const wearing = progress.wardrobe.equipped[item.slot] === item.id;
-            const base = `${import.meta.env.BASE_URL}art/wear/${itemPreview(item.id)}`;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                className={wearing ? 'shop-card wear-card on' : 'shop-card wear-card'}
-                data-testid={`wear-${item.id}`}
-                aria-pressed={wearing}
-                onClick={() => toggle(item.id)}
-              >
-                <img src={`${base}.webp`} alt="" />
-                <h2>{item.name}</h2>
-                <span>{wearing ? 'Take it off' : 'Put it on'}</span>
-              </button>
-            );
-          })}
+      <div className="wardrobe-fit">
+        <div className="mirror-stage">
+          <DressedApprentice className="guide mirror-figure" alt="Aida in the clothes she chose" />
         </div>
-      )}
+        {note ? (
+          <p className="note good shop-cheer" role="status">
+            {note}
+          </p>
+        ) : null}
+        {owned.length === 0 ? (
+          <p className="mirror-empty">This shelf is waiting. Two spells in the crystal cave can buy the first one.</p>
+        ) : (
+          <div className="shop-grid" data-testid="wardrobe-grid">
+            {owned.map((item) => {
+              const wearing = progress.wardrobe.equipped[item.slot] === item.id;
+              const base = `${import.meta.env.BASE_URL}art/wear/${itemPreview(item.id)}`;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={wearing ? 'shop-card wear-card on' : 'shop-card wear-card'}
+                  data-testid={`wear-${item.id}`}
+                  aria-pressed={wearing}
+                  onClick={() => toggle(item.id)}
+                >
+                  <img src={`${base}.webp`} alt="" />
+                  <h2 className="wear-name">{item.name}</h2>
+                  <span className="wear-state">{wearing ? 'Take it off' : 'Put it on'}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
       <button type="button" className="btn gold xl" data-testid="back-to-shop" onClick={onShop}>
         Back to the shop
       </button>

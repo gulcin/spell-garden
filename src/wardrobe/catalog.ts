@@ -1,6 +1,6 @@
 /** Crystal shop. A few cave spells buy the first thing in each shelf. */
 
-export type ShopCategory = 'dress' | 'hat' | 'extra' | 'broom';
+export type ShopCategory = 'dress' | 'hat' | 'extra' | 'broom' | 'friend';
 
 export type WearSlot = 'dress' | 'hat' | 'familiar' | 'bag' | 'wand' | 'necklace' | 'crown' | 'broom';
 
@@ -18,6 +18,7 @@ export const SHOP_CATEGORIES: { id: ShopCategory; label: string }[] = [
   { id: 'hat', label: 'Hats' },
   { id: 'extra', label: 'Extras' },
   { id: 'broom', label: 'Brooms' },
+  { id: 'friend', label: 'Friends' },
 ];
 
 export const SHOP_ITEMS: ShopItem[] = [
@@ -33,7 +34,7 @@ export const SHOP_ITEMS: ShopItem[] = [
   { id: 'extra-necklace', name: 'Crystal necklace', category: 'extra', slot: 'necklace', price: 10, line: 'One bright crystal on a ribbon.' },
   { id: 'extra-bag', name: 'Moon bag', category: 'extra', slot: 'bag', price: 14, line: 'A round bag with a moon clasp.' },
   { id: 'extra-wand', name: 'Comet wand', category: 'extra', slot: 'wand', price: 18, line: 'A wand with a trailing spark.' },
-  { id: 'extra-kitten', name: 'Cloud kitten', category: 'extra', slot: 'familiar', price: 22, line: 'A small kitten who likes pockets.' },
+  { id: 'extra-kitten', name: 'Cloud kitten', category: 'friend', slot: 'familiar', price: 22, line: 'A small kitten who likes pockets.' },
   { id: 'broom-twig', name: 'Twig broom', category: 'broom', slot: 'broom', price: 6, line: 'A kind little broom of garden twigs.' },
   { id: 'broom-blossom', name: 'Blossom broom', category: 'broom', slot: 'broom', price: 12, line: 'Tied with a pink flower.' },
   { id: 'broom-star', name: 'Star broom', category: 'broom', slot: 'broom', price: 18, line: 'The bristles shine.' },

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { applyAll, initialState, isSolved } from '../src/activities/logic.ts';
-import { countUpHint, generateItem, placementPlan, sampleItem } from '../src/activities/generate.ts';
+import { baseTenPrompt, countUpHint, generateItem, placementPlan, sampleItem } from '../src/activities/generate.ts';
 import { classify, isManipulative, TEMPLATE_LABEL, type TemplateId } from '../src/curriculum/classify.ts';
 import { allTopics } from '../src/curriculum/data.ts';
 import { askHer } from '../src/curriculum/ask.ts';
@@ -69,6 +69,31 @@ describe('item generators', () => {
       expect(item.template).toBe(template);
       expect(item.prompt.length).toBeGreaterThan(8);
     }
+  });
+
+  it('names only the base-ten blocks that are sitting in the tray', () => {
+    expect(baseTenPrompt(21, [{ art: 'rod' }, { art: 'unit' }])).toBe(
+      'Build 21 on the mat. Use a rod for a ten and a cube for a one.',
+    );
+    expect(baseTenPrompt(121, [{ art: 'flat' }, { art: 'rod' }, { art: 'unit' }])).toBe(
+      'Build 121 on the mat. Use a flat for a hundred, a rod for a ten, and a cube for a one.',
+    );
+    expect(baseTenPrompt(100, [{ art: 'flat' }])).toBe('Build 100 on the mat. Use a flat for a hundred.');
+    const failures: string[] = [];
+    for (const topic of allTopics()) {
+      for (const salt of ['seed-a', `practice-${topic.id}`]) {
+        const item = generateItem(topic, salt);
+        if (item.template !== 'base-ten' || !item.prompt.startsWith('Build ')) continue;
+        const kinds = new Set(item.pieces.map((piece) => piece.art));
+        if (!kinds.has('flat') && /flat|hundred/i.test(item.prompt)) failures.push(`${topic.name} names a flat: ${item.prompt}`);
+        if (kinds.has('flat') && !item.prompt.includes('a flat for a hundred')) failures.push(`${topic.name} hides a flat: ${item.prompt}`);
+        if (kinds.has('rod') && !item.prompt.includes('a rod for a ten')) failures.push(`${topic.name} hides a rod: ${item.prompt}`);
+        if (!kinds.has('rod') && /\brod\b|ten/.test(item.prompt)) failures.push(`${topic.name} names a rod: ${item.prompt}`);
+        if (kinds.has('unit') && !item.prompt.includes('a cube for a one')) failures.push(`${topic.name} hides a cube: ${item.prompt}`);
+        if (!kinds.has('unit') && /cube/.test(item.prompt)) failures.push(`${topic.name} names a cube: ${item.prompt}`);
+      }
+    }
+    expect(failures).toEqual([]);
   });
 
   it('asks a real-world question from the evidence', () => {

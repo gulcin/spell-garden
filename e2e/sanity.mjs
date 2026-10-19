@@ -102,8 +102,8 @@ function installSeed(page) {
         sessions: [],
         seenTemplates: templates,
         rewards: [],
-        crystals: 200,
-        purse: { pink: 0, yellow: 0, blue: 0, gold: 10 },
+        crystals: 280,
+        purse: { pink: 0, yellow: 0, blue: 0, gold: 14 },
         wardrobe: { owned: [], equipped: {} },
         visitedPlaces: [],
         storyOffers: places,
@@ -145,7 +145,7 @@ async function layout(page) {
     if (root && root.scrollHeight > root.clientHeight + 2) problems.push(`app scrolls ${root.scrollHeight}>${root.clientHeight}`);
     const scrolling = document.scrollingElement;
     if (scrolling && scrolling.scrollHeight > scrolling.clientHeight + 2) problems.push(`page scrolls ${scrolling.scrollHeight}>${scrolling.clientHeight}`);
-    for (const node of document.querySelectorAll('.board, .play, .quest, .garden, .shop, .home, .journal, .colour-app, .story-reader, .witch-house, .tell-sheet')) {
+    for (const node of document.querySelectorAll('.board, .play, .quest, .garden, .shop, .home, .journal, .colour-app, .story-reader, .witch-house, .tell-sheet, .wardrobe, [data-testid="wardrobe-grid"]')) {
       if (node.scrollHeight > node.clientHeight + 2) problems.push(`inner scroll .${node.className.toString().split(' ')[0]} ${node.scrollHeight}>${node.clientHeight}`);
     }
     for (const node of document.querySelectorAll('h1, h2, p, button, .spell-row, .prompt')) {
@@ -170,6 +170,54 @@ async function layout(page) {
       }
     }
     return problems;
+  });
+}
+
+async function wardrobeProblems(page) {
+  const layoutProblems = await layout(page);
+  const tileProblems = await page.evaluate(() => {
+    const problems = [];
+    const cards = [...document.querySelectorAll('[data-testid^="wear-"]')];
+    if (cards.length === 0) problems.push('empty shelf');
+    for (const card of cards) {
+      const box = card.getBoundingClientRect();
+      const name = card.querySelector('.wear-name');
+      const state = card.querySelector('.wear-state');
+      const nameText = name?.textContent?.trim() ?? '';
+      const stateText = state?.textContent?.trim() ?? '';
+      if (!nameText) problems.push(`missing name ${card.getAttribute('data-testid')}`);
+      if (stateText !== 'Put it on' && stateText !== 'Take it off') problems.push(`state ${card.getAttribute('data-testid')} ${stateText}`);
+      for (const node of [name, state]) {
+        if (!(node instanceof HTMLElement)) continue;
+        const rect = node.getBoundingClientRect();
+        if (rect.top < box.top - 1 || rect.bottom > box.bottom + 1 || rect.left < box.left - 1 || rect.right > box.right + 1) {
+          problems.push(`outside ${nameText}`);
+        }
+        if (node.scrollHeight > node.clientHeight + 2 || node.scrollWidth > node.clientWidth + 2) problems.push(`clipped ${node.textContent}`);
+        if (rect.height < 8 || rect.width < 8) problems.push(`tiny ${node.textContent}`);
+      }
+      if (box.top < -1 || box.bottom > window.innerHeight + 1) problems.push(`offscreen ${nameText}`);
+    }
+    return problems;
+  });
+  return [...layoutProblems, ...tileProblems];
+}
+
+async function trayWords(page) {
+  return page.evaluate(() => {
+    const prompt = document.querySelector('h2.prompt')?.textContent?.trim() ?? '';
+    const srcs = [...document.querySelectorAll('[data-testid^="piece:"] img')].map((img) => img.getAttribute('src') || '');
+    const problems = [];
+    const named = [
+      [/flat|hundred/i, 'block-flat', 'flat'],
+      [/\brods?\b/i, 'block-rod', 'rod'],
+      [/\bcubes?\b/i, 'block-unit', 'cube'],
+    ];
+    for (const [pattern, file, label] of named) {
+      if (pattern.test(prompt) && !srcs.some((src) => src.includes(file))) problems.push(`${label} named but missing (${prompt})`);
+    }
+    if (!prompt) problems.push('missing prompt');
+    return { prompt, problems };
   });
 }
 
@@ -423,7 +471,7 @@ async function main() {
   if (!notes.includes('The robe was sitting')) record('grown-ups notes', 'still broken', notes.slice(0, 160));
   else record('grown-ups notes', 'pass');
   const stamp = await page.locator('[data-testid="app-version"]').innerText();
-  if (!stamp.includes('Version 1.3.0 (')) record('grown-ups version', 'still broken', stamp);
+  if (!stamp.includes('Version 1.3.1 (')) record('grown-ups version', 'still broken', stamp);
   else record('grown-ups version', 'pass', stamp.trim());
   await page.locator('[data-testid="whats-new"]').click();
   await page.waitForSelector('[data-testid="whats-new-screen"]');
@@ -456,6 +504,53 @@ async function main() {
   if (!look?.includes('look-robe-moon')) record('dress-up robe', 'still broken', look ?? 'no look');
   else record('dress-up robe', 'pass', look);
   await shot(page, 'wardrobe-moon');
+  await page.locator('[data-testid="back-to-shop"]').click();
+  await page.waitForSelector('[data-testid="crystal-shop"]');
+  const rest = [
+    ['dress', 'robe-rose'],
+    ['dress', 'robe-moss'],
+    ['dress', 'robe-midnight'],
+    ['hat', 'hat-mushroom'],
+    ['hat', 'hat-crescent'],
+    ['hat', 'hat-tall'],
+    ['extra', 'extra-necklace'],
+    ['extra', 'extra-bag'],
+    ['extra', 'extra-wand'],
+    ['friend', 'extra-kitten'],
+    ['broom', 'broom-blossom'],
+    ['broom', 'broom-star'],
+    ['broom', 'broom-night'],
+  ];
+  for (const [shelf, id] of rest) {
+    await page.locator(`[data-testid="shelf-${shelf}"]`).click();
+    await clickPaged(page, `buy-${id}`);
+  }
+  await page.locator('[data-testid="open-wardrobe"]').click();
+  await page.waitForSelector('[data-testid="wardrobe"]');
+  await page.locator('[data-testid="wardrobe-shelf-dress"]').click();
+  await page.locator('[data-testid="wear-robe-rose"]').click();
+  const roseState = await page.locator('[data-testid="wear-robe-rose"] .wear-state').innerText();
+  if (roseState !== 'Take it off') record('dress-up rose', 'still broken', roseState);
+  else record('dress-up rose', 'pass');
+  const wardrobeViews = [
+    { name: 'ipad-portrait', width: 834, height: 1194 },
+    { name: 'ipad-landscape', width: 1194, height: 834 },
+    { name: 'ipad-tight', width: 1180, height: 720 },
+    { name: 'iphone', width: 390, height: 844 },
+    { name: 'iphone-short', width: 390, height: 700 },
+  ];
+  const shelves = ['dress', 'hat', 'extra', 'broom', 'friend'];
+  for (const viewport of wardrobeViews) {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    for (const shelf of shelves) {
+      await page.locator(`[data-testid="wardrobe-shelf-${shelf}"]`).click();
+      const problems = await wardrobeProblems(page);
+      if (viewport.name === 'ipad-landscape' && shelf === 'dress') await shot(page, 'wardrobe-rose');
+      if (problems.length) record(`wardrobe ${viewport.name} ${shelf}`, 'still broken', problems.slice(0, 6).join('; '));
+      else record(`wardrobe ${viewport.name} ${shelf}`, 'pass');
+    }
+  }
+  await page.setViewportSize({ width: 834, height: 1194 });
   await page.locator('[data-testid="garden-map"]').click();
 
   await page.locator('[data-testid="map-shop"]').click();
@@ -578,6 +673,9 @@ async function main() {
   if (build) {
     await openPractice(page, build.id);
     await page.setViewportSize({ width: 1194, height: 834 });
+    const tray = await trayWords(page);
+    if (tray.problems.length) record('base-ten tray words', 'still broken', tray.problems.join('; '));
+    else record('base-ten tray words', 'pass', tray.prompt);
     const squashed = await layout(page);
     await shot(page, 'base-ten-ipad-landscape');
     if (squashed.length) record(`base-ten ${build.name}`, 'still broken', squashed.slice(0, 4).join('; '));

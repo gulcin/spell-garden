@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.1] - 2026-10-19
+
+The mirror shows one shelf at a time, and the block spell only names the blocks in the tray.
+
+### Fixed
+
+- Robes, hats, extras, brooms, and friends each have a shelf, so every piece fits on an iPad and an iPhone without scrolling.
+- Every wardrobe tile shows its name and Put it on or Take it off inside the tile.
+- “Build the number” names a flat, a rod, or a cube only when that block is in the tray.
+
+### For Aida
+
+- The mirror has shelves. Tap a shelf, then put a piece on or take it off.
+- The block spell talks about the blocks you can see.
+
 ## [1.3.0] - 2026-10-19
 
 The app on the home screen brings in a new spell by itself.
@@ -133,6 +148,7 @@ The garden as Aida first played it: painted places, a way home, a shop, and a no
 
 - The garden is painted, the shop is open, and you can tell us what you think.
 
+[1.3.1]: https://github.com/gulcin/spell-garden/releases/tag/v1.3.1
 [1.3.0]: https://github.com/gulcin/spell-garden/releases/tag/v1.3.0
 [1.2.0]: https://github.com/gulcin/spell-garden/releases/tag/v1.2.0
 [1.1.4]: https://github.com/gulcin/spell-garden/releases/tag/v1.1.4
