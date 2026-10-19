@@ -1,6 +1,7 @@
 import type { Goal, Item } from '../activities/types.ts';
 import type { WardrobeState } from '../progress/types.ts';
 import { itemById } from '../wardrobe/catalog.ts';
+import { PAINTED_OUTFIT, STORY_FRAMES, type StoryFrame } from './adventureFrames.ts';
 
 export type Adventure = {
   id: string;
@@ -44,50 +45,6 @@ const COUNT_NOUN: Record<string, [string, string]> = {
   greenhouse: ['sprout', 'sprouts'],
   'wizard-tower': ['book', 'books'],
   'mushroom-ring': ['mushroom cap', 'mushroom caps'],
-};
-
-/** Several openings per place, picked by the UTC day, so tomorrow's visit sounds different. */
-const OPENINGS: Record<string, string[]> = {
-  'lantern-grove': [
-    '{name} stepped into the lantern grove and found every lantern asleep.',
-    'A soft wind had blown the lantern grove dark, and {name} came to wake it.',
-    'Fireflies hid in the lantern grove until {name} brought a little light back.',
-  ],
-  'potion-cottage': [
-    '{name} found the potion cottage kettle cold and the cups still empty.',
-    'The cottage chimney was quiet, so {name} came to warm the kettle.',
-    'Petal tea would not pour until {name} counted the cups just right.',
-  ],
-  'crystal-cave': [
-    '{name} ducked into the crystal cave and heard the gems whispering for help.',
-    'The cave was dim, and {name} followed a faint spark inside.',
-    'Loose crystals had rolled apart, so {name} came to share them fairly.',
-  ],
-  observatory: [
-    '{name} climbed to the observatory and found the garden clock dozing.',
-    'The dome was open, but the stars would not settle until {name} set the time.',
-    'A night bird called, and {name} went up to count the stars.',
-  ],
-  'lily-pond': [
-    '{name} reached the lily pond and saw the pads drifting apart.',
-    'Pebble the frog could not cross, so {name} came to set the pads in a line.',
-    'The moon sat on the water, and {name} counted the pads that held it.',
-  ],
-  greenhouse: [
-    '{name} opened the greenhouse and found the sprouts asking for a drink.',
-    'The glass was warm, but the little plants were waiting for {name}.',
-    'A seedling had tipped over, and {name} came to set the rows straight.',
-  ],
-  'wizard-tower': [
-    '{name} climbed the wizard tower and found the spell books in a heap.',
-    'Teacup the owl blinked from the loft, waiting for {name} to open the right books.',
-    'The tower window was foggy until {name} set the numbers in order.',
-  ],
-  'mushroom-ring': [
-    '{name} tiptoed into the mushroom ring and found the caps dim.',
-    'Lumen the beetle sat still, so {name} came to count the glowing caps.',
-    'The ring had gone quiet, and {name} stepped in to wake it kindly.',
-  ],
 };
 
 const MONTHS = [
@@ -134,21 +91,21 @@ function countLine(placeId: string, count: number, name: string): string {
   const thing = `${count} ${noun(placeId, count)}`;
   switch (placeId) {
     case 'lantern-grove':
-      return `${name} lit ${thing} to wake the sleeping path.`;
+      return `${name} lit ${thing}, and each one woke with a soft pop.`;
     case 'potion-cottage':
-      return `${name} poured ${thing} so the kettle could sing.`;
+      return `${name} poured ${thing}, so the kettle could sing.`;
     case 'crystal-cave':
-      return `${name} gathered ${thing} to light the quiet cave.`;
+      return `${name} gathered ${thing}, and the quiet cave grew brighter.`;
     case 'observatory':
-      return `${name} counted ${thing} so the night could see.`;
+      return `${name} counted ${thing}, so the night could see.`;
     case 'lily-pond':
-      return `${name} set out ${thing} to make a bridge of leaves.`;
+      return `${name} set out ${thing}, and they made a bridge of leaves.`;
     case 'greenhouse':
       return `${name} grew ${thing} under the warm glass.`;
     case 'wizard-tower':
       return `${name} opened ${thing} in the sleepy loft.`;
     case 'mushroom-ring':
-      return `${name} counted ${thing} until the ring glowed.`;
+      return `${name} counted ${thing}, and the ring began to glow.`;
     default:
       return `${name} counted ${thing}, and the garden grew brighter.`;
   }
@@ -165,8 +122,8 @@ function mixLine(placeId: string, counts: Record<string, number>, name: string):
           .map(([group, count]) => `${count} ${group}`)
           .join(', ')} and ${parts[parts.length - 1]![1]} ${parts[parts.length - 1]![0]}`;
   const thing = noun(placeId, sumCounts(counts));
-  if (placeId === 'lantern-grove') return `${name} lit ${listed} ${thing} to wake the path.`;
-  if (placeId === 'potion-cottage') return `${name} poured ${listed} ${thing} so the kettle could sing.`;
+  if (placeId === 'lantern-grove') return `${name} lit ${listed} ${thing}, so the path would have every colour it needed.`;
+  if (placeId === 'potion-cottage') return `${name} poured ${listed} ${thing}, so the kettle could sing.`;
   return `${name} gathered ${listed} ${thing} and set them in their places.`;
 }
 
@@ -197,15 +154,15 @@ function deedFromGoal(placeId: string, template: Item['template'], goal: Goal, n
     const jars = Object.keys(goal.counts).filter((id) => id.startsWith('jar')).length;
     const shared = sumCounts(goal.counts);
     const jarCount = jars || Object.keys(goal.counts).length;
-    return `To finish the sharing, ${name} shared ${shared} ${shareNoun(placeId, shared)} between ${jarCount} jars.`;
+    return `${name} shared ${shared} ${shareNoun(placeId, shared)} between ${jarCount} jars, so each jar could shine the same.`;
   }
   if (template === 'array' && goal.kind === 'array') {
     const count = goal.rows * goal.cols;
-    return `${name} planted ${count} ${noun(placeId, count)} in ${goal.rows} rows of ${goal.cols}.`;
+    return `${name} planted ${count} ${noun(placeId, count)} in ${goal.rows} rows of ${goal.cols}, so the rows would match.`;
   }
-  if (goal.kind === 'clock') return `${name} set the garden clock to ${clockPhrase(goal.hour, goal.minute)} so the stars would know the hour.`;
-  if (goal.kind === 'angle') return `${name} turned her wand until it opened to ${goal.degrees} degrees.`;
-  if (goal.kind === 'value') return `${name} built the number ${goal.total} with blocks.`;
+  if (goal.kind === 'clock') return `${name} set the garden clock to ${clockPhrase(goal.hour, goal.minute)}, so the stars would know the hour.`;
+  if (goal.kind === 'angle') return `${name} turned her wand until it opened to ${goal.degrees} degrees, and the corner felt true.`;
+  if (goal.kind === 'value') return `${name} built the number ${goal.total} with blocks, and the tower could read it.`;
   if (goal.kind === 'sum') return `${name} made the coins add up to ${goal.total}.`;
   if (goal.kind === 'shaded') return `${name} coloured ${goal.count} equal ${goal.count === 1 ? 'part' : 'parts'} of the picture.`;
   if (goal.kind === 'piece-at') return `${name} hopped to the lily the spell asked for.`;
@@ -239,8 +196,36 @@ export function outfitPhrase(wardrobe: WardrobeState | null | undefined): string
   return `your ${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
 }
 
-function wornPhrase(wardrobe: WardrobeState | null | undefined): string {
-  return outfitPhrase(wardrobe).replace(/^your /, 'her ');
+function frameAt(placeId: string, at: number): StoryFrame {
+  const frames = STORY_FRAMES[placeId] ?? STORY_FRAMES['lantern-grove']!;
+  return frames[dayIndex(at) % frames.length]!;
+}
+
+function say(text: string, name: string): string {
+  return text.replaceAll('{name}', name);
+}
+
+/** Sentences a child would hear, including a line that ends inside quotation marks. */
+export function pageSentences(text: string): string[] {
+  return text
+    .split(/(?<=[.!?]["']?)\s+/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+}
+
+function weave(deeds: string[]): string {
+  if (deeds.length <= 2) return deeds.join(' ');
+  const [first, ...rest] = deeds;
+  const tail = rest.map((line) => line.replace(/[.!?]$/, '')).join(', and ');
+  return `${first} Then ${tail}.`;
+}
+
+function deedPage(name: string, leadA: string, leadB: string, after: string, deeds: string[]): string {
+  return [say(leadA, name), say(leadB, name), weave(deeds), say(after, name)].join(' ');
+}
+
+function quietPage(name: string, lines: readonly string[]): string {
+  return lines.map((line) => say(line, name)).join(' ');
 }
 
 export function visitIntro(
@@ -250,18 +235,38 @@ export function visitIntro(
   name = 'Aida',
   at = Date.UTC(2026, 9, 19),
 ): string {
+  // The painted pages always show the same cloak and hat, whatever she has on in the garden.
+  void wardrobe;
   const who = learner(name);
-  const openings = OPENINGS[placeId] ?? OPENINGS['lantern-grove']!;
-  const problem = openings[dayIndex(at) % openings.length]!.replaceAll('{name}', who);
-  const friend = companion?.trim() ? ` ${companion.trim()} came along.` : '';
-  return `${problem} She wore ${wornPhrase(wardrobe)}.${friend}`;
+  const frame = frameAt(placeId, at);
+  const outfit = `${who} wore ${PAINTED_OUTFIT}.`;
+  const along = companion?.trim() ? `${companion.trim()} came along.` : '';
+  return [say(frame.problem, who), say(frame.sound, who), outfit, along, say(frame.speech, who)].filter(Boolean).join(' ');
 }
 
 function crystalSentence(placeId: string, crystals: number, name: string): string {
   const place = PLACE_NAME[placeId] ?? 'garden';
   if (crystals <= 0) return `${name} left the crystals glowing in the ${place}.`;
-  if (crystals === 1) return `1 crystal settled in ${name}'s pocket.`;
-  return `${crystals} crystals settled in ${name}'s pocket.`;
+  if (crystals === 1) return `1 crystal settled in ${name}'s pocket, warm as a tiny sun.`;
+  return `${crystals} crystals settled in ${name}'s pocket, warm as a handful of sunshine.`;
+}
+
+function withFriend(warm: string, creature?: string | null): string {
+  const name = creature?.trim();
+  if (!name) return warm;
+  if (warm.toLowerCase().includes(name.toLowerCase())) return warm;
+  const short = name.split(' the ')[0] ?? '';
+  if (short && warm.startsWith(`${short} `)) return `${name}${warm.slice(short.length)}`;
+  return `${name} stayed for the ending. ${warm}`;
+}
+
+function withGifts(magic: string, gift?: string | null, companion?: string | null): string {
+  const extras = [
+    gift?.trim() ? `she carried ${gift.trim()} home` : '',
+    companion?.trim() ? `${companion.trim()} walked beside her` : '',
+  ].filter(Boolean);
+  if (extras.length === 0) return magic;
+  return `${magic.replace(/[.!?]$/, '')}, and ${extras.join(', and ')}.`;
 }
 
 export function closingLines(input: {
@@ -273,15 +278,12 @@ export function closingLines(input: {
   at: number;
   name?: string | null;
 }): string[] {
-  const place = PLACE_NAME[input.placeId] ?? 'garden';
-  const friend = input.creature?.trim() || PLACE_FRIEND[input.placeId] || 'a quiet friend';
   const who = learner(input.name);
-  const brought = input.gift ? ` She carried ${input.gift} home.` : '';
-  const along = input.companion?.trim() ? ` ${input.companion.trim()} walked her to the gate.` : '';
-  return [
-    `${friend} stayed close, and the ${place} grew quiet and warm.`,
-    `${crystalSentence(input.placeId, input.crystals, who)}${brought}${along} The garden kept ${adventureDate(input.at)} safe in its memory.`,
-  ];
+  const frame = frameAt(input.placeId, input.at);
+  const warm = withFriend(say(frame.warm, who), input.creature);
+  const magic = withGifts(say(frame.magic, who), input.gift, input.companion);
+  const kept = `The garden kept ${adventureDate(input.at)} safe in its memory.`;
+  return [`${warm} ${magic} ${crystalSentence(input.placeId, input.crystals, who)} ${kept}`];
 }
 
 export function isAdventure(value: unknown): value is Adventure {
@@ -315,18 +317,17 @@ export function buildAdventure(input: {
   const place = PLACE_NAME[input.placeId] ?? 'garden';
   const friend = input.creature?.trim() || PLACE_FRIEND[input.placeId] || 'a quiet friend';
   const who = learner(input.name);
+  const frame = frameAt(input.placeId, input.at);
   const deeds = input.deeds.map((line) => line.trim()).filter(Boolean);
   const split = Math.max(1, Math.ceil(deeds.length / 2));
   const first = deeds.slice(0, split);
   const rest = deeds.slice(split);
-  const work = first.length > 0 ? first.join(' ') : `${who} listened, and the ${place} listened back.`;
-  const more = rest.join(' ');
   const ending = closingLines({ ...input, name: who });
   const pages = [
     visitIntro(input.placeId, input.wardrobe, input.companion, who, input.at),
-    work,
-    more || `${who} paused, and the ${place} glowed a little brighter.`,
-    `${ending[0]} ${ending[1]}`,
+    first.length > 0 ? deedPage(who, frame.leadA, frame.leadB, frame.after, first) : quietPage(who, frame.quiet),
+    rest.length > 0 ? deedPage(who, frame.nextA, frame.nextB, frame.nextAfter, rest) : quietPage(who, frame.bridge),
+    ending.join(' '),
   ];
   return {
     id: `adventure-${input.placeId}-${input.at}`,

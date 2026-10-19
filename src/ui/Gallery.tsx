@@ -75,12 +75,13 @@ function previewProgress(screen: string, dressed: boolean): Progress {
         name: 'Aida',
         placeId: 'lantern-grove',
         deeds: [
-          'Aida lit 7 lanterns to wake the sleeping path.',
-          'To finish the sharing, Aida shared 12 glow-berries between 3 jars.',
+          deedLine('lantern-grove', { template: 'ten-frame', goal: { kind: 'fill-count', count: 7 } }),
+          deedLine('lantern-grove', { template: 'sharing', goal: { kind: 'zone-counts', counts: { jar0: 4, jar1: 4, jar2: 4 } } }),
         ],
         crystals: 4,
         wardrobe: progress.wardrobe,
         creature: 'Nim the moth',
+        companion: 'Pip the cloud cat',
         at: Date.UTC(2026, 9, 18),
       }),
     ];

@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.3] - 2026-10-19
+
+Today's adventure is a story you can read aloud, and the words match the picture.
+
+### Fixed
+
+- Today's adventure is written as storybook pages: several sentences, with feelings, sounds, and a friend who speaks. There are four different tales in every place. The last page ends warm and magical.
+- The story names the lilac star cloak and purple hat shown in the pictures.
+- The story sits on a parchment card in a larger storybook font, and the page still fits the iPad and the phone.
+
+### For Aida
+
+- Today's adventure is a little story, with a friend who talks.
+- The words match the cloak and hat in the picture.
+
 ## [1.4.2] - 2026-10-19
 
 Today's adventure is a little story, and each task in a chapter is a different problem.
@@ -217,6 +232,7 @@ The garden as Aida first played it: painted places, a way home, a shop, and a no
 
 - The garden is painted, the shop is open, and you can tell us what you think.
 
+[1.4.3]: https://github.com/gulcin/spell-garden/releases/tag/v1.4.3
 [1.4.2]: https://github.com/gulcin/spell-garden/releases/tag/v1.4.2
 [1.4.1]: https://github.com/gulcin/spell-garden/releases/tag/v1.4.1
 [1.4.0]: https://github.com/gulcin/spell-garden/releases/tag/v1.4.0
