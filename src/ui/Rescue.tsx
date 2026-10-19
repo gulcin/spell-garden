@@ -23,6 +23,45 @@ export function startAgain(): Promise<void> {
 
 type BoundaryState = { error: boolean };
 
+type ScreenBoundaryProps = { children: ReactNode; onHome: () => void };
+
+/**
+ * A single screen that trips shows a way back to the map.
+ * Progress, the service worker, and the caches stay as they are.
+ */
+export class ScreenBoundary extends Component<ScreenBoundaryProps, BoundaryState> {
+  state: BoundaryState = { error: false };
+
+  static getDerivedStateFromError(): BoundaryState {
+    return { error: true };
+  }
+
+  render() {
+    if (!this.state.error) return this.props.children;
+    const mark = `${import.meta.env.BASE_URL}art/map-mark.webp`;
+    return (
+      <div className="spell-oops" role="alert" data-testid="screen-oops">
+        <div>
+          <h1>Oops</h1>
+          <p>Back to the garden. Your garden is still saved.</p>
+          <button
+            type="button"
+            className="map-home"
+            data-testid="oops-map"
+            onClick={() => {
+              this.setState({ error: false });
+              this.props.onHome();
+            }}
+          >
+            <img src={mark} alt="" />
+            <span>Garden map</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+}
+
 /** Runtime crashes get the same fresh start as a shell that never loaded. */
 export class GardenBoundary extends Component<{ children: ReactNode }, BoundaryState> {
   state: BoundaryState = { error: false };

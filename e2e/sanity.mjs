@@ -5,7 +5,7 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { chromium } from 'playwright-core';
+import { chromium, webkit } from 'playwright-core';
 
 function chromePath() {
   const fromEnv = process.env.CHROME_PATH;
@@ -411,6 +411,132 @@ async function greetArrivals(page) {
   }
 }
 
+async function shopShelf(page) {
+  return page.evaluate(() => {
+    const issues = [];
+    const grid = document.querySelector('.shop:not(.pet-shop) .shop-grid');
+    const buy = document.querySelector('.shop:not(.pet-shop) .shop-grid button');
+    const gridBox = grid?.getBoundingClientRect();
+    const buyBox = buy?.getBoundingClientRect();
+    if (!grid || !gridBox || gridBox.height < 80) issues.push(`grid ${Math.round(gridBox?.height ?? 0)}`);
+    const text = buy?.textContent?.trim() ?? '';
+    if (!text) issues.push('buy blank');
+    if (!buy || !buyBox || buyBox.height < 8) issues.push('buy missing');
+    else if (buyBox.bottom > window.innerHeight + 1 || buyBox.top < 0) issues.push('buy offscreen');
+    else {
+      const hit = document.elementFromPoint(buyBox.left + buyBox.width / 2, buyBox.top + Math.min(buyBox.height / 2, 18));
+      if (hit && hit !== buy && !buy.contains(hit) && !hit.contains(buy)) issues.push('buy covered');
+    }
+    return issues;
+  });
+}
+
+const SHOP_VIEWS = [
+  { name: 'ipad-portrait', width: 834, height: 1194 },
+  { name: 'ipad-landscape', width: 1194, height: 834 },
+  { name: 'iphone', width: 390, height: 844 },
+  { name: 'iphone-short', width: 390, height: 700 },
+];
+
+async function assertShopShelf(page, label) {
+  for (const viewport of SHOP_VIEWS) {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    await page.waitForTimeout(60);
+    const problems = [...(await layout(page)), ...(await shopShelf(page))];
+    if (problems.length) record(`${label} ${viewport.name}`, 'still broken', problems.slice(0, 6).join('; '));
+    else record(`${label} ${viewport.name}`, 'pass');
+  }
+  await page.setViewportSize({ width: 834, height: 1194 });
+}
+
+async function checkLegacyShop(pageUrl) {
+  const legacy = {
+    format: 'prague.wizard-math.progress.v1',
+    taxonomy: 'marble-skill-taxonomy-v1',
+    learnerName: 'Aida',
+    placement: { done: true, correct: 4, asked: 5, frontierAge: 8, completedAt: 1 },
+    topics: {},
+    sessions: [
+      {
+        id: 's',
+        startedAt: 1,
+        endedAt: 2,
+        chapterTitle: 'A quiet chapter',
+        topicIds: [],
+        correct: 3,
+        incorrect: 0,
+        skips: 0,
+        rewardId: 'moth',
+      },
+    ],
+    seenTemplates: [],
+    rewards: ['moth'],
+    crystals: 26,
+    wardrobe: {
+      owned: ['robe-moon', 'robe-rose', 'extra-kitten', 'hat-night', 'robe-vanished'],
+      equipped: { dress: 'robe-moon', hat: 'hat-night', familiar: 'no-such-friend' },
+    },
+    visitedPlaces: ['lantern-grove', 'crystal-shop'],
+    storyOffers: ['crystal-shop'],
+    updatedAt: 1,
+  };
+  const engines = [
+    ['chromium', () => chromium.launch({ executablePath: chromePath(), args: ['--no-sandbox', '--disable-dev-shm-usage'] })],
+    ['webkit', () => webkit.launch({ headless: true })],
+  ];
+  for (const [name, launch] of engines) {
+    const browser = await launch();
+    const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, hasTouch: true, isMobile: true });
+    const pageErrors = [];
+    page.on('pageerror', (error) => pageErrors.push(error.message));
+    await page.addInitScript((saved) => {
+      localStorage.setItem('prague.wizard-math.progress.v1', JSON.stringify(saved));
+    }, legacy);
+    try {
+      await page.goto(pageUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
+      await page.waitForSelector('[data-testid="map-shop"]', { timeout: 20000 });
+      await greetArrivals(page);
+      await page.locator('[data-testid="map-shop"]').click();
+      await page.waitForSelector('[data-testid="crystal-shop"]');
+      if ((await page.locator('[data-testid="screen-oops"]').count()) > 0) {
+        record(`legacy shop ${name}`, 'still broken', 'oops screen');
+        continue;
+      }
+      const before = Number(await page.locator('[data-testid="crystal-count"]').innerText());
+      await page.locator('[data-testid="shelf-hat"]').click();
+      const ownedHat = (await page.locator('[data-testid="item-hat-night"] button').last().innerText()).trim();
+      if (!ownedHat.includes('Take it off') && !ownedHat.includes('Put it on')) {
+        record(`legacy shop ${name}`, 'still broken', ownedHat);
+        continue;
+      }
+      await clickPaged(page, 'buy-hat-mushroom');
+      const after = Number(await page.locator('[data-testid="crystal-count"]').innerText());
+      if (before - after !== 12) {
+        record(`legacy shop ${name}`, 'still broken', `crystals ${before} -> ${after}`);
+        continue;
+      }
+      await page.locator('[data-testid="open-wardrobe"]').click();
+      await page.waitForSelector('[data-testid="wardrobe"]');
+      await page.locator('[data-testid="wardrobe-shelf-hat"]').click();
+      await page.waitForSelector('[data-testid="wear-hat-mushroom"]');
+      await page.locator('[data-testid="back-to-shop"]').click();
+      await page.waitForSelector('[data-testid="crystal-shop"]');
+      await page.setViewportSize({ width: 1194, height: 834 });
+      await page.waitForTimeout(60);
+      const shelf = await shopShelf(page);
+      const noisy = pageErrors.filter((line) => !line.includes('InvalidStateError') && !line.includes('audio'));
+      if (shelf.length || noisy.length) record(`legacy shop ${name}`, 'still broken', [...shelf, ...noisy].slice(0, 4).join('; '));
+      else record(`legacy shop ${name}`, 'pass', `crystals ${before} -> ${after}`);
+      await page.locator('[data-testid="garden-map"]').click();
+      await page.waitForSelector('[data-testid="map-shop"]');
+    } catch (error) {
+      record(`legacy shop ${name}`, 'still broken', error instanceof Error ? error.message : 'error');
+    } finally {
+      await browser.close();
+    }
+  }
+}
+
 async function fits(page, label, musicId) {
   for (const viewport of VIEWPORTS) {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
@@ -507,7 +633,7 @@ async function main() {
   if (!notes.includes('The robe was sitting')) record('grown-ups notes', 'still broken', notes.slice(0, 160));
   else record('grown-ups notes', 'pass');
   const stamp = await page.locator('[data-testid="app-version"]').innerText();
-  if (!stamp.includes('Version 1.4.0 (')) record('grown-ups version', 'still broken', stamp);
+  if (!stamp.includes('Version 1.4.1 (')) record('grown-ups version', 'still broken', stamp);
   else record('grown-ups version', 'pass', stamp.trim());
   await page.locator('[data-testid="whats-new"]').click();
   await page.waitForSelector('[data-testid="whats-new-screen"]');
@@ -533,6 +659,7 @@ async function main() {
 
   await page.locator('[data-testid="map-shop"]').click();
   await page.waitForSelector('[data-testid="crystal-shop"]');
+  await assertShopShelf(page, 'crystal shop');
   for (const id of ['robe-moon', 'hat-night', 'extra-crown', 'broom-twig']) {
     await page.locator(`[data-testid="shelf-${id.startsWith('robe') ? 'dress' : id.startsWith('hat') ? 'hat' : id.startsWith('extra') ? 'extra' : 'broom'}"]`).click();
     await page.locator(`[data-testid="buy-${id}"]`).click();
@@ -812,6 +939,7 @@ async function main() {
     }
   }
 
+  await checkLegacyShop(base);
   if (errors.length) record('console errors', 'still broken', errors.slice(0, 3).join(' | '));
   else record('console errors', 'pass');
   if (missing.length) record('404s', 'still broken', [...new Set(missing)].slice(0, 5).join(' | '));

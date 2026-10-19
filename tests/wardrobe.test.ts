@@ -129,6 +129,34 @@ describe('crystal shop', () => {
     }
   });
 
+  it('drops unknown clothes and a wardrobe that is not a list', () => {
+    const saved = freshProgress('Aida');
+    saved.crystals = 26;
+    delete (saved as { purse?: unknown }).purse;
+    const broken = withWardrobe({
+      ...saved,
+      wardrobe: { owned: 'robe-moon', equipped: { dress: 'robe-moon' } },
+      house: { owned: 'fern-pot', placed: null },
+      pets: { owned: 'cloud-cat' },
+    } as never);
+    expect(broken.crystals).toBe(26);
+    expect(broken.wardrobe.owned).toEqual([]);
+    expect(broken.wardrobe.equipped).toEqual({});
+    expect(Array.isArray(broken.house.owned)).toBe(true);
+    expect(broken.house.owned).not.toContain('fern-pot');
+    expect(broken.pets.owned).toEqual([]);
+    const mixed = withWardrobe({
+      ...saved,
+      wardrobe: {
+        owned: ['robe-moon', 'robe-vanished', 'hat-night'],
+        equipped: { dress: 'robe-moon', hat: 'hat-gone', familiar: 'nope' },
+      },
+    } as never);
+    expect(mixed.wardrobe.owned).toEqual(['robe-moon', 'hat-night']);
+    expect(mixed.wardrobe.equipped).toEqual({ dress: 'robe-moon' });
+    expect(buyItem({ ...saved, wardrobe: { owned: 'robe-moon', equipped: {} } } as never, 'robe-rose').bought).toBe(false);
+  });
+
   it('lets the mirror take a hat off without forgetting she owns it', () => {
     const bought = buyItem(awardCrystals(freshProgress(), 6), 'hat-night');
     expect(bought.progress.wardrobe.equipped.hat).toBe('hat-night');

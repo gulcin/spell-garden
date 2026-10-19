@@ -28,7 +28,7 @@ function art(file: string): { src: string; srcSet: string } {
  * so the purple cloth never peeks out from under a cutout.
  */
 export function DressedApprentice({ className, alt = '' }: { className?: string; alt?: string }) {
-  const { equipped } = useWardrobe();
+  const equipped = useWardrobe()?.equipped ?? {};
   const look = paintedLook(equipped.dress, equipped.hat);
   const picture = look ? art(look) : null;
   return (

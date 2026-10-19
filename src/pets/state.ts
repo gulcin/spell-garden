@@ -67,32 +67,40 @@ export function normalizePets(value: unknown): PetState {
 }
 
 export function endedChapters(progress: Pick<Progress, 'sessions'>): number {
-  return progress.sessions.filter((session) => session.endedAt != null || session.rewardId != null).length;
+  const sessions = Array.isArray(progress?.sessions) ? progress.sessions : [];
+  return sessions.filter((session) => session && (session.endedAt != null || session.rewardId != null)).length;
 }
 
 export function earnMet(pet: Pet, progress: Pick<Progress, 'sessions' | 'visitedPlaces'>): boolean {
-  if (!pet.earn) return false;
+  if (!pet?.earn) return false;
   if (pet.earn.kind === 'chapters') return endedChapters(progress) >= pet.earn.count;
-  return progress.visitedPlaces.includes(pet.earn.placeId);
+  const places = Array.isArray(progress?.visitedPlaces) ? progress.visitedPlaces : [];
+  return places.includes(pet.earn.placeId);
 }
 
 /** Adds friends whose milestone is already met. Bought friends stay as they are. */
-export function grantEarned(pets: PetState, progress: Pick<Progress, 'sessions' | 'visitedPlaces'>, at = Date.now()): PetState {
-  const have = new Set(pets.owned.map((pet) => pet.id));
+export function grantEarned(
+  pets: PetState | null | undefined,
+  progress: Pick<Progress, 'sessions' | 'visitedPlaces'>,
+  at = Date.now(),
+): PetState {
+  const safe = pets && Array.isArray(pets.owned) ? pets : freshPets();
+  const have = new Set(safe.owned.map((pet) => pet.id));
   const arriving = PETS.filter((pet) => pet.earn && !have.has(pet.id) && earnMet(pet, progress));
-  if (arriving.length === 0) return pets;
+  if (arriving.length === 0) return safe;
   return {
-    ...pets,
+    ...safe,
     owned: [
-      ...pets.owned,
+      ...safe.owned,
       ...arriving.map((pet) => ({ id: pet.id, name: pet.name, at, how: 'earned' as const })),
     ],
   };
 }
 
 export function grantProgress(progress: Progress, at = Date.now()): Progress {
-  const pets = grantEarned(progress.pets, progress, at);
-  return pets === progress.pets ? progress : { ...progress, pets };
+  const pets = grantEarned(progress?.pets, progress, at);
+  if (pets === progress.pets) return progress;
+  return { ...progress, pets };
 }
 
 export function buyPet(progress: Progress, id: string, at = Date.now()): Progress {

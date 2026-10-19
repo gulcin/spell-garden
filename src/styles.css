@@ -218,6 +218,18 @@ code { font-size: 0.86em; background: #fff; padding: 0.1em 0.35em; border-radius
 }
 .spell-rescue h1 { font-size: 28px; margin: 0 0 8px; }
 .spell-rescue p { font-size: 18px; margin: 0 0 16px; }
+.spell-oops {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 16px;
+}
+.spell-oops h1 { font-size: 28px; margin: 0 0 8px; }
+.spell-oops p { font-size: 18px; margin: 0 0 16px; }
+.spell-oops .map-home { position: static; margin: 0 auto; }
 .btn {
   border: 0;
   border-radius: 999px;
@@ -2324,3 +2336,109 @@ code { font-size: 0.86em; background: #fff; padding: 0.1em 0.35em; border-radius
 }
 .pet-reveal img { width: 140px; height: 140px; object-fit: contain; }
 .pet-reveal h2, .pet-reveal p { margin: 0; }
+
+/* Crystal shop: the shelf keeps a real height. Chrome shrinks so the cards are not clipped away. */
+.shop:not(.pet-shop) {
+  gap: 4px;
+  padding: 4px 6px 4px;
+}
+.shop:not(.pet-shop) > .shop-top {
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+}
+.shop:not(.pet-shop) > .shop-top .kicker { display: none; }
+.shop:not(.pet-shop) > .shop-top h1 { font-size: 1.2rem; margin: 0; }
+.shop:not(.pet-shop) .shop-tools { gap: 4px; }
+.shop:not(.pet-shop) .story-open { min-height: 40px; padding: 0 12px; }
+.shop:not(.pet-shop) .crystal-wallet { min-height: 36px; padding: 2px 6px; }
+.shop:not(.pet-shop) > .shopkeeper-row {
+  flex: 0 0 auto;
+  padding: 4px 10px;
+  gap: 8px;
+  border-radius: 16px;
+}
+.shop:not(.pet-shop) > .shopkeeper-row p {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.shop:not(.pet-shop) > .shopkeeper-row .btn { margin-top: 4px; min-height: 40px; padding: 0 14px; }
+.shop:not(.pet-shop) .shopkeeper { width: 52px; }
+.shop:not(.pet-shop) > .friend-chip { flex: 0 0 auto; margin: 0; }
+.shop:not(.pet-shop) > .place-book {
+  width: 44px;
+  height: 44px;
+  margin: 0;
+  flex: 0 0 auto;
+  align-self: flex-start;
+  overflow: hidden;
+}
+.shop:not(.pet-shop) > .place-book img { width: 44px; height: 44px; object-fit: contain; }
+.shop:not(.pet-shop) > .place-book span { display: none; }
+.shop:not(.pet-shop) > .shop-cheer { flex: 0 0 auto; margin: 0; }
+.shop:not(.pet-shop) > .shop-tabs { flex: 0 0 auto; gap: 4px; }
+.shop:not(.pet-shop) > .shop-tabs button {
+  min-height: 40px;
+  min-width: 0;
+  padding: 0 12px;
+}
+.shop:not(.pet-shop) > .shop-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  align-content: start;
+  align-items: start;
+}
+.shop:not(.pet-shop) .shop-card {
+  min-height: 0;
+  overflow: hidden;
+  padding: 6px 8px;
+  gap: 2px;
+}
+.shop:not(.pet-shop) .shop-card img {
+  flex: 0 0 auto;
+  width: auto;
+  max-width: 100%;
+  height: 96px;
+  max-height: 96px;
+  margin-inline: auto;
+  object-fit: contain;
+}
+.shop:not(.pet-shop) .shop-card h2 { flex: 0 0 auto; margin: 0; font-size: 1.05rem; }
+.shop:not(.pet-shop) .shop-card p { flex: 0 1 auto; min-height: 0; margin: 0; overflow: hidden; }
+.shop:not(.pet-shop) .shop-card .btn { flex: 0 0 auto; min-height: 40px; margin-top: 0; padding: 0 10px; }
+.shop:not(.pet-shop) > .shop-pager { flex: 0 0 auto; }
+.shop:not(.pet-shop) > .shop-pager button { min-height: 40px; }
+.shop:not(.pet-shop) > .shop-mirror-preview {
+  flex: 0 0 auto;
+  padding: 4px 8px;
+  gap: 8px;
+  border-radius: 16px;
+}
+.shop:not(.pet-shop) > .shop-mirror-preview .guide,
+.shop:not(.pet-shop) > .shop-mirror-preview .guide-small { width: 52px; }
+.shop:not(.pet-shop) > .shop-mirror-preview .btn { min-height: 40px; padding: 0 14px; }
+.shop:not(.pet-shop) > .pay-till { flex: 0 1 auto; min-height: 0; margin: 0; padding: 6px 8px; }
+.shop:not(.pet-shop) .pay-wallet,
+.shop:not(.pet-shop) .pay-counter { min-height: 64px; padding: 4px; }
+.shop:not(.pet-shop) .coin-piece,
+.shop:not(.pet-shop) .coin-piece img { width: 36px; }
+@media (max-height: 900px), (max-width: 700px) {
+  .shop:not(.pet-shop) > .shopkeeper-row p { display: none; }
+  .shop:not(.pet-shop) > .shopkeeper-row .btn { margin-top: 0; }
+  .shop:not(.pet-shop) .shopkeeper { width: 44px; }
+  .shop:not(.pet-shop) .shop-card p { display: none; }
+  .shop:not(.pet-shop) .shop-card img { height: 72px; max-height: 72px; }
+  .shop:not(.pet-shop) > .shop-mirror-preview .guide,
+  .shop:not(.pet-shop) > .shop-mirror-preview .guide-small { width: 44px; }
+}
+.shop:not(.pet-shop):has(.pay-till) > .shopkeeper-row,
+.shop:not(.pet-shop):has(.pay-till) > .shop-mirror-preview { display: none; }

@@ -44,7 +44,8 @@ export function spendCrystals(progress: Progress, price: number): Progress | nul
 
 export function buyItem(progress: Progress, id: string): { progress: Progress; bought: boolean } {
   const item = itemById(id);
-  if (!item || progress.wardrobe.owned.includes(id)) return { progress, bought: false };
+  const owned = progress.wardrobe?.owned;
+  if (!item || !Array.isArray(owned) || owned.includes(id)) return { progress, bought: false };
   const spent = spendCrystals(progress, item.price);
   if (!spent) return { progress, bought: false };
   return {
@@ -52,8 +53,8 @@ export function buyItem(progress: Progress, id: string): { progress: Progress; b
     progress: {
       ...spent,
       wardrobe: {
-        owned: [...progress.wardrobe.owned, id],
-        equipped: { ...progress.wardrobe.equipped, [item.slot]: id },
+        owned: [...owned, id],
+        equipped: { ...(progress.wardrobe.equipped ?? {}), [item.slot]: id },
       },
     },
   };
@@ -61,7 +62,8 @@ export function buyItem(progress: Progress, id: string): { progress: Progress; b
 
 export function equipItem(progress: Progress, id: string): Progress {
   const item = itemById(id);
-  if (!item || !progress.wardrobe.owned.includes(id)) return progress;
+  const owned = progress.wardrobe?.owned;
+  if (!item || !Array.isArray(owned) || !owned.includes(id)) return progress;
   return {
     ...progress,
     wardrobe: { ...progress.wardrobe, equipped: { ...progress.wardrobe.equipped, [item.slot]: id } },

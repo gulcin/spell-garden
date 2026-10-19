@@ -15,6 +15,10 @@ import { TalkDock } from './TalkDock.tsx';
 
 type Shelf = ShopCategory | 'home';
 
+function idList(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((id): id is string => typeof id === 'string') : [];
+}
+
 type PendingPay = { id: string; name: string; price: number; kind: 'wear' | 'home' };
 
 export function CrystalShop({
@@ -39,6 +43,11 @@ export function CrystalShop({
   const [cheer, setCheer] = useState<string | null>(null);
   const [paySelf, setPaySelf] = useState(false);
   const [paying, setPaying] = useState<PendingPay | null>(null);
+  const owned = idList(progress.wardrobe?.owned);
+  const equipped = progress.wardrobe?.equipped ?? {};
+  const crystals = Number.isFinite(progress.crystals) ? progress.crystals : 0;
+  const houseOwned = idList(progress.house?.owned);
+  const placedPieces = Array.isArray(progress.house?.placed) ? progress.house.placed : [];
   const items = SHOP_ITEMS.filter((item) => item.category === shelf);
   const homeItems = shopFurniture();
   const pageSize = 2;
@@ -55,28 +64,28 @@ export function CrystalShop({
 
   function purchase(id: string) {
     const item = itemById(id);
-    if (!item || progress.wardrobe.owned.includes(id) || progress.crystals < item.price) return;
-    const line = `${item.name} is yours. It suits you. ${paymentSpeech(progress.crystals, item.price)}`;
+    if (!item || owned.includes(id) || crystals < item.price) return;
+    const line = `${item.name} is yours. It suits you. ${paymentSpeech(crystals, item.price)}`;
     update((current) => buyItem(current, id).progress);
     say(line);
   }
 
   function purchaseHome(id: string) {
     const item = furnitureById(id);
-    if (!item || progress.house.owned.includes(id) || progress.crystals < item.price) return;
-    const line = `You brought home the ${item.name.toLowerCase()}. ${paymentSpeech(progress.crystals, item.price)}`;
+    if (!item || houseOwned.includes(id) || crystals < item.price) return;
+    const line = `You brought home the ${item.name.toLowerCase()}. ${paymentSpeech(crystals, item.price)}`;
     update((current) => buyFurniture(current, id).progress);
     say(line);
   }
 
   function beginPay(next: PendingPay) {
-    if (progress.crystals < next.price) return;
+    if (crystals < next.price) return;
     setPaying(next);
   }
 
   function completePay(tender: Purse) {
     if (!paying) return;
-    const line = `${paying.kind === 'home' ? `You brought home the ${paying.name.toLowerCase()}.` : `${paying.name} is yours. It suits you.`} ${tenderSpeech(progress.crystals, tender, paying.price, paying.name)}`;
+    const line = `${paying.kind === 'home' ? `You brought home the ${paying.name.toLowerCase()}.` : `${paying.name} is yours. It suits you.`} ${tenderSpeech(crystals, tender, paying.price, paying.name)}`;
     if (paying.kind === 'home') update((current) => buyFurniture(current, paying.id).progress);
     else update((current) => buyItem(current, paying.id).progress);
     say(line);
@@ -86,7 +95,7 @@ export function CrystalShop({
   function wear(id: string) {
     const item = itemById(id);
     if (!item) return;
-    const wearing = progress.wardrobe.equipped[item.slot] === id;
+    const wearing = equipped[item.slot] === id;
     update((current) => (wearing ? unequipSlot(current, item.slot) : equipItem(current, id)));
     const line = wearing ? `The ${item.name.toLowerCase()} rests on the hook.` : `She puts on the ${item.name.toLowerCase()}.`;
     setCheer(line);
@@ -102,7 +111,7 @@ export function CrystalShop({
         </div>
         <div className="shop-tools">
           {onStory ? <StoryButton onClick={onStory} /> : null}
-          <CrystalCounter count={progress.crystals} />
+          <CrystalCounter count={crystals} />
         </div>
       </header>
       <div className="shopkeeper-row">
@@ -150,7 +159,7 @@ export function CrystalShop({
       </div>
       {paying ? (
         <PayTill
-          crystals={progress.crystals}
+          crystals={crystals}
           price={paying.price}
           itemName={paying.name}
           onPay={completePay}
@@ -160,16 +169,16 @@ export function CrystalShop({
       {shelf === 'home' ? (
         <div className="shop-grid" data-testid="home-shelf">
           {visibleHome.map((item) => {
-            const owned = progress.house.owned.includes(item.id);
-            const placed = progress.house.placed.some((piece) => piece.itemId === item.id);
-            const short = Math.max(0, item.price - progress.crystals);
+            const have = houseOwned.includes(item.id);
+            const placed = placedPieces.some((piece) => piece?.itemId === item.id);
+            const short = Math.max(0, item.price - crystals);
             const art = `${import.meta.env.BASE_URL}art/house/${item.id}`;
             return (
               <article key={item.id} className="shop-card" data-testid={`item-${item.id}`}>
                 <img src={`${art}.webp`} alt="" />
                 <h2>{item.name}</h2>
                 <p>{item.line}</p>
-                {owned ? (
+                {have ? (
                   <button type="button" className="btn gold" onClick={onHouse} disabled={!onHouse}>
                     {placed ? 'In the house' : 'Put in the house'}
                   </button>
@@ -191,16 +200,16 @@ export function CrystalShop({
       ) : null}
       {shelf !== 'home' ? <div className="shop-grid">
         {visibleWear.map((item) => {
-          const owned = progress.wardrobe.owned.includes(item.id);
-          const wearing = progress.wardrobe.equipped[item.slot] === item.id;
-          const short = Math.max(0, item.price - progress.crystals);
+          const have = owned.includes(item.id);
+          const wearing = equipped[item.slot] === item.id;
+          const short = Math.max(0, item.price - crystals);
           const base = `${import.meta.env.BASE_URL}art/wear/${itemPreview(item.id)}`;
           return (
             <article key={item.id} className={wearing ? 'shop-card on' : 'shop-card'} data-testid={`item-${item.id}`}>
               <img src={`${base}.webp`} alt="" />
               <h2>{item.name}</h2>
               <p>{item.line}</p>
-              {owned ? (
+              {have ? (
                 <button
                   type="button"
                   className={wearing ? 'btn gold on' : 'btn gold'}

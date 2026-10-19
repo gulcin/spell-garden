@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { freshHouse, placeItem } from '../src/house/layout.ts';
 import { PET_GROUPS, PETS, earnLine, shopPets } from '../src/pets/catalog.ts';
-import { buyPet, companionTitle, grantEarned, normalizePets, renamePet, restPet, restTrayStart, unseenArrivals } from '../src/pets/state.ts';
+import { buyPet, companionTitle, grantEarned, grantProgress, normalizePets, renamePet, restPet, restTrayStart, unseenArrivals } from '../src/pets/state.ts';
 import { freshProgress } from '../src/progress/types.ts';
 import { withWardrobe } from '../src/progress/storage.ts';
 import { buildAdventure } from '../src/stories/adventure.ts';
@@ -76,6 +76,12 @@ describe('pet shop', () => {
     expect(kept.pets.owned.find((pet) => pet.id === 'cloud-cat')).toMatchObject({ name: 'Pip', how: 'bought' });
     expect(kept.pets.companionId).toBeNull();
     expect(kept.pets.owned.some((pet) => pet.id === 'lily-frog')).toBe(true);
+    const missing = freshProgress('Aida');
+    missing.visitedPlaces = ['lily-pond'];
+    delete (missing as { pets?: unknown }).pets;
+    const filled = grantProgress(missing, 5);
+    expect(filled.pets.owned.some((pet) => pet.id === 'lily-frog')).toBe(true);
+    expect(grantEarned(null, freshProgress('Aida'), 5).owned).toEqual([]);
   });
 
   it('rests a pet on a bed in the witch house', () => {

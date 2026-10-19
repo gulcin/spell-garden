@@ -5,6 +5,7 @@ import { STABLE_STORES, migrateStoredProgress, progressMigrations } from '../src
 import { freshProgress, PROGRESS_KEY, PROGRESS_SCHEMA } from '../src/progress/types.ts';
 import { withWardrobe } from '../src/progress/storage.ts';
 import { CHECK_INTERVAL_MS, planUpdate } from '../src/updates.ts';
+import { ScreenBoundary } from '../src/ui/Rescue.tsx';
 import { gardenNewsPlan, kidHighlights, parseChangelog, serviceWorkerCacheId, versionLabel } from '../src/version.ts';
 
 const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as { version: string };
@@ -13,11 +14,11 @@ const css = readFileSync(new URL('../src/styles.css', import.meta.url), 'utf8');
 const sw = readFileSync(new URL('../src/swUpdates.ts', import.meta.url), 'utf8');
 
 describe('Spell Garden version', () => {
-  it('stamps semver 1.4.0 and keeps the service worker waiting for a tap', () => {
-    expect(pkg.version).toBe('1.4.0');
-    expect(serviceWorkerCacheId(pkg.version)).toBe('spell-garden-v1.4.0');
-    expect(SPELL_GARDEN_CACHE).toBe('spell-garden-v1.4.0');
-    expect(versionLabel({ version: '1.4.0', sha: 'abc1234', date: '2026-10-19' })).toBe('Version 1.4.0 (abc1234)');
+  it('stamps semver 1.4.1 and keeps the service worker waiting for a tap', () => {
+    expect(pkg.version).toBe('1.4.1');
+    expect(serviceWorkerCacheId(pkg.version)).toBe('spell-garden-v1.4.1');
+    expect(SPELL_GARDEN_CACHE).toBe('spell-garden-v1.4.1');
+    expect(versionLabel({ version: '1.4.1', sha: 'abc1234', date: '2026-10-19' })).toBe('Version 1.4.1 (abc1234)');
     expect(css).toContain('-webkit-text-size-adjust: 100%');
     expect(css).toContain('text-size-adjust: 100%');
     expect(css).not.toContain('font-size: clamp');
@@ -25,7 +26,7 @@ describe('Spell Garden version', () => {
 
   it('reads the changelog', () => {
     const notes = parseChangelog(changelog);
-    expect(notes[0]?.version).toBe('1.4.0');
+    expect(notes[0]?.version).toBe('1.4.1');
     expect(notes[0]?.date).toBe('2026-10-19');
     expect(notes.at(-1)?.version).toBe('1.0.0');
     const written = notes.map((note) => note.sections.flatMap((section) => section.items).join(' ')).join(' ');
@@ -37,8 +38,12 @@ describe('Spell Garden version', () => {
     expect(written).toMatch(/lets go/);
     expect(written).toMatch(/feedback address/);
     expect(written).toMatch(/A new spell is ready/);
-    expect(notes[0]?.sections.flatMap((section) => section.items).join(' ')).toMatch(/Collection book/);
-    expect(notes[0]?.sections.flatMap((section) => section.items).join(' ')).toMatch(/quiet music/);
+    const current = notes[0]?.sections.flatMap((section) => section.items).join(' ') ?? '';
+    expect(current).toMatch(/crystal shop/);
+    expect(current).toMatch(/garden map/);
+    const pets = notes.find((note) => note.version === '1.4.0')?.sections.flatMap((section) => section.items).join(' ') ?? '';
+    expect(pets).toMatch(/Collection book/);
+    expect(pets).toMatch(/quiet music/);
     expect(notes.find((note) => note.version === '1.1.4')?.sections.flatMap((section) => section.items).join(' ')).toMatch(/visible screen/);
     const forAida = kidHighlights(notes, '1.0.0').join(' ');
     expect(forAida).toMatch(/little note/);
@@ -50,6 +55,12 @@ describe('Spell Garden version', () => {
     expect(gardenNewsPlan('1.2.0', '1.2.0')).toBe('stay');
     expect(gardenNewsPlan('1.1.4', '1.2.0')).toBe('show');
     expect(gardenNewsPlan('9.0.0', '1.2.0')).toBe('stay');
+    expect(ScreenBoundary.getDerivedStateFromError()).toEqual({ error: true });
+    const rescue = readFileSync(new URL('../src/ui/Rescue.tsx', import.meta.url), 'utf8');
+    const oops = rescue.slice(rescue.indexOf('class ScreenBoundary'), rescue.indexOf('class GardenBoundary'));
+    expect(oops).toContain('Back to the garden');
+    expect(oops).toContain('data-testid="oops-map"');
+    expect(oops).not.toContain('startAgain');
   });
 
   it('shows a banner on the map and waits while a lesson is open', () => {

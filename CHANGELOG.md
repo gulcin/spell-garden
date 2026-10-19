@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.1] - 2026-10-19
+
+The crystal shop shows its shelves again.
+
+### Fixed
+
+- The crystal shop shelf was squeezed to nothing, so the clothes disappeared on the iPhone and on a wide iPad. The robes, hats, and other shelves show again, and buying still spends crystals.
+- An older save with a missing or unknown robe, hat, or friend no longer knocks a screen over. Those ids are left out, and the rest of the garden stays.
+- If a screen trips, she gets a way back to the garden map. Her saved garden stays.
+
+### For Aida
+
+- The crystal shop shows the clothes again.
+
 ## [1.4.0] - 2026-10-19
 
 Poppy's pet shop is open, and every place has its own quiet tune.
@@ -185,6 +199,7 @@ The garden as Aida first played it: painted places, a way home, a shop, and a no
 
 - The garden is painted, the shop is open, and you can tell us what you think.
 
+[1.4.1]: https://github.com/gulcin/spell-garden/releases/tag/v1.4.1
 [1.4.0]: https://github.com/gulcin/spell-garden/releases/tag/v1.4.0
 [1.3.2]: https://github.com/gulcin/spell-garden/releases/tag/v1.3.2
 [1.3.1]: https://github.com/gulcin/spell-garden/releases/tag/v1.3.1

@@ -27,6 +27,7 @@ import { companionTitle, grantProgress } from './pets/state.ts';
 import { WardrobeProvider } from './ui/DressedApprentice.tsx';
 import { WardrobeMirror } from './ui/Wardrobe.tsx';
 import { GardenNews } from './ui/GardenNews.tsx';
+import { ScreenBoundary } from './ui/Rescue.tsx';
 import { UpdateBanner } from './ui/UpdateBanner.tsx';
 import { setLessonInProgress } from './updateState.ts';
 import { listenForMusic, playMusic } from './music/engine.ts';
@@ -266,6 +267,7 @@ function GardenApp() {
       {screen !== 'home' ? <GardenMapButton onHome={() => show('home')} /> : null}
         <TellUsButton onOpen={() => setTelling(true)} />
       </div>
+      <ScreenBoundary key={screen} onHome={() => show('home')}>
       {screen === 'home' ? <GardenNews /> : null}
       {screen === 'home' ? (
         <>
@@ -468,6 +470,7 @@ function GardenApp() {
         </div>
       ) : null}
       {telling ? <TellSheet onClose={() => setTelling(false)} /> : null}
+      </ScreenBoundary>
     </main>
     </WardrobeProvider>
   );
