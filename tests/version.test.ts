@@ -13,11 +13,11 @@ const css = readFileSync(new URL('../src/styles.css', import.meta.url), 'utf8');
 const sw = readFileSync(new URL('../src/swUpdates.ts', import.meta.url), 'utf8');
 
 describe('Spell Garden version', () => {
-  it('stamps semver 1.3.1 and keeps the service worker waiting for a tap', () => {
-    expect(pkg.version).toBe('1.3.1');
-    expect(serviceWorkerCacheId(pkg.version)).toBe('spell-garden-v1.3.1');
-    expect(SPELL_GARDEN_CACHE).toBe('spell-garden-v1.3.1');
-    expect(versionLabel({ version: '1.3.1', sha: 'abc1234', date: '2026-10-19' })).toBe('Version 1.3.1 (abc1234)');
+  it('stamps semver 1.4.0 and keeps the service worker waiting for a tap', () => {
+    expect(pkg.version).toBe('1.4.0');
+    expect(serviceWorkerCacheId(pkg.version)).toBe('spell-garden-v1.4.0');
+    expect(SPELL_GARDEN_CACHE).toBe('spell-garden-v1.4.0');
+    expect(versionLabel({ version: '1.4.0', sha: 'abc1234', date: '2026-10-19' })).toBe('Version 1.4.0 (abc1234)');
     expect(css).toContain('-webkit-text-size-adjust: 100%');
     expect(css).toContain('text-size-adjust: 100%');
     expect(css).not.toContain('font-size: clamp');
@@ -25,7 +25,7 @@ describe('Spell Garden version', () => {
 
   it('reads the changelog', () => {
     const notes = parseChangelog(changelog);
-    expect(notes[0]?.version).toBe('1.3.1');
+    expect(notes[0]?.version).toBe('1.4.0');
     expect(notes[0]?.date).toBe('2026-10-19');
     expect(notes.at(-1)?.version).toBe('1.0.0');
     const written = notes.map((note) => note.sections.flatMap((section) => section.items).join(' ')).join(' ');
@@ -37,10 +37,13 @@ describe('Spell Garden version', () => {
     expect(written).toMatch(/lets go/);
     expect(written).toMatch(/feedback address/);
     expect(written).toMatch(/A new spell is ready/);
+    expect(notes[0]?.sections.flatMap((section) => section.items).join(' ')).toMatch(/Collection book/);
+    expect(notes[0]?.sections.flatMap((section) => section.items).join(' ')).toMatch(/quiet music/);
     expect(notes.find((note) => note.version === '1.1.4')?.sections.flatMap((section) => section.items).join(' ')).toMatch(/visible screen/);
     const forAida = kidHighlights(notes, '1.0.0').join(' ');
     expect(forAida).toMatch(/little note/);
     expect(forAida).toMatch(/dresses and hats/);
+    expect(forAida).toMatch(/Poppy/);
     expect(forAida).not.toMatch(/version\.json/);
     expect(gardenNewsPlan(null, '1.2.0')).toBe('record');
     expect(gardenNewsPlan('soon', '1.2.0')).toBe('record');

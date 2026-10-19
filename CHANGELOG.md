@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-10-19
+
+Poppy's pet shop is open, and every place has its own quiet tune.
+
+### Added
+
+- Cats, dogs, real creatures, imaginary friends, and fairies. Most can be bought with crystals, some find her after a visit or a chapter, and a few can be either.
+- Collection book grouped into Cats, Dogs, Creatures, Imaginary, and Fairies. Friends she has not met yet are silhouettes.
+- She can name a friend and choose one to walk with her. Earned friends, including fairies, say hello when they arrive.
+- Friends can rest on a bed in the witch's house. A friend who walks with her is mentioned in the storybook.
+- Each place has its own quiet music loop, including the shops, the house, the colouring corner, the map, and bedtime. Music dips while someone is speaking. Grown-ups can turn sound and music on or off, and set the music volume.
+
+### For Aida
+
+- Poppy's shop has cats, dogs, and fairies. You can name a friend and let them walk with you.
+- Friends can rest in the witch's house.
+- Each place has its own quiet music.
+
 ## [1.3.1] - 2026-10-19
 
 The mirror shows one shelf at a time, and the block spell only names the blocks in the tray.
@@ -148,6 +166,7 @@ The garden as Aida first played it: painted places, a way home, a shop, and a no
 
 - The garden is painted, the shop is open, and you can tell us what you think.
 
+[1.4.0]: https://github.com/gulcin/spell-garden/releases/tag/v1.4.0
 [1.3.1]: https://github.com/gulcin/spell-garden/releases/tag/v1.3.1
 [1.3.0]: https://github.com/gulcin/spell-garden/releases/tag/v1.3.0
 [1.2.0]: https://github.com/gulcin/spell-garden/releases/tag/v1.2.0

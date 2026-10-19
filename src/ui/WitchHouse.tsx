@@ -12,7 +12,7 @@ import {
   type PlacedItem,
 } from '../house/layout.ts';
 import { petById } from '../pets/catalog.ts';
-import { callHome, ownedPet, restPet } from '../pets/state.ts';
+import { callHome, ownedPet, restPet, restTrayStart } from '../pets/state.ts';
 import type { Progress } from '../progress/types.ts';
 import { CrystalCounter } from './CrystalCounter.tsx';
 import { PetArt } from './PetShop.tsx';
@@ -152,6 +152,7 @@ export function WitchHouse({
       if (b.id === progress.pets.companionId) return 1;
       return b.at - a.at;
     });
+  const pageStart = restTrayStart(petPage, waitingPets.length);
   const companionHere = progress.pets.companionId && !restingIds.has(progress.pets.companionId) ? progress.pets.companionId : null;
 
   return (
@@ -182,6 +183,7 @@ export function WitchHouse({
           </button>
         ))}
       </div>
+      <div className="house-stage">
       <div
         className="house-room"
         data-testid="house-room"
@@ -243,12 +245,12 @@ export function WitchHouse({
         })}
         {waitingPets.length > 0 ? (
           <div className="house-pets" data-testid="house-pets">
-            {petPage > 0 ? (
-              <button type="button" data-testid="pet-rest-prev" onClick={() => setPetPage(petPage - 1)} aria-label="Previous friends">
+            {pageStart > 0 ? (
+              <button type="button" data-testid="pet-rest-prev" onClick={() => setPetPage(pageStart - 1)} aria-label="Previous friends">
                 ‹
               </button>
             ) : null}
-            {waitingPets.slice(petPage, petPage + 2).map((owned) => {
+            {waitingPets.slice(pageStart, pageStart + 2).map((owned) => {
               const pet = petById(owned.id);
               if (!pet) return null;
               return (
@@ -264,8 +266,8 @@ export function WitchHouse({
                 </button>
               );
             })}
-            {petPage + 2 < waitingPets.length ? (
-              <button type="button" data-testid="pet-rest-next" onClick={() => setPetPage(petPage + 1)} aria-label="More friends">
+            {pageStart + 2 < waitingPets.length ? (
+              <button type="button" data-testid="pet-rest-next" onClick={() => setPetPage(pageStart + 1)} aria-label="More friends">
                 ›
               </button>
             ) : null}
@@ -282,6 +284,7 @@ export function WitchHouse({
             style={{ left: drag.clientX, top: drag.clientY }}
           />
         ) : null}
+      </div>
       </div>
       {selectedPiece ? (
         <div className="house-tools">

@@ -1863,7 +1863,21 @@ code { font-size: 0.86em; background: #fff; padding: 0.1em 0.35em; border-radius
   .story-art, .story-sparkles i, .story-moth, .turn-next, .turn-back { animation: none; }
 }
 
-.witch-house { display: flex; flex-direction: column; gap: 12px; }
+.witch-house {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.house-stage {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  container-type: size;
+}
 .house-top .place-book { width: 76px; }
 .house-papers { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
 .house-paper {
@@ -1883,9 +1897,9 @@ code { font-size: 0.86em; background: #fff; padding: 0.1em 0.35em; border-radius
 .house-paper.on { background: var(--violet); color: white; box-shadow: 0 4px 0 var(--violet-deep); }
 .house-room {
   position: relative;
-  width: min(100%, 920px);
-  margin: 0 auto;
+  width: min(100cqw, 920px, calc(100cqh * 16 / 9));
   aspect-ratio: 16 / 9;
+  margin: 0 auto;
   border-radius: 28px;
   overflow: hidden;
   background-size: cover;
@@ -1960,12 +1974,33 @@ code { font-size: 0.86em; background: #fff; padding: 0.1em 0.35em; border-radius
 .house-chip img { width: 72px; height: 64px; object-fit: contain; pointer-events: none; }
 .house-chip span { font-size: 0.82rem; line-height: 1.1; }
 @media (max-width: 640px) {
-  .shop-top.house-top { flex-direction: column; align-items: stretch; gap: 8px; }
   .house-top .shop-tools { justify-content: flex-end; }
-  .house-papers { flex-wrap: wrap; }
-  .house-room { aspect-ratio: 5 / 4; }
+  .house-papers { flex-wrap: nowrap; }
+  .house-paper {
+    flex: 1 1 0;
+    min-width: 0;
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
+    white-space: normal;
+    line-height: 1.05;
+    padding: 4px 4px 6px;
+    gap: 2px;
+    font-size: 0.85rem;
+  }
+  .house-paper img { width: 100%; height: 28px; }
   .house-girl { width: 28%; left: 68%; bottom: 1%; }
   .house-nim { top: 18%; left: 78%; width: 14% !important; }
+}
+@media (max-height: 900px) {
+  .witch-house { gap: 4px; }
+  .house-top .place-book { width: 56px; }
+  .house-top .place-book span { display: none; }
+  .house-hint { display: none; }
+  .house-tray { padding-top: 0; padding-bottom: 0; }
+  .house-tray .house-chip { width: 84px; min-height: 72px; }
+  .house-tray .house-chip img { width: 48px; height: 40px; }
+  .witch-house > .btn.xl { min-height: 44px; }
 }
 
 /* One screen: type stays modest, and play areas shrink instead of scrolling. */
@@ -2168,6 +2203,23 @@ code { font-size: 0.86em; background: #fff; padding: 0.1em 0.35em; border-radius
 }
 .pet-shop .shopkeeper-row { padding: 6px 10px; }
 .pet-shop .shopkeeper { width: 64px; background: transparent; }
+@media (max-width: 700px) {
+  .pet-shop .shop-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .pet-shop .shop-card { padding: 8px; gap: 2px; }
+  .pet-shop .shop-card img { height: 56px; max-height: 56px; }
+  .pet-shop .shop-card h2 { font-size: 1rem; margin: 0; }
+  .pet-shop .shop-card p,
+  .pet-shop .shop-card span {
+    margin: 0;
+    font-size: 0.85rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .pet-shop .shopkeeper-row { padding: 6px 8px; gap: 8px; }
+  .pet-shop .shopkeeper { width: 48px; }
+}
 .pet-tabs { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .pet-tabs h2 { margin: 0; font-size: 1.2rem; }
 .pet-tabs button {

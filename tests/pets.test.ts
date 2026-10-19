@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { freshHouse, placeItem } from '../src/house/layout.ts';
 import { PET_GROUPS, PETS, earnLine, shopPets } from '../src/pets/catalog.ts';
-import { buyPet, companionTitle, grantEarned, normalizePets, renamePet, restPet, unseenArrivals } from '../src/pets/state.ts';
+import { buyPet, companionTitle, grantEarned, normalizePets, renamePet, restPet, restTrayStart, unseenArrivals } from '../src/pets/state.ts';
 import { freshProgress } from '../src/progress/types.ts';
 import { withWardrobe } from '../src/progress/storage.ts';
 import { buildAdventure } from '../src/stories/adventure.ts';
@@ -87,5 +87,23 @@ describe('pet shop', () => {
     const resting = restPet(pets, withBed, 'clover-bunny');
     expect(resting.home[0]?.x).toBe(bed?.x);
     expect(normalizePets({ owned: [{ id: 'clover-bunny', name: 'Pip', how: 'bought', at: 1 }], home: [{ id: 'gone', x: 1, y: 1 }] }).home).toEqual([]);
+  });
+
+  it('keeps a fourth friend off the first floor spot and clamps the rest tray', () => {
+    const ids = ['clover-bunny', 'cloud-cat', 'ginger-tabby', 'slate-cat'];
+    let pets = {
+      ...freshProgress().pets,
+      owned: ids.map((id) => ({ id, name: id, at: 1, how: 'bought' as const })),
+    };
+    const spots = [];
+    for (const id of ids) {
+      pets = restPet(pets, freshHouse(), id);
+      spots.push(`${pets.home.at(-1)?.x}:${pets.home.at(-1)?.y}`);
+    }
+    expect(new Set(spots).size).toBe(4);
+    expect(spots[0]).not.toBe(spots[3]);
+    expect(restTrayStart(4, 1)).toBe(0);
+    expect(restTrayStart(4, 3)).toBe(1);
+    expect(restTrayStart(0, 5)).toBe(0);
   });
 });

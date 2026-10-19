@@ -160,6 +160,8 @@ async function layout(page) {
     for (const node of document.querySelectorAll('button:not([disabled]), a.btn')) {
       const rect = node.getBoundingClientRect();
       if (rect.width < 2 || rect.height < 2) continue;
+      // Furniture in the room is a layered picture, so one piece may sit over another.
+      if (node.classList.contains('house-piece')) continue;
       if (rect.top < -1 || rect.left < -1 || rect.bottom > window.innerHeight + 1 || rect.right > window.innerWidth + 1) {
         problems.push(`offscreen ${(node.getAttribute('data-testid') || node.textContent || '').trim().slice(0, 32)}`);
         continue;
@@ -223,8 +225,19 @@ async function trayWords(page) {
 
 async function shot(page, name) {
   const file = `${shotDir}/${name}.png`;
-  await page.screenshot({ path: file });
-  return file;
+  let lastError = null;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      await page.screenshot({ path: file });
+      return file;
+    } catch (error) {
+      lastError = error;
+      const message = error instanceof Error ? error.message : '';
+      if (!/EAGAIN|resource temporarily unavailable/i.test(message) || attempt === 2) throw error;
+      await page.waitForTimeout(200 * (attempt + 1));
+    }
+  }
+  throw lastError;
 }
 
 let touchSession = null;
@@ -390,7 +403,29 @@ async function answerNeighbour(page, personId) {
   return line;
 }
 
+async function greetArrivals(page) {
+  for (let step = 0; step < 12; step += 1) {
+    const hello = page.locator('[data-testid="pet-hello"]');
+    if ((await hello.count()) === 0 || !(await hello.isVisible())) return;
+    await hello.click();
+  }
+}
+
+async function fits(page, label, musicId) {
+  for (const viewport of VIEWPORTS) {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    const problems = await layout(page);
+    if (musicId) {
+      const music = await page.evaluate(() => document.documentElement.dataset.music ?? '');
+      if (music !== musicId) problems.push(`music ${music}`);
+    }
+    if (problems.length) record(`${label} ${viewport.name}`, 'still broken', problems.slice(0, 4).join('; '));
+    else record(`${label} ${viewport.name}`, 'pass');
+  }
+}
+
 async function openPlace(page, id) {
+  await greetArrivals(page);
   const named = page.locator(`[data-testid="map-stop-${id}"]`);
   const target = (await named.count()) ? named : page.locator('[data-testid="map-stop-current"]');
   await target.click({ force: true });
@@ -471,7 +506,7 @@ async function main() {
   if (!notes.includes('The robe was sitting')) record('grown-ups notes', 'still broken', notes.slice(0, 160));
   else record('grown-ups notes', 'pass');
   const stamp = await page.locator('[data-testid="app-version"]').innerText();
-  if (!stamp.includes('Version 1.3.1 (')) record('grown-ups version', 'still broken', stamp);
+  if (!stamp.includes('Version 1.4.0 (')) record('grown-ups version', 'still broken', stamp);
   else record('grown-ups version', 'pass', stamp.trim());
   await page.locator('[data-testid="whats-new"]').click();
   await page.waitForSelector('[data-testid="whats-new-screen"]');
@@ -597,10 +632,10 @@ async function main() {
   const walking = await page.locator('[data-testid="walk-pet-cloud-cat"]').innerText();
   if (named !== 'Pip' || !walking.includes('Walking')) record('pet buy and name', 'still broken', `${named} ${walking}`);
   else record('pet buy and name', 'pass');
-  const petFit = await layout(page);
-  if (petFit.length) record('pet shop fit', 'still broken', petFit.slice(0, 4).join('; '));
-  else record('pet shop fit', 'pass');
-  await shot(page, 'pet-shop');
+  await page.setViewportSize({ width: 1194, height: 834 });
+  await shot(page, 'pet-shop-ipad-landscape');
+  await fits(page, 'pet shop', 'pet-shop');
+  await page.setViewportSize({ width: 834, height: 1194 });
   await page.locator('[data-testid="garden-map"]').click();
   await page.waitForSelector('[data-testid="map-companion"]');
   record('pet companion', 'pass');
@@ -608,6 +643,10 @@ async function main() {
   await page.locator('[data-testid="rest-pet-cloud-cat"]').click();
   await page.waitForSelector('[data-testid="home-pet-cloud-cat"]');
   record('pet in the house', 'pass');
+  await page.setViewportSize({ width: 1194, height: 834 });
+  await shot(page, 'house-rest-ipad-landscape');
+  await fits(page, 'witch house', 'witch-house');
+  await page.setViewportSize({ width: 834, height: 1194 });
   await page.locator('[data-testid="garden-map"]').click();
 
   await page.locator('[data-testid="map-colour"]').click();
@@ -682,6 +721,7 @@ async function main() {
       await shot(page, `chapter-${placeId}`);
       await page.locator('[data-testid="reward-home"]').click();
       await page.waitForSelector('[data-testid="map-shop"]');
+      await greetArrivals(page);
     } catch (error) {
       await shot(page, `fail-chapter-${placeId}`);
       record(`chapter ${placeId}`, 'still broken', error instanceof Error ? error.message.split('\n')[0] : 'error');
