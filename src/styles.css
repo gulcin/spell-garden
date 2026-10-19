@@ -1886,7 +1886,21 @@ code { font-size: 0.86em; background: #fff; padding: 0.1em 0.35em; border-radius
   box-shadow: var(--shadow);
 }
 .update-banner p { margin: 0; font-weight: 800; }
-.version-stamp { margin: 0; color: var(--muted); font-size: 0.9rem; }
+.version-stamp { margin: 0; color: var(--muted); font-size: 0.82rem; }
+.grownup-version { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: flex-start; gap: 4px 16px; }
+.grownup-version .text-link { font-size: 0.92rem; }
+.news-card { text-align: center; }
+.news-card h2 { margin: 0 0 8px; }
+.news-card ul { margin: 8px 0 16px; padding-left: 1.2em; text-align: left; }
+.news-card li { margin: 8px 0; font-weight: 800; }
+.news-card .btn { width: 100%; }
+.journal.news-open { display: flex; flex-direction: column; }
+.whats-new { flex: 1 1 auto; min-height: 0; overflow: auto; display: grid; gap: 12px; align-content: start; padding-bottom: 18px; }
+.whats-new article { background: white; border-radius: 16px; padding: 12px 14px; }
+.whats-new h2, .whats-new h3 { margin: 0 0 6px; }
+.whats-new h3 { color: var(--violet-deep); font-size: 0.95rem; }
+.whats-new ul { margin: 0 0 10px; padding-left: 1.1em; }
+.whats-new li { margin: 4px 0; }
 .shop-grid { min-height: 0; }
 .shop-card img { max-height: 72px; width: auto; object-fit: contain; }
 .shopkeeper { width: 84px; }

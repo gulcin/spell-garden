@@ -24,6 +24,7 @@ import { storyById, STORIES } from './stories/library.ts';
 import { crystalGain } from './wardrobe/catalog.ts';
 import { WardrobeProvider } from './ui/DressedApprentice.tsx';
 import { WardrobeMirror } from './ui/Wardrobe.tsx';
+import { GardenNews } from './ui/GardenNews.tsx';
 import { UpdateBanner } from './ui/UpdateBanner.tsx';
 import { setLessonInProgress } from './updateState.ts';
 
@@ -242,6 +243,7 @@ function GardenApp() {
       {screen !== 'home' ? <GardenMapButton onHome={() => show('home')} /> : null}
         <TellUsButton onOpen={() => setTelling(true)} />
       </div>
+      {screen === 'home' ? <GardenNews /> : null}
       {screen === 'home' ? (
         <Home
           progress={progress}

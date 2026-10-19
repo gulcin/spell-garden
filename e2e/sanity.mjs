@@ -391,6 +391,15 @@ async function main() {
   }
   await page.setViewportSize({ width: 834, height: 1194 });
 
+  await page.evaluate(() => localStorage.setItem('spell-garden.seenVersion', '1.0.0'));
+  await page.reload();
+  await page.waitForSelector('[data-testid="garden-news"]');
+  const news = await page.locator('[data-testid="garden-news"]').innerText();
+  if (!news.includes('New in the garden!') || news.includes('version.json')) record('garden news', 'still broken', news.slice(0, 180));
+  else record('garden news', 'pass');
+  await page.locator('[data-testid="garden-news-close"]').click();
+  await page.waitForSelector('[data-testid="garden-news"]', { state: 'detached' });
+
   await page.locator('[data-testid="tell-us"]').click();
   await page.waitForSelector('[data-testid="tell-sheet"]');
   await page.locator('[data-testid="tell-broken"]').click();
@@ -413,8 +422,17 @@ async function main() {
   const notes = await page.locator('[data-testid="report-list"]').innerText();
   if (!notes.includes('The robe was sitting')) record('grown-ups notes', 'still broken', notes.slice(0, 160));
   else record('grown-ups notes', 'pass');
-  if (!(await page.locator('[data-testid="app-version"]').innerText()).includes('1.1.4')) record('grown-ups version', 'still broken');
-  else record('grown-ups version', 'pass');
+  const stamp = await page.locator('[data-testid="app-version"]').innerText();
+  if (!stamp.includes('Version 1.2.0 (')) record('grown-ups version', 'still broken', stamp);
+  else record('grown-ups version', 'pass', stamp.trim());
+  await page.locator('[data-testid="whats-new"]').click();
+  await page.waitForSelector('[data-testid="whats-new-screen"]');
+  const notesScreen = await page.locator('[data-testid="whats-new-screen"]').innerText();
+  if (!notesScreen.includes('1.0.0') || !notesScreen.includes('crystal shop') || !notesScreen.includes('home pill')) {
+    record('whats new', 'still broken', notesScreen.slice(0, 180));
+  } else record('whats new', 'pass');
+  await page.locator('[data-testid="whats-new-back"]').click();
+  await page.waitForSelector('[data-testid="report-list"]');
   await page.locator('[data-testid="check-updates"]').click();
   await page.waitForSelector('[data-testid="update-status"]');
   record('check for updates', 'pass');

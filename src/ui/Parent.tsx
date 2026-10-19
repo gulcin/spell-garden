@@ -10,6 +10,7 @@ import { flushReportQueue, hydrateReports, loadReports, mumMailto, type Report }
 import { checkForUpdates } from '../swUpdates.ts';
 import { versionLabel } from '../version.ts';
 import { PageBanner, Prop } from './pictures.tsx';
+import { WhatsNew } from './WhatsNew.tsx';
 
 const STATUS_WORD: Record<Status, string> = {
   mastered: 'Mastered',
@@ -86,7 +87,7 @@ export function Parent({
   );
 }
 
-function ReportList() {
+function ReportList({ onNews }: { onNews: () => void }) {
   const [reports, setReports] = useState<Report[]>(() => loadReports());
   useEffect(() => {
     let live = true;
@@ -119,9 +120,14 @@ function ReportList() {
 
   return (
     <section className="reports" data-testid="report-list">
-      <p className="version-stamp" data-testid="app-version">
-        {versionLabel()}
-      </p>
+      <div className="grownup-version">
+        <p className="version-stamp" data-testid="app-version">
+          {versionLabel()}
+        </p>
+        <button type="button" className="text-link" data-testid="whats-new" onClick={onNews}>
+          What's new
+        </button>
+      </div>
       <button
         type="button"
         className="btn quiet"
@@ -212,6 +218,7 @@ function Journal({
     const fit = [...clusters].reverse().find((cluster) => cluster.ageRangeStart <= age) ?? clusters[0];
     return fit?.summary ?? '';
   }, [domain, progress.placement.frontierAge]);
+  const [newsOpen, setNewsOpen] = useState(false);
   const focus = allTopics().find((topic) => topic.id === picked) ?? null;
   const hopped = useMemo(() => {
     return allTopics()
@@ -230,6 +237,15 @@ function Journal({
     URL.revokeObjectURL(url);
   }
 
+  if (newsOpen) {
+    return (
+      <div className="journal news-open">
+        <PageBanner place="observatory" />
+        <WhatsNew onClose={() => setNewsOpen(false)} />
+      </div>
+    );
+  }
+
   return (
     <div className="journal">
       <PageBanner place="observatory" />
@@ -238,7 +254,7 @@ function Journal({
       </button>
       <h1>{progress.learnerName}'s journal</h1>
       <p className="lede">Mastered, practising, or ready. Ages and the notes for grown-ups stay on this screen.</p>
-      <ReportList />
+      <ReportList onNews={() => setNewsOpen(true)} />
       <label className="start-level">
         Starting level
         <select

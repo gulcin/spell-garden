@@ -49,5 +49,38 @@ export const buildInfo = {
 };
 
 export function versionLabel(info: { version: string; sha: string; date: string } = buildInfo): string {
-  return `v${info.version} · ${info.sha} · ${info.date}`;
+  return `Version ${info.version} (${info.sha})`;
+}
+
+export function compareSemver(left: string, right: string): number {
+  const parts = (value: string) =>
+    value
+      .split('+')[0]!
+      .split('-')[0]!
+      .split('.')
+      .map((part) => Number.parseInt(part, 10) || 0);
+  const a = parts(left);
+  const b = parts(right);
+  for (let index = 0; index < 3; index += 1) {
+    const diff = (a[index] ?? 0) - (b[index] ?? 0);
+    if (diff !== 0) return diff;
+  }
+  return 0;
+}
+
+export const SEEN_VERSION_KEY = 'spell-garden.seenVersion';
+
+export type GardenNewsPlan = 'record' | 'show' | 'stay';
+
+/** A first visit is recorded quietly. A newer version opens the note for Aida. */
+export function gardenNewsPlan(seen: string | null, current: string): GardenNewsPlan {
+  if (!seen || !SEMVER.test(seen)) return 'record';
+  if (compareSemver(current, seen) > 0) return 'show';
+  return 'stay';
+}
+
+export function kidHighlights(notes: ReleaseNotes[], seen: string): string[] {
+  return notes
+    .filter((note) => SEMVER.test(note.version) && compareSemver(note.version, seen) > 0)
+    .flatMap((note) => note.sections.filter((section) => section.title === 'For Aida').flatMap((section) => section.items));
 }
