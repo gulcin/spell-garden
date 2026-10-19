@@ -88,7 +88,8 @@ function startServer() {
     }
     const file = fileFor(url.pathname);
     if (!file) {
-      misses.push(`${generation} ${key}`);
+      const detail = `${generation} ${key}`;
+      misses.push(detail);
       res.writeHead(404, { 'Cache-Control': 'no-cache' });
       res.end('missing');
       return;
@@ -159,10 +160,14 @@ try {
   await page.waitForSelector('[data-testid="map-shop"]');
   const first = await page.locator('meta[name="spell-garden-version"]').getAttribute('content');
   if (first !== '9.0.0') throw new Error(`opened ${first}`);
-  await page.waitForFunction(async () => {
-    const reg = await navigator.serviceWorker.getRegistration();
-    return Boolean(reg?.active && navigator.serviceWorker.controller);
-  });
+  // An async waitForFunction predicate returns a Promise, which is always truthy, so it does not wait.
+  await page.evaluate(
+    () =>
+      Promise.race([
+        navigator.serviceWorker.ready,
+        new Promise((_, reject) => setTimeout(() => reject(new Error('the first spell did not install')), 25000)),
+      ]),
+  );
   await page.evaluate(async () => {
     await new Promise((resolve, reject) => {
       const request = indexedDB.open('spell-garden-colouring', 1);
@@ -189,10 +194,20 @@ try {
     Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'visible' });
     document.dispatchEvent(new Event('visibilitychange'));
   });
-  await page.waitForFunction(async () => {
-    const reg = await navigator.serviceWorker.getRegistration();
-    return Boolean(reg?.waiting);
-  });
+  await page.evaluate(
+    () =>
+      new Promise((resolve, reject) => {
+        const started = Date.now();
+        const look = () => {
+          navigator.serviceWorker.getRegistration().then((reg) => {
+            if (reg?.waiting) resolve(true);
+            else if (Date.now() - started > 20000) reject(new Error('the new spell did not install'));
+            else setTimeout(look, 100);
+          }, reject);
+        };
+        look();
+      }),
+  );
   if ((await page.locator('[data-testid="update-banner"]').count()) !== 0) {
     throw new Error('the update banner appeared during a grown-ups screen');
   }

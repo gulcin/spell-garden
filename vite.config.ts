@@ -103,17 +103,16 @@ self.addEventListener('fetch',(event)=>{
   }
   if(event.request.mode==='navigate'){
     event.respondWith((async()=>{
+      const cache=await caches.open(CACHE);
+      const home=await cache.match(HOME);
+      if(home) return home;
       try{
         const response=await fresh(HOME);
         if(response.ok){
-          const cache=await caches.open(CACHE);
           await cache.put(HOME, response.clone());
           return response;
         }
       }catch{}
-      const cache=await caches.open(CACHE);
-      const home=await cache.match(HOME);
-      if(home) return home;
       return new Response('Offline',{status:503});
     })());
     return;

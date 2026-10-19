@@ -25,10 +25,14 @@ function deferredFlags(): { deferred: boolean; deferredThisSession: boolean } {
   };
 }
 
+function workerIsWaiting(reg: ServiceWorkerRegistration | undefined): boolean {
+  return Boolean(reg?.waiting && navigator.serviceWorker.controller);
+}
+
 export function currentUpdatePlan(): UpdatePlan {
   const flags = deferredFlags();
   return planUpdate({
-    waiting,
+    waiting: waiting || workerIsWaiting(registration),
     lesson: isLessonInProgress(),
     deferred: flags.deferred,
     deferredThisSession: flags.deferredThisSession,
@@ -97,17 +101,31 @@ function markWaiting(): void {
   emit();
 }
 
+const armed = new WeakSet<ServiceWorker>();
+
+/** updatefound can fire before register() resolves, so watch the worker that is already installing. */
+function armWorker(worker: ServiceWorker | null): void {
+  if (!worker) return;
+  const note = () => {
+    if (worker.state === 'installed' && navigator.serviceWorker.controller) markWaiting();
+  };
+  if (armed.has(worker)) {
+    note();
+    return;
+  }
+  armed.add(worker);
+  note();
+  worker.addEventListener('statechange', note);
+}
+
 function watchRegistration(reg: ServiceWorkerRegistration): void {
   registration = reg;
-  if (reg.waiting && navigator.serviceWorker.controller) markWaiting();
+  armWorker(reg.installing);
+  armWorker(reg.waiting);
   if (watched.has(reg)) return;
   watched.add(reg);
   reg.addEventListener('updatefound', () => {
-    const installing = reg.installing;
-    if (!installing) return;
-    installing.addEventListener('statechange', () => {
-      if (installing.state === 'installed' && navigator.serviceWorker.controller) markWaiting();
-    });
+    armWorker(reg.installing);
   });
 }
 
@@ -124,6 +142,7 @@ export async function lookForUpdate(): Promise<RemoteVersion | null> {
       watchRegistration(await registerScript(remote.version));
     }
     if (registration) await registration.update();
+    if (registration) armWorker(registration.installing ?? registration.waiting);
   } catch {
     return remote;
   }

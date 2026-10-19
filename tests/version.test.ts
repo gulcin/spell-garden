@@ -62,11 +62,13 @@ describe('Spell Garden version', () => {
     expect(sw).toContain('visibilitychange');
     expect(sw).toContain('SKIP_WAITING');
     expect(sw).toContain('controllerchange');
+    expect(sw).toContain('reg.installing');
     expect(sw).not.toContain('prague.wizard-math.progress');
     const worker = serviceWorkerSource('spell-garden-v1.3.0', ['./index.html'], './index.html');
     expect(worker).toContain('SKIP_WAITING');
     expect(worker).toContain("cache:'reload'");
     expect(worker).toContain("searchParams.set('spell', CACHE)");
+    expect(worker.indexOf('cache.match(HOME)')).toBeLessThan(worker.indexOf('fresh(HOME)'));
     expect(worker).not.toContain('localStorage');
   });
 
