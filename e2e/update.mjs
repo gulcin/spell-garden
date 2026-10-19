@@ -34,9 +34,10 @@ function chromePath() {
 function build(version, outDir) {
   rmSync(outDir, { recursive: true, force: true });
   mkdirSync(outDir, { recursive: true });
+  const env = { ...process.env, SPELL_VERSION: version, SPELL_BUILD_DATE: '2026-10-19', BASE_PATH: './' };
   const result = spawnSync('npx', ['vite', 'build', '--outDir', outDir], {
     cwd: root,
-    env: { ...process.env, SPELL_VERSION: version, SPELL_BUILD_DATE: '2026-10-19' },
+    env,
     stdio: 'inherit',
   });
   if (result.status !== 0) throw new Error(`build ${version} failed`);
