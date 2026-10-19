@@ -94,6 +94,79 @@ function pack(topic: Topic, template: TemplateId, salt: string, built: Built): I
   };
 }
 
+function goalStamp(item: Item): string {
+  const goal = item.goal;
+  switch (goal.kind) {
+    case 'fill-count':
+      return `fill:${goal.count}:${goal.group ?? ''}`;
+    case 'mix':
+      return `mix:${Object.entries(goal.counts)
+        .sort()
+        .map(([group, count]) => `${group}=${count}`)
+        .join(',')}`;
+    case 'zone-counts':
+      return `zones:${Object.entries(goal.counts)
+        .sort()
+        .map(([zone, count]) => `${zone}=${count}`)
+        .join(',')}:span${item.spanCount ?? ''}`;
+    case 'sum':
+      return `sum:${goal.total}`;
+    case 'value':
+      return `value:${goal.total}`;
+    case 'array':
+      return `array:${goal.rows}x${goal.cols}`;
+    case 'piece-at': {
+      const piece = item.pieces.find((row) => row.id === goal.pieceId);
+      const pools = (item.pools ?? []).map((pool) => pool.count).join('x');
+      return `at:${piece?.label ?? piece?.art ?? goal.pieceId}@${goal.zoneId}:${pools}`;
+    }
+    case 'groups':
+      return `groups:${item.pieces
+        .map((piece) => `${piece.label ?? piece.art}:${piece.group ?? ''}`)
+        .sort()
+        .join(',')}`;
+    case 'shaded':
+      return `shaded:${goal.count}`;
+    case 'choice':
+      return `choice:${item.choices?.find((row) => row.id === goal.id)?.label ?? goal.id}`;
+    case 'clock':
+      return `clock:${goal.hour}:${goal.minute}`;
+    case 'angle':
+      return `angle:${goal.degrees}@${item.angleStart ?? 0}`;
+    case 'toggles': {
+      const on = (item.toggles ?? [])
+        .filter((row) => goal.ids.includes(row.id))
+        .map((row) => row.shape)
+        .sort();
+      const all = (item.toggles ?? []).map((row) => `${row.shape}`).join(',');
+      return `toggles:${on.join('+')}|${all}`;
+    }
+    case 'symmetry':
+      return `symmetry:${[...goal.ids].sort().join(',')}`;
+    case 'equal':
+      return `equal:${goal.min}:${goal.groups.join('+')}`;
+  }
+}
+
+/** Template, prompt, and the numbers the spell asks for. Same signature means the same activity. */
+export function activitySignature(item: Item): string {
+  const prompt = item.prompt.replace(/\s+/g, ' ').trim().toLowerCase();
+  return `${item.template}|${prompt}|${goalStamp(item)}`;
+}
+
+/**
+ * Draw a problem whose signature is not already in this section.
+ * The same focus idea may appear three times; the questions must still differ.
+ * Placement salts keep their marker, so a retry stays on the placement problem.
+ */
+export function generateDistinct(topic: Topic, salt: string, ease: number, avoid: ReadonlySet<string>): Item {
+  let item = generateItem(topic, salt, ease);
+  for (let n = 1; n <= 24 && avoid.has(activitySignature(item)); n += 1) {
+    item = generateItem(topic, `${salt}#${n}`, ease);
+  }
+  return item;
+}
+
 function slots(count: number, prefix: string, role: string): Zone[] {
   return Array.from({ length: count }, (_, i) => ({
     id: `${prefix}${i}`,
@@ -243,7 +316,7 @@ function tenFrame(topic: Topic, rand: () => number, salt: string): Item {
   const wide = gentle === 0 && b >= 1 && /20/.test(name);
   const slotCount = wide ? 20 : 10;
   const mixCap = gentle > 0 ? Math.max(2, 4 - gentle) : b === 0 ? 4 : 6;
-  const countCap = gentle > 0 ? Math.max(3, 6 - gentle) : b === 0 ? 7 : 10;
+  const countCap = gentle >= 2 ? 6 : gentle > 0 ? 8 : b === 0 ? 7 : 10;
   const zones = slots(slotCount, 'slot', 'slot');
   const subtract = /subtract|taking away|separat/.test(name) && (!/add/.test(name) || rand() < 0.45);
   if (/bond|pairs/.test(name) || (/make/.test(name) && rand() < 0.5)) {
@@ -384,7 +457,7 @@ function numberLine(topic: Topic, rand: () => number, salt: string): Item {
   }
   if (/skip|counting in|2s|4s|6s|8s|50s|100s/.test(name)) {
     const step = /100/.test(name) ? 100 : /50/.test(name) ? 50 : /8s/.test(name) ? 8 : /6s/.test(name) ? 6 : /4s/.test(name) ? 4 : 2;
-    const hops = int(rand, 2, gentle > 0 ? 2 : 4);
+    const hops = int(rand, 2, gentle > 0 ? 4 : 5);
     const zones: Zone[] = [];
     for (let i = 0; i <= 5; i++) zones.push({ id: padId(i * step), role: 'lily', label: String(i * step), capacity: 1 });
     const end = hops * step;
@@ -521,8 +594,8 @@ function shareExact(topic: Topic, salt: string, gems: number, jars: number, rem:
 function sharing(topic: Topic, rand: () => number, salt: string): Item {
   const name = topic.name.toLowerCase();
   const b = band(topic);
-  const jars = int(rand, 2, gentle > 0 ? 2 : b >= 2 ? 5 : 3);
-  const each = int(rand, 2, gentle > 0 ? Math.max(2, 4 - gentle) : b === 0 ? 4 : 6);
+  const jars = int(rand, 2, gentle > 0 ? 3 : b >= 2 ? 5 : 3);
+  const each = int(rand, 2, gentle >= 2 ? 3 : gentle > 0 ? 4 : b === 0 ? 4 : 6);
   const rem = /remainder/.test(name) ? int(rand, 1, jars - 1) : 0;
   const gems = jars * each + rem;
   const prompt = rem
@@ -534,15 +607,15 @@ function sharing(topic: Topic, rand: () => number, salt: string): Item {
 function array(topic: Topic, rand: () => number, salt: string): Item {
   const name = topic.name.toLowerCase();
   const b = band(topic);
-  let rows = int(rand, 2, gentle > 0 ? 2 : b === 0 ? 3 : 4);
-  let cols = int(rand, 2, gentle > 0 ? Math.max(2, 4 - gentle) : b === 0 ? 4 : 6);
+  let rows = int(rand, 2, gentle > 0 ? 3 : b === 0 ? 3 : 4);
+  let cols = int(rand, 2, gentle >= 2 ? 3 : gentle > 0 ? 4 : b === 0 ? 4 : 6);
   if (/square|cube/.test(name)) {
     rows = int(rand, 2, 4);
     cols = rows;
   }
   if (/by tens|multiplying by tens/.test(name)) {
     cols = 10;
-    rows = int(rand, 2, 3);
+    rows = int(rand, 2, 4);
   }
   const gridRows = rows + 1;
   const gridCols = cols + 2;
@@ -635,9 +708,9 @@ function fraction(topic: Topic, rand: () => number, salt: string): Item {
     return shade(topic, salt, n, 10, 'bar', `Shade ${counted(n, 'tenth')} of the potion bar.`);
   }
   if (/add|sum/.test(name)) {
-    const den = pick(rand, gentle > 0 ? [4] : [4, 5, 6, 8]);
-    const a = int(rand, 1, Math.max(1, den - 3));
-    const c = int(rand, 1, den - a - 1);
+    const den = pick(rand, gentle >= 2 ? [4, 5, 6] : gentle > 0 ? [4, 5, 6, 8] : [4, 5, 6, 8]);
+    const a = int(rand, 1, Math.max(1, den - 2));
+    const c = int(rand, 1, Math.max(1, den - a - 1));
     return shade(topic, salt, a + c, den, den > 6 ? 'bar' : 'pie', `Shade the sum of ${a}/${den} and ${c}/${den}.`);
   }
   if (/equivalent/.test(name)) {
@@ -645,9 +718,18 @@ function fraction(topic: Topic, rand: () => number, salt: string): Item {
     const k = pick(rand, [2, 3]);
     return shade(topic, salt, k, base * k, 'bar', `Shade the amount that matches 1/${base}. The bar is split into ${base * k}, so colour ${k} pieces.`);
   }
-  const den = /half/.test(name) ? 2 : /quarter/.test(name) ? 4 : pick(rand, gentle >= 2 ? [2, 4] : gentle > 0 ? [2, 3, 4] : [2, 3, 4, 6, 8]);
-  const num = /half/.test(name) ? 1 : /quarter/.test(name) && rand() < 0.5 ? 1 : int(rand, 1, den - 1);
-  const word = num === 1 && den === 2 ? ' That is a half.' : num === 1 && den === 4 ? ' That is a quarter.' : '';
+  if (/half/.test(name)) {
+    const scenes: { layout: 'pie' | 'bar'; prompt: string }[] = [
+      { layout: 'pie', prompt: 'The moon pie is cut into 2 equal slices. Colour 1 slice. That is a half.' },
+      { layout: 'bar', prompt: 'The potion bar is split into 2 equal pieces. Colour 1 piece. That is a half.' },
+      { layout: 'pie', prompt: 'The lily has 2 equal petals. Colour 1 petal. That is a half.' },
+    ];
+    const scene = pick(rand, scenes);
+    return shade(topic, salt, 1, 2, scene.layout, scene.prompt);
+  }
+  const den = /quarter/.test(name) ? 4 : pick(rand, gentle >= 2 ? [2, 4] : gentle > 0 ? [2, 3, 4] : [2, 3, 4, 6, 8]);
+  const num = /quarter/.test(name) && rand() < 0.5 ? 1 : int(rand, 1, den - 1);
+  const word = num === 1 && den === 4 ? ' That is a quarter.' : '';
   return shade(topic, salt, num, den, den <= 6 ? 'pie' : 'bar', `Colour ${num} of the ${den} equal parts.${word}`);
 }
 
@@ -776,7 +858,7 @@ function clockItem(topic: Topic, salt: string, hour: number, minute: number, pro
 function balance(topic: Topic, rand: () => number, salt: string): Item {
   const name = topic.name.toLowerCase();
   if (/mass|weight/.test(name) || topic.domain === 'Measurement') {
-    const n = int(rand, 3, gentle > 0 ? Math.max(4, 6 - gentle) : 8);
+    const n = int(rand, 3, gentle >= 2 ? 6 : gentle > 0 ? 7 : 8);
     const pieces: Piece[] = [];
     const solution: Action[] = [];
     for (let i = 0; i < n; i++) {
@@ -785,7 +867,7 @@ function balance(topic: Topic, rand: () => number, salt: string): Item {
     }
     if (n >= 5) pieces.push({ id: 'five', art: 'stone', value: 5, label: '5' });
     return pack(topic, 'balance', salt, {
-      prompt: 'The melon weighs the same as the mushrooms. Put stones on the empty pan until the scale balances.',
+      prompt: `The melon weighs the same as ${n} mushrooms. Put stones on the empty pan until the scale balances.`,
       hints: hints(
         'Count the mushrooms first.',
         'Each stone marked 1 matches one mushroom.',
@@ -827,7 +909,7 @@ function balance(topic: Topic, rand: () => number, salt: string): Item {
 }
 
 function measure(topic: Topic, rand: () => number, salt: string): Item {
-  const length = int(rand, 3, Math.max(3, (rawBand(topic) >= 2 ? 8 : 6) - gentle));
+  const length = int(rand, 3, gentle >= 2 ? 6 : gentle > 0 ? 7 : rawBand(topic) >= 2 ? 10 : 8);
   const zones: Zone[] = [];
   const counts: Record<string, number> = {};
   for (let i = 0; i < length; i++) {
@@ -840,7 +922,7 @@ function measure(topic: Topic, rand: () => number, salt: string): Item {
   counts.extra1 = 0;
   const pieces: Piece[] = Array.from({ length: length + 2 }, (_, i) => ({ id: `pl${i}`, art: 'plank' }));
   return pack(topic, 'measure', salt, {
-    prompt: 'Lay planks on the wooden bridge until you reach the star flag. Do not go past the flag.',
+    prompt: `The wooden bridge is ${length} planks long. Lay planks until you reach the star flag, and do not go past it.`,
     hints: hints(
       'The wooden spaces are the bridge. The grass past the flag is not.',
       'One plank fills one space.',
@@ -859,29 +941,83 @@ function measure(topic: Topic, rand: () => number, salt: string): Item {
 function shapes(topic: Topic, rand: () => number, salt: string): Item {
   const name = topic.name.toLowerCase();
   if (/positional|position, direction/.test(name)) {
+    const scenes = [
+      {
+        prompt: 'The frog sits on the lily. Where is the frog?',
+        correct: 'On the lily',
+        wrongs: ['Under the lily', 'Beside the pond', 'Above the clouds'],
+        walk: ['The frog sits on the lily.', 'So the place is on the lily.'],
+      },
+      {
+        prompt: 'The moth hides under the leaf. Where is the moth?',
+        correct: 'Under the leaf',
+        wrongs: ['On the leaf', 'Beside the brook', 'Above the trees'],
+        walk: ['The moth hides under the leaf.', 'So the place is under the leaf.'],
+      },
+      {
+        prompt: 'The beetle waits beside the mushroom. Where is the beetle?',
+        correct: 'Beside the mushroom',
+        wrongs: ['On the mushroom', 'Under the grass', 'Above the ring'],
+        walk: ['The beetle waits beside the mushroom.', 'So the place is beside the mushroom.'],
+      },
+      {
+        prompt: 'The owl perches above the tower door. Where is the owl?',
+        correct: 'Above the door',
+        wrongs: ['Under the door', 'Beside the kettle', 'Inside the pond'],
+        walk: ['The owl perches above the door.', 'So the place is above the door.'],
+      },
+    ];
+    const scene = pick(rand, scenes);
     return choice(
       topic,
       'shapes',
       salt,
-      'The frog sits on the lily. Where is the frog?',
+      scene.prompt,
       ['On means right there.', 'Under means below. Beside means next to it.'],
-      'On the lily',
-      ['Under the lily', 'Beside the pond', 'Above the clouds'],
-      hints('Look at the word on.', 'The frog is not under the lily.', 'On means sitting right there.'),
-      ['The frog sits on the lily.', 'So the place is on the lily.'],
+      scene.correct,
+      scene.wrongs,
+      hints('Read the place word in the story.', 'Under means below. Beside means next to it.', 'Match the word the story used.'),
+      scene.walk,
     );
   }
   if (/turns & direction|describing movement/.test(name)) {
+    const scenes = [
+      {
+        prompt: 'Which way is a quarter turn to the right?',
+        correct: 'The same way clock hands go',
+        wrongs: ['The other way from clock hands', 'Straight up', 'Backwards'],
+        walk: ['Clock hands travel to the right.', 'A quarter turn to the right follows them.'],
+      },
+      {
+        prompt: 'Which way is a quarter turn to the left?',
+        correct: 'The other way from clock hands',
+        wrongs: ['The same way clock hands go', 'Straight down', 'A tiny hop'],
+        walk: ['Clock hands travel to the right.', 'A quarter turn to the left goes the other way.'],
+      },
+      {
+        prompt: 'Which way is a half turn?',
+        correct: 'Around until you face the other way',
+        wrongs: ['A tiny tilt', 'Straight up', 'No turn at all'],
+        walk: ['A half turn is halfway around.', 'You end facing the other way.'],
+      },
+      {
+        prompt: 'Which way is a full turn?',
+        correct: 'All the way around, back to the start',
+        wrongs: ['A quarter of the way', 'Only a little to the left', 'Straight ahead'],
+        walk: ['A full turn goes all the way around.', 'You finish where you began.'],
+      },
+    ];
+    const scene = pick(rand, scenes);
     return choice(
       topic,
       'shapes',
       salt,
-      'Which way is a quarter turn to the right?',
+      scene.prompt,
       ['Clock hands move to the right.', 'A quarter turn is one corner of a square.'],
-      'The same way clock hands go',
-      ['The other way from clock hands', 'Straight up', 'Backwards'],
-      hints('Think of the garden clock.', 'The minute hand moves to the right.', 'A quarter turn follows that same way.'),
-      ['Clock hands travel to the right.', 'A quarter turn to the right follows them.'],
+      scene.correct,
+      scene.wrongs,
+      hints('Think of the garden clock.', 'The minute hand moves to the right.', 'Match the size of the turn in the story.'),
+      scene.walk,
     );
   }
   const pool: { shape: ShapeName; label: string }[] = [
@@ -896,29 +1032,42 @@ function shapes(topic: Topic, rand: () => number, salt: string): Item {
     { shape: 'sphere', label: 'Sphere' },
   ];
   let want: (shape: ShapeName) => boolean = (shape) => shape === 'triangle';
-  let prompt = 'Tap every triangle.';
+  let spoken = 'triangle';
+  let options = pool.filter((row) => row.shape === 'triangle');
   if (/circle|parts of a circle/.test(name)) {
     want = (shape) => shape === 'circle';
-    prompt = 'Tap every circle.';
+    spoken = 'circle';
+    options = pool.filter((row) => row.shape === 'circle');
   } else if (/3-d|solid|faces|nets|cube/.test(name)) {
     want = (shape) => shape === 'cube' || shape === 'cone' || shape === 'sphere';
-    prompt = 'Tap the solid shapes. Leave the flat shapes alone.';
+    spoken = 'solid shape';
+    options = pool.filter((row) => row.shape === 'cube' || row.shape === 'cone' || row.shape === 'sphere');
   } else if (/quadrilateral|4 sides|square/.test(name)) {
     want = (shape) => shape === 'square' || shape === 'rectangle';
-    prompt = 'Tap the shapes with 4 sides.';
+    spoken = 'shape with 4 sides';
+    options = pool.filter((row) => row.shape === 'square' || row.shape === 'rectangle');
   } else if (rand() < 0.4) {
     want = (shape) => shape === 'square';
-    prompt = 'Tap every square.';
+    spoken = 'square';
+    options = pool.filter((row) => row.shape === 'square');
   }
-  const toggles = shuffle(rand, pool)
-    .slice(0, 6)
-    .map((row, i) => ({ id: `sh${i}`, shape: row.shape, label: row.label }));
-  if (!toggles.some((row) => want(row.shape))) {
-    toggles[0] = { id: 'sh0', shape: 'triangle', label: 'Triangle' };
-    want = (shape) => shape === 'triangle';
-    prompt = 'Tap every triangle.';
-  }
+  const copies = int(rand, 1, options.length === 1 ? 3 : Math.min(3, options.length));
+  const targets =
+    options.length === 1
+      ? Array.from({ length: copies }, () => options[0]!)
+      : shuffle(rand, options).slice(0, copies);
+  const fillers = shuffle(
+    rand,
+    pool.filter((row) => !want(row.shape)),
+  ).slice(0, 6 - targets.length);
+  const toggles = shuffle(rand, [...targets, ...fillers]).map((row, i) => ({ id: `sh${i}`, shape: row.shape, label: row.label }));
   const ids = toggles.filter((row) => want(row.shape)).map((row) => row.id);
+  const many = spoken.endsWith('s') ? spoken : `${spoken}${ids.length === 1 ? '' : 's'}`;
+  const prompt = pick(rand, [
+    `Tap every ${spoken}. ${ids.length} ${ids.length === 1 ? 'is' : 'are'} hiding here.`,
+    `The garden hid ${ids.length} ${many}. Tap each one.`,
+    `Find the ${many} and tap them. There ${ids.length === 1 ? 'is' : 'are'} ${ids.length}.`,
+  ]);
   return pack(topic, 'shapes', salt, {
     prompt,
     hints: hints(
@@ -954,7 +1103,7 @@ function symmetry(topic: Topic, rand: () => number, salt: string): Item {
     mirrors.push(`g${r}-${cols - 1 - c}`);
   }
   return pack(topic, 'symmetry', salt, {
-    prompt: 'Finish the reflection. Tap squares on the right so the garden mirrors the left.',
+    prompt: `Finish the reflection. ${mirrors.length} squares on the right still need a partner so the picture matches.`,
     hints: hints(
       'A mirror flips left and right.',
       'Each coloured square needs a partner the same distance from the middle.',
@@ -984,7 +1133,7 @@ function pattern(topic: Topic, rand: () => number, salt: string): Item {
       ...distractors.map((n, i) => ({ id: `d${i}`, art: 'token' as const, label: String(n), value: n })),
     ];
     return pack(topic, 'pattern', salt, {
-      prompt: 'The sequence grows by the same amount each time. Drag the next number into the gap.',
+      prompt: `The sequence is ${lead.map((tile) => tile.label).join(', ')}. It grows by the same amount each time. Drag the next number into the gap.`,
       hints: hints(
         'Find the jump from one number to the next.',
         'That same jump happens every time.',
@@ -1012,7 +1161,7 @@ function pattern(topic: Topic, rand: () => number, salt: string): Item {
     ...others.map((art, i) => ({ id: `d${i}`, art })),
   ];
   return pack(topic, 'pattern', salt, {
-    prompt: 'Drag the tile that continues the pattern into the gap.',
+    prompt: `The tiles go ${chosen.seq.join(', ')}. Drag the tile that comes next into the gap.`,
     hints: hints(
       'Say the pattern out loud.',
       'Look at the last tile and ask what usually comes next.',
@@ -1036,7 +1185,7 @@ function sort(topic: Topic, rand: () => number, salt: string): Item {
     if (right === left) right = left + 1;
     const zone = right > left ? 'right' : 'left';
     return pack(topic, 'sort', salt, {
-      prompt: 'Drag the gold ribbon onto the pool with more fireflies.',
+      prompt: `The left pool has ${left} fireflies and the right pool has ${right}. Drag the gold ribbon onto the pool with more.`,
       hints: hints('Count each pool.', 'The greater count is the one with more.', 'The ribbon marks the larger pool.'),
       walkthrough: [`One pool has ${left}. The other has ${right}.`, 'The ribbon goes on the pool with more.'],
       pieces: [{ id: 'ribbon', art: 'ribbon', label: 'more' }],
@@ -1203,24 +1352,41 @@ function coordinate(topic: Topic, rand: () => number, salt: string): Item {
 
 function angle(topic: Topic, rand: () => number, salt: string): Item {
   const name = topic.name.toLowerCase();
+  const object = pick(rand, ['book', 'window', 'picture frame', 'garden gate']);
   let degrees = 90;
-  let prompt = 'Turn the wand until it makes a right angle, like the corner of a book.';
+  let kind: 'right' | 'straight' | 'acute' | 'obtuse' | 'turn' | 'exact' = 'right';
   if (/straight|half turn/.test(name)) {
     degrees = 180;
-    prompt = 'Turn the wand into a straight line, a half turn.';
+    kind = 'straight';
   } else if (/acute|estimating angles/.test(name)) {
     degrees = pick(rand, [30, 45, 60]);
-    prompt = `Open a narrow acute angle. Aim for ${degrees} degrees, smaller than a book corner.`;
+    kind = 'acute';
   } else if (/obtuse/.test(name)) {
     degrees = pick(rand, [120, 135, 150]);
-    prompt = `Open an obtuse angle, wider than a book corner. Aim for ${degrees} degrees.`;
+    kind = 'obtuse';
   } else if (/full|complete turn|360/.test(name)) {
-    degrees = 270;
-    prompt = 'Turn the wand three quarters of the way around the circle.';
+    degrees = pick(rand, [180, 270, 360]);
+    kind = 'turn';
   } else if (band(topic) >= 2 && rand() < 0.5) {
     degrees = pick(rand, [45, 90, 180, 270]);
-    prompt = degrees === 90 ? prompt : `Turn the wand to ${degrees} degrees.`;
+    kind = 'exact';
   }
+  const start = pick(
+    rand,
+    [0, 20, 45, 180, 270].filter((value) => value !== degrees),
+  );
+  const prompt =
+    kind === 'straight'
+      ? `The wand rests at ${start} degrees. Turn it into a straight line, a half turn.`
+      : kind === 'acute'
+        ? `The wand rests at ${start} degrees. Open a narrow acute angle. Aim for ${degrees} degrees, smaller than a book corner.`
+        : kind === 'obtuse'
+          ? `The wand rests at ${start} degrees. Open an obtuse angle, wider than a book corner. Aim for ${degrees} degrees.`
+          : kind === 'turn'
+            ? `The wand rests at ${start} degrees. Turn it ${degrees} degrees around the circle.`
+            : kind === 'exact'
+              ? `The wand rests at ${start} degrees. Turn it to ${degrees} degrees.`
+              : `The wand rests at ${start} degrees. Turn it to a right angle, 90 degrees, like the corner of a ${object}.`;
   return pack(topic, 'angle', salt, {
     prompt,
     hints: hints(
@@ -1232,7 +1398,7 @@ function angle(topic: Topic, rand: () => number, salt: string): Item {
     pieces: [],
     zones: [],
     initial: {},
-    angleStart: 0,
+    angleStart: start,
     goal: { kind: 'angle', degrees },
     solution: [{ op: 'angle', degrees }],
   });
@@ -1246,23 +1412,22 @@ function chance(topic: Topic, rand: () => number, salt: string): Item {
   ];
   const pouch: Zone = { id: 'pouch', role: 'pouch', label: 'Pouch', capacity: 8 };
   if (/equally|fair/.test(name)) {
+    const n = int(rand, 1, 3);
     return pack(topic, 'chance', salt, {
-      prompt: 'Put marbles in the pouch so blue and gold are equally likely. Use at least one of each.',
+      prompt: `Put ${n} blue ${n === 1 ? 'marble' : 'marbles'} and ${n} gold ${n === 1 ? 'marble' : 'marbles'} in the pouch, so both colours are equally likely.`,
       hints: hints(
         'Equally likely means the same number of each colour.',
-        'Start with one blue and one gold.',
-        'You can add more, as long as the colours still match.',
+        `Count ${n} blue first.`,
+        `Then add ${n} gold.`,
       ),
-      walkthrough: ['I choose the same number of blue and gold.', 'Two of each is a fair pouch.'],
+      walkthrough: [`I put ${n} blue in the pouch.`, `I put ${n} gold beside them.`],
       pieces,
       zones: [pouch],
       initial: {},
-      goal: { kind: 'equal', groups: ['blue', 'gold'], zoneId: 'pouch', min: 1 },
+      goal: { kind: 'mix', counts: { blue: n, gold: n }, zonePrefix: 'pouch' },
       solution: [
-        { op: 'move', pieceId: 'b0', zoneId: 'pouch' },
-        { op: 'move', pieceId: 'b1', zoneId: 'pouch' },
-        { op: 'move', pieceId: 'g0', zoneId: 'pouch' },
-        { op: 'move', pieceId: 'g1', zoneId: 'pouch' },
+        ...Array.from({ length: n }, (_, i) => ({ op: 'move' as const, pieceId: `b${i}`, zoneId: 'pouch' })),
+        ...Array.from({ length: n }, (_, i) => ({ op: 'move' as const, pieceId: `g${i}`, zoneId: 'pouch' })),
       ],
     });
   }
@@ -1343,62 +1508,95 @@ function choice(
 
 function fallback(topic: Topic, rand: () => number, salt: string): Item {
   const name = topic.name.toLowerCase();
-  const evidence = topic.evidence[0] || topic.description;
+  const evidence = topic.evidence.length > 0 ? pick(rand, topic.evidence) : topic.description;
   if (/order of operations/.test(name)) {
-    return choice(topic, 'fallback', salt, 'What is 5 + 2 × 3?', [
-      'Multiply before you add.',
-      'In 2 + 3 × 4, the 3 × 4 happens first, so 2 + 12 = 14.',
-    ], '11', ['21', '10', '7'], hints('Look for the multiplication first.', '2 × 3 is 6.', 'Then add the 5.'), ['5 + 2 × 3 means 5 + 6.', 'That is 11.']);
+    const sums = [
+      { prompt: 'What is 5 + 2 × 3?', answer: '11', wrongs: ['21', '10', '7'], work: ['5 + 2 × 3 means 5 + 6.', 'That is 11.'], hints: hints('Look for the multiplication first.', '2 × 3 is 6.', 'Then add the 5.') },
+      { prompt: 'What is 4 + 3 × 2?', answer: '10', wrongs: ['14', '9', '8'], work: ['4 + 3 × 2 means 4 + 6.', 'That is 10.'], hints: hints('Look for the multiplication first.', '3 × 2 is 6.', 'Then add the 4.') },
+      { prompt: 'What is 6 + 2 × 4?', answer: '14', wrongs: ['32', '12', '16'], work: ['6 + 2 × 4 means 6 + 8.', 'That is 14.'], hints: hints('Look for the multiplication first.', '2 × 4 is 8.', 'Then add the 6.') },
+      { prompt: 'What is 7 + 3 × 3?', answer: '16', wrongs: ['30', '13', '21'], work: ['7 + 3 × 3 means 7 + 9.', 'That is 16.'], hints: hints('Look for the multiplication first.', '3 × 3 is 9.', 'Then add the 7.') },
+    ];
+    const row = pick(rand, sums);
+    return choice(topic, 'fallback', salt, row.prompt, ['Multiply before you add.', 'In 2 + 3 × 4, the 3 × 4 happens first, so 2 + 12 = 14.'], row.answer, row.wrongs, row.hints, row.work);
   }
   if (/bracket/.test(name)) {
-    return choice(topic, 'fallback', salt, 'What is 3 × (4 + 1)?', [
-      'Brackets are a nest. Work inside them first.',
-      '2 × (3 + 1) is 2 × 4, which is 8.',
-    ], '15', ['13', '12', '7'], hints('The brackets come first.', '4 + 1 is 5.', 'Then 3 groups of 5.'), ['Inside the brackets, 4 + 1 = 5.', '3 × 5 = 15.']);
+    const sums = [
+      { prompt: 'What is 3 × (4 + 1)?', answer: '15', wrongs: ['13', '12', '7'], work: ['Inside the brackets, 4 + 1 = 5.', '3 × 5 = 15.'], hints: hints('The brackets come first.', '4 + 1 is 5.', 'Then 3 groups of 5.') },
+      { prompt: 'What is 2 × (3 + 4)?', answer: '14', wrongs: ['10', '9', '24'], work: ['Inside the brackets, 3 + 4 = 7.', '2 × 7 = 14.'], hints: hints('The brackets come first.', '3 + 4 is 7.', 'Then 2 groups of 7.') },
+      { prompt: 'What is 4 × (2 + 2)?', answer: '16', wrongs: ['12', '8', '10'], work: ['Inside the brackets, 2 + 2 = 4.', '4 × 4 = 16.'], hints: hints('The brackets come first.', '2 + 2 is 4.', 'Then 4 groups of 4.') },
+      { prompt: 'What is (5 + 1) × 2?', answer: '12', wrongs: ['11', '8', '7'], work: ['Inside the brackets, 5 + 1 = 6.', '6 × 2 = 12.'], hints: hints('The brackets come first.', '5 + 1 is 6.', 'Then 2 groups of 6.') },
+    ];
+    const row = pick(rand, sums);
+    return choice(topic, 'fallback', salt, row.prompt, ['Brackets are a nest. Work inside them first.', '2 × (3 + 1) is 2 × 4, which is 8.'], row.answer, row.wrongs, row.hints, row.work);
   }
   if (/roman/.test(name)) {
-    return choice(topic, 'fallback', salt, 'What number is IX?', [
-      'I before V or X means one less.',
-      'IV means 4. VI means 6.',
-    ], '9', ['11', '10', '4'], hints('I before X means one less than ten.', 'X is 10.', 'One less than 10 is 9.'), ['IX is one less than ten.', 'That is 9.']);
+    const sums = [
+      { prompt: 'What number is IX?', answer: '9', wrongs: ['11', '10', '4'], work: ['IX is one less than ten.', 'That is 9.'] },
+      { prompt: 'What number is IV?', answer: '4', wrongs: ['6', '9', '5'], work: ['IV is one less than five.', 'That is 4.'] },
+      { prompt: 'What number is XI?', answer: '11', wrongs: ['9', '10', '6'], work: ['X is 10 and I is 1.', 'Together they make 11.'] },
+      { prompt: 'What number is VI?', answer: '6', wrongs: ['4', '9', '11'], work: ['V is 5 and I is 1.', 'Together they make 6.'] },
+    ];
+    const row = pick(rand, sums);
+    return choice(topic, 'fallback', salt, row.prompt, ['I before V or X means one less.', 'IV means 4. VI means 6.'], row.answer, row.wrongs, hints('Look at the order of the letters.', 'A smaller letter before a bigger one means one less.', 'A smaller letter after means one more.'), row.work);
   }
   if (/mean|average/.test(name)) {
-    return choice(topic, 'fallback', salt, 'What is the mean of 3, 5 and 7?', [
-      'The mean is the fair share: add, then divide by how many numbers.',
-      'The mean of 2, 4 and 6 is (2+4+6) ÷ 3 = 4.',
-    ], '5', ['15', '4', '7'], hints('Add the three numbers.', '3 + 5 + 7 is 15.', 'Share 15 into 3 equal parts.'), ['3 + 5 + 7 = 15.', '15 ÷ 3 = 5.']);
+    const sums = [
+      { prompt: 'What is the mean of 3, 5 and 7?', answer: '5', wrongs: ['15', '4', '7'], work: ['3 + 5 + 7 = 15.', '15 ÷ 3 = 5.'] },
+      { prompt: 'What is the mean of 2, 4 and 6?', answer: '4', wrongs: ['12', '3', '6'], work: ['2 + 4 + 6 = 12.', '12 ÷ 3 = 4.'] },
+      { prompt: 'What is the mean of 1, 5 and 9?', answer: '5', wrongs: ['15', '4', '9'], work: ['1 + 5 + 9 = 15.', '15 ÷ 3 = 5.'] },
+      { prompt: 'What is the mean of 4, 4 and 7?', answer: '5', wrongs: ['15', '4', '7'], work: ['4 + 4 + 7 = 15.', '15 ÷ 3 = 5.'] },
+    ];
+    const row = pick(rand, sums);
+    return choice(topic, 'fallback', salt, row.prompt, ['The mean is the fair share: add, then divide by how many numbers.', 'The mean of 2, 3 and 4 is (2+3+4) ÷ 3 = 3.'], row.answer, row.wrongs, hints('Add the three numbers.', 'Then share that total into 3 equal parts.', 'The fair share is the mean.'), row.work);
   }
   if (/prime/.test(name)) {
-    return choice(topic, 'fallback', salt, 'Which of these is a prime number?', [
-      'A prime has exactly two factors: 1 and itself.',
-      '7 is prime. 9 is not, because 3 × 3 = 9.',
-    ], '11', ['9', '15', '1'], hints('Check whether something other than 1 multiplies to make it.', '9 is 3 × 3, so it is not prime.', '11 cannot be split that way.'), ['11 has no factors except 1 and 11.', 'So 11 is prime.']);
+    const sums = [
+      { prompt: 'Which of these is a prime number?', answer: '11', wrongs: ['9', '15', '1'], work: ['11 has no factors except 1 and 11.', 'So 11 is prime.'] },
+      { prompt: 'Which of these is a prime number?', answer: '13', wrongs: ['9', '15', '21'], work: ['13 has no factors except 1 and 13.', 'So 13 is prime.'] },
+      { prompt: 'Which of these is a prime number?', answer: '7', wrongs: ['9', '8', '1'], work: ['7 has no factors except 1 and 7.', 'So 7 is prime.'] },
+      { prompt: 'Which of these is a prime number?', answer: '17', wrongs: ['15', '21', '9'], work: ['17 has no factors except 1 and 17.', 'So 17 is prime.'] },
+    ];
+    const row = pick(rand, sums);
+    return choice(topic, 'fallback', salt, row.prompt, ['A prime has exactly two factors: 1 and itself.', '7 is prime. 9 is not, because 3 × 3 = 9.'], row.answer, row.wrongs, hints('Check whether something other than 1 multiplies to make it.', 'If it splits into a rectangle bigger than 1 by itself, it is not prime.', '1 is not a prime number.'), row.work);
   }
   if (/like terms|collecting/.test(name)) {
-    return choice(topic, 'fallback', salt, '3 pink sparks join 2 more pink sparks. How many pink sparks?', [
-      'Things that match can be counted together.',
-      '4 blue sparks and 1 blue spark make 5 blue sparks.',
-    ], '5', ['6', '3', '2'], hints('They are the same kind, so they can join.', 'Start with 3.', 'Count on 2 more.'), ['3 pink sparks are here.', '2 more join them.', 'That is 5 pink sparks.']);
+    const sums = [
+      { prompt: '3 pink sparks join 2 more pink sparks. How many pink sparks?', answer: '5', wrongs: ['6', '3', '2'], work: ['3 pink sparks are here.', '2 more join them.', 'That is 5 pink sparks.'] },
+      { prompt: '4 blue sparks join 3 more blue sparks. How many blue sparks?', answer: '7', wrongs: ['12', '4', '1'], work: ['4 blue sparks are here.', '3 more join them.', 'That is 7 blue sparks.'] },
+      { prompt: '6 gold sparks join 1 more gold spark. How many gold sparks?', answer: '7', wrongs: ['6', '5', '8'], work: ['6 gold sparks are here.', '1 more joins them.', 'That is 7 gold sparks.'] },
+      { prompt: '2 leaf sparks join 5 more leaf sparks. How many leaf sparks?', answer: '7', wrongs: ['10', '3', '8'], work: ['2 leaf sparks are here.', '5 more join them.', 'That is 7 leaf sparks.'] },
+    ];
+    const row = pick(rand, sums);
+    return choice(topic, 'fallback', salt, row.prompt, ['Things that match can be counted together.', '4 blue sparks and 1 blue spark make 5 blue sparks.'], row.answer, row.wrongs, hints('They are the same kind, so they can join.', 'Start with the first count.', 'Count on the rest.'), row.work);
   }
   if (/expand/.test(name)) {
-    return choice(topic, 'fallback', salt, 'Expand 3(x + 2).', [
-      'Multiply the outside number by each term inside.',
-      '2(x + 4) = 2x + 8.',
-    ], '3x + 6', ['3x + 2', 'x + 6', '5x'], hints('3 multiplies both the x and the 2.', '3 times x is 3x.', '3 times 2 is 6.'), ['3(x + 2) = 3×x + 3×2.', 'That is 3x + 6.']);
+    const sums = [
+      { prompt: 'Expand 3(x + 2).', answer: '3x + 6', wrongs: ['3x + 2', 'x + 6', '5x'], work: ['3(x + 2) = 3×x + 3×2.', 'That is 3x + 6.'] },
+      { prompt: 'Expand 2(x + 4).', answer: '2x + 8', wrongs: ['2x + 4', 'x + 8', '6x'], work: ['2(x + 4) = 2×x + 2×4.', 'That is 2x + 8.'] },
+      { prompt: 'Expand 4(x + 1).', answer: '4x + 4', wrongs: ['4x + 1', 'x + 4', '5x'], work: ['4(x + 1) = 4×x + 4×1.', 'That is 4x + 4.'] },
+      { prompt: 'Expand 5(x + 3).', answer: '5x + 15', wrongs: ['5x + 3', 'x + 15', '8x'], work: ['5(x + 3) = 5×x + 5×3.', 'That is 5x + 15.'] },
+    ];
+    const row = pick(rand, sums);
+    return choice(topic, 'fallback', salt, row.prompt, ['Multiply the outside number by each term inside.', '2(x + 4) = 2x + 8.'], row.answer, row.wrongs, hints('The outside number multiplies both parts.', 'Multiply the x first.', 'Then multiply the plain number.'), row.work);
   }
   if (/vocabulary|notation|language|communication|reasoning|strategy|working|sense of|precision|argument|modelling|generalising|choosing/.test(name) || topic.type === 'META' || topic.type === 'LANGUAGE') {
     const scene = evidence.length > 140 ? `${evidence.slice(0, 137)}…` : evidence;
+    const ask = pick(rand, [
+      `Which habit best shows “${topic.name}”?`,
+      `A friend asks how to show “${topic.name}”. Which habit fits?`,
+      `Pick the habit that matches “${topic.name}” in the garden.`,
+    ]);
     return choice(
       topic,
       'fallback',
       salt,
-      `Which habit best shows “${topic.name}”?`,
+      ask,
       [topic.description.split('. ')[0] ?? topic.description, `One way to show it: ${scene}`],
       scene,
       [
         'Guess the biggest number and move on',
         'Hide the counters so nobody can see',
-        'Skip any part that feels new',
+        'Skip any part that feels tricky',
       ],
       hints('Think about what a careful mathematician does.', 'The example is a clue.', 'Choose the habit that matches the idea, not a shortcut.'),
       ['The idea is about sense-making, not speed.', 'The matching habit is the one in the example.'],

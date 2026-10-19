@@ -365,6 +365,7 @@ function GardenApp() {
                 placeId,
                 crystals: correct * crystalGain(placeId),
                 companion: companionTitle(progress.pets),
+                name: progress.learnerName,
                 at,
               })),
             );
@@ -441,6 +442,7 @@ function GardenApp() {
                   creature: gift.kind === 'friend' ? gift.name : null,
                   gift: gift.kind === 'friend' ? null : gift.name,
                   companion: companionTitle(progress.pets),
+                  name: progress.learnerName,
                   at,
                 }),
               ),

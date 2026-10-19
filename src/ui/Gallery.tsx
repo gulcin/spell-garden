@@ -25,7 +25,7 @@ import { Parent } from './Parent.tsx';
 import { PLACES, placeStyle, Prop } from './pictures.tsx';
 import { RewardScreen } from './Reward.tsx';
 import { SkipButton } from './SkipButton.tsx';
-import { buildAdventure } from '../stories/adventure.ts';
+import { buildAdventure, deedLine, visitIntro } from '../stories/adventure.ts';
 import { appendPuzzlePage, bookByPlace } from '../stories/books.ts';
 import { BookReader, rememberStory, StoryOffer, StoryReader, StoryShelf } from './StoryTime.tsx';
 import { WardrobeMirror } from './Wardrobe.tsx';
@@ -74,7 +74,10 @@ function previewProgress(screen: string, dressed: boolean): Progress {
       buildAdventure({
         name: 'Aida',
         placeId: 'lantern-grove',
-        deeds: ['You lit 7 lanterns.', 'You shared 12 crystals between 3 jars.'],
+        deeds: [
+          'Aida lit 7 lanterns to wake the sleeping path.',
+          'To finish the sharing, Aida shared 12 glow-berries between 3 jars.',
+        ],
         crystals: 4,
         wardrobe: progress.wardrobe,
         creature: 'Nim the moth',
@@ -85,8 +88,14 @@ function previewProgress(screen: string, dressed: boolean): Progress {
       placeId: 'lantern-grove',
       chapterId: 'visit-preview',
       at: Date.UTC(2026, 9, 18),
-      intro: { id: 'visit-preview:intro', text: 'Today you visited the lantern grove. You wore your rose petal robe and mushroom cap.' },
-      deed: { id: 'visit-preview:1', text: 'You lit 7 lanterns.' },
+      intro: {
+        id: 'visit-preview:intro',
+        text: visitIntro('lantern-grove', progress.wardrobe, null, 'Aida', Date.UTC(2026, 9, 18)),
+      },
+      deed: {
+        id: 'visit-preview:1',
+        text: deedLine('lantern-grove', { template: 'ten-frame', goal: { kind: 'fill-count', count: 7 } }),
+      },
     });
   }
   return progress;

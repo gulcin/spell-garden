@@ -94,11 +94,13 @@ export function Home({
             {PLACES.map((place, index) => {
               const visited = progress.visitedPlaces.includes(place.id);
               const state = index === here ? 'now' : visited ? 'visited' : 'open';
+              const edge = place.x > 80 ? ' hotspot-edge' : '';
+              const low = place.y >= 62 && place.x <= 80 ? ' hotspot-low' : '';
               return (
                 <button
                   key={place.id}
                   type="button"
-                  className={`hotspot hotspot-${state}${visited ? ' has-star' : ''}${place.x > 80 ? ' hotspot-edge' : ''}`}
+                  className={`hotspot hotspot-${state}${visited ? ' has-star' : ''}${edge}${low}`}
                   style={{ left: `${place.x}%`, top: `${place.y}%` }}
                   data-testid={index === here ? 'map-stop-current' : `map-stop-${place.id}`}
                   aria-current={index === here ? 'step' : undefined}
@@ -112,8 +114,8 @@ export function Home({
             })}
             <button
               type="button"
-              className={`hotspot hotspot-shop${progress.visitedPlaces.includes('crystal-shop') ? ' has-star' : ''}`}
-              style={{ left: '50%', top: '78%' }}
+              className={`hotspot hotspot-shop hotspot-right${progress.visitedPlaces.includes('crystal-shop') ? ' has-star' : ''}`}
+              style={{ left: '50%', top: '76%' }}
               data-testid="map-shop"
               onClick={onShop}
             >
@@ -122,8 +124,8 @@ export function Home({
             </button>
             <button
               type="button"
-              className={`hotspot hotspot-house${progress.visitedPlaces.includes('witch-house') ? ' has-star' : ''}`}
-              style={{ left: '24%', top: '48%' }}
+              className={`hotspot hotspot-house hotspot-right${progress.visitedPlaces.includes('witch-house') ? ' has-star' : ''}`}
+              style={{ left: '27%', top: '42%' }}
               data-testid="map-house"
               aria-label="Witch's house"
               onClick={onHouse}
@@ -145,7 +147,7 @@ export function Home({
             <button
               type="button"
               className={`hotspot hotspot-pets hotspot-edge${progress.visitedPlaces.includes('pet-shop') ? ' has-star' : ''}`}
-              style={{ left: '90%', top: '62%' }}
+              style={{ left: '90%', top: '82%' }}
               data-testid="map-pets"
               aria-label="Pet shop"
               onClick={onPets}

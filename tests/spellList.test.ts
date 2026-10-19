@@ -32,7 +32,7 @@ describe('spell beds', () => {
     const place = allTopics().find((topic) => topic.name === 'Positional Language');
     expect(place).toBeTruthy();
     expect(classify(place!)).toBe('shapes');
-    expect(generateItem(place!, 'spell-bed').prompt).toMatch(/Where is the frog/);
+    expect(generateItem(place!, 'spell-bed').prompt).toMatch(/Where is the/);
   });
 
   it('makes the whole spell card the button', () => {

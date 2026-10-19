@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.2] - 2026-10-19
+
+Today's adventure is a little story, and each task in a chapter is a different problem.
+
+### Fixed
+
+- Today's adventure reads as a short story about Aida and her friends, with a beginning, a middle tied to the tasks she solved, and a warm ending. The wording changes with the day. The list of what changed stays on the grown-ups page.
+- A chapter could offer the same activity three times, because the focus idea is practised three times and some spells ignored the salt. Each try in a section is now a different problem.
+- The wardrobe mirror shows the witch large, with the robe cards sitting under the mirror.
+- The glowing circles on the garden map sit on their places, and the labels stay clear of the glow.
+- A friend walking through the witch's house is the same size as a friend resting on the floor.
+
+### For Aida
+
+- Today's adventure is a story about you and your friends.
+- The tasks in a chapter are different from each other.
+- The mirror shows you large, the map labels stay easy to read, and a walking friend fits in the house.
+
 ## [1.4.1] - 2026-10-19
 
 The crystal shop shows its shelves again.
@@ -199,6 +217,7 @@ The garden as Aida first played it: painted places, a way home, a shop, and a no
 
 - The garden is painted, the shop is open, and you can tell us what you think.
 
+[1.4.2]: https://github.com/gulcin/spell-garden/releases/tag/v1.4.2
 [1.4.1]: https://github.com/gulcin/spell-garden/releases/tag/v1.4.1
 [1.4.0]: https://github.com/gulcin/spell-garden/releases/tag/v1.4.0
 [1.3.2]: https://github.com/gulcin/spell-garden/releases/tag/v1.3.2

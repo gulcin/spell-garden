@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Board, type BoardHandle } from '../activities/Board.tsx';
-import { generateItem, placementPlan } from '../activities/generate.ts';
+import { activitySignature, generateDistinct, placementPlan } from '../activities/generate.ts';
 import { isSolved } from '../activities/logic.ts';
 import type { Item } from '../activities/types.ts';
 import { applySkip, recordAttempt } from '../progress/mastery.ts';
@@ -100,11 +100,25 @@ export function Quest({
   const progressRef = useRef(progress);
   progressRef.current = progress;
   const slot = slots[index];
+  const shown = useRef<string[]>([]);
+  const ease = slot ? (progress.topics[slot.topic.id]?.ease ?? 0) : 0;
   const item = useMemo(() => {
     if (!slot) return null;
-    const ease = progress.topics[slot.topic.id]?.ease ?? 0;
-    return generateItem(slot.topic, retry ? `${slot.salt}:retry${retry}` : slot.salt, ease);
-  }, [slot, retry, progress.topics]);
+    const avoid = new Set(shown.current.slice(0, index).filter((signature) => signature.length > 0));
+    const salt = retry ? `${slot.salt}:retry${retry}` : slot.salt;
+    return generateDistinct(slot.topic, salt, ease, avoid);
+  }, [slot, retry, index, ease]);
+
+  useEffect(() => {
+    if (item) shown.current[index] = activitySignature(item);
+  }, [item, index]);
+
+  const spokenKey = useRef('');
+  useEffect(() => {
+    if (phase !== 'play' || !item || spokenKey.current === item.key) return;
+    spokenKey.current = item.key;
+    speak(item.prompt);
+  }, [phase, item]);
 
   useEffect(() => {
     moving.current = false;
@@ -167,7 +181,7 @@ export function Quest({
           <Prop name="moth" className="reward-prop" alt="" />
         </div>
         <h2>The garden is resting</h2>
-        <p>Every spell you can reach is already glowing. A grown-up can open a new path from the journal.</p>
+        <p>Every spell you can reach is already glowing. A grown-up can open another path from the journal.</p>
         <button type="button" className="btn primary" onClick={() => onFinish(correct, asked, deeds.current, chapterId.current)}>
           Back to the tower
         </button>
@@ -182,11 +196,15 @@ export function Quest({
     return { ...current, seenTemplates: [...current.seenTemplates, template] };
   }
 
+  function storyOpening(): string {
+    return visitIntro(placeId, progress.wardrobe, companionTitle(progress.pets), progress.learnerName, Date.now());
+  }
+
   function begin() {
     const line =
       mode === 'placement'
         ? `${progress.learnerName}, five tiny spells will find where your garden begins. There is no rush.`
-        : `${progress.learnerName}, ${chapter?.intro ?? 'A new chapter of kind magic is ready.'}`;
+        : storyOpening();
     speak(line);
     if (mode === 'chapter') {
       update((current) => ({
@@ -218,7 +236,6 @@ export function Quest({
       speak(DEMO_LINE[item!.template] ?? 'Watch once, then it is your turn.');
     } else {
       setPhase('play');
-      speak(item!.prompt);
     }
   }
 
@@ -260,7 +277,10 @@ export function Quest({
           placeId,
           chapterId: chapterId.current,
           at,
-          intro: { id: `${chapterId.current}:intro`, text: visitIntro(placeId, current.wardrobe, companionTitle(current.pets)) },
+          intro: {
+            id: `${chapterId.current}:intro`,
+            text: visitIntro(placeId, current.wardrobe, companionTitle(current.pets), current.learnerName, at),
+          },
           deed: { id: pageId, text: deed },
         }),
       };
@@ -312,9 +332,6 @@ export function Quest({
     setHintLevel(0);
     setNote(null);
     setPhase('play');
-    const ease = progressRef.current.topics[slot.topic.id]?.ease ?? 0;
-    const fresh = generateItem(slot.topic, `${slot.salt}:retry${nextRetry}`, ease);
-    speak(fresh.prompt);
   }
 
   function next(skippedTopicId?: string) {
@@ -326,7 +343,7 @@ export function Quest({
     if (!upcoming) return;
     const stored = progressRef.current.topics[upcoming.topic.id]?.ease ?? 0;
     const ease = skippedTopicId === upcoming.topic.id ? Math.min(2, stored + 1) : stored;
-    const upcomingItem = generateItem(upcoming.topic, upcoming.salt, ease);
+    const upcomingItem = generateDistinct(upcoming.topic, upcoming.salt, ease, new Set(shown.current.filter((signature) => signature.length > 0)));
     const showDemo = !progressRef.current.seenTemplates.includes(upcomingItem.template);
     setIndex(index + 1);
     setRetry(0);
@@ -337,7 +354,6 @@ export function Quest({
       speak(DEMO_LINE[upcomingItem.template] ?? 'Watch once, then it is your turn.');
     } else {
       setPhase('play');
-      speak(upcomingItem.prompt);
     }
   }
 
@@ -382,7 +398,7 @@ export function Quest({
           <p>
             {mode === 'placement'
               ? `${spot.line} Five tiny spells, ${progress.learnerName}. They are not a test you can fail. They only show the garden where to open the gate.`
-              : chapter?.intro}
+              : storyOpening()}
           </p>
           <button type="button" className="btn gold xl" data-testid={mode === 'placement' ? 'begin-placement' : 'begin-puzzles'} onClick={begin}>
             {mode === 'placement' ? "I'm ready" : 'Begin the spells'}

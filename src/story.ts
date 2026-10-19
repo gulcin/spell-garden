@@ -28,18 +28,18 @@ export type Chapter = {
 };
 
 export const CHAPTERS: Chapter[] = [
-  { id: 'lanterns', title: 'The sleepy lanterns', intro: 'The garden lanterns have nodded off. Each true spell wakes one with a warm glow.', rewardId: 'moth' },
-  { id: 'brook', title: 'The lily brook', intro: 'A few planks of the brook bridge are loose. Careful maths will mend them kindly.', rewardId: 'lantern-glow' },
-  { id: 'kitchen', title: 'The potion kitchen', intro: 'The bottles are waiting. Sharing, pouring, and counting will fill them evenly.', rewardId: 'frog' },
-  { id: 'greenhouse', title: 'The crystal greenhouse', intro: 'Crystal seedlings want neat rows. You can help them grow.', rewardId: 'vine' },
-  { id: 'loft', title: 'The star-moth loft', intro: 'Up in the loft, a clock and a pile of spark-coins need a gentle sort.', rewardId: 'owl' },
-  { id: 'gate', title: 'The garden gate', intro: 'The gate remembers patterns. Finish them and it opens without a creak.', rewardId: 'bridge-mend' },
-  { id: 'kettle', title: 'Petal tea', intro: 'Someone left the scales unbalanced. A quiet spell will set them level.', rewardId: 'bunny' },
-  { id: 'rug', title: 'The moon rug', intro: 'Shapes and mirrors are hiding in the rug. Find the ones that match.', rewardId: 'rug' },
-  { id: 'beetle', title: 'Lumen’s walk', intro: 'A lantern beetle is almost awake. Fractions of pie will do it kindly.', rewardId: 'beetle' },
-  { id: 'window', title: 'The tower window', intro: 'From the window you can see number-lilies all along the brook.', rewardId: 'kettle' },
-  { id: 'cloud', title: 'A small cloud', intro: 'A cloud has come to visit. It likes fair shares and tidy tens.', rewardId: 'kitten' },
-  { id: 'door', title: 'The painted door', intro: 'The door wants one more chapter of kind magic before bedtime.', rewardId: 'banner' },
+  { id: 'lanterns', title: 'The sleepy lanterns', intro: 'Aida finds the garden lanterns nodded off. Each true spell wakes one with a warm glow.', rewardId: 'moth' },
+  { id: 'brook', title: 'The lily brook', intro: 'A few planks of the brook bridge are loose. Aida can mend them with careful maths.', rewardId: 'lantern-glow' },
+  { id: 'kitchen', title: 'The potion kitchen', intro: 'The bottles are waiting. Aida shares, pours, and counts until they fill evenly.', rewardId: 'frog' },
+  { id: 'greenhouse', title: 'The crystal greenhouse', intro: 'Crystal seedlings want neat rows. Aida can help them grow.', rewardId: 'vine' },
+  { id: 'loft', title: 'The star-moth loft', intro: 'Up in the loft, a clock and a pile of spark-coins need Aida’s gentle sort.', rewardId: 'owl' },
+  { id: 'gate', title: 'The garden gate', intro: 'The gate remembers patterns. Aida finishes them and it opens without a creak.', rewardId: 'bridge-mend' },
+  { id: 'kettle', title: 'Petal tea', intro: 'Someone left the scales unbalanced. Aida’s quiet spell will set them level.', rewardId: 'bunny' },
+  { id: 'rug', title: 'The moon rug', intro: 'Shapes and mirrors are hiding in the rug. Aida finds the ones that match.', rewardId: 'rug' },
+  { id: 'beetle', title: 'Lumen’s walk', intro: 'A lantern beetle is almost awake. Aida shares a pie into kind fractions.', rewardId: 'beetle' },
+  { id: 'window', title: 'The tower window', intro: 'From the window Aida can see number-lilies all along the brook.', rewardId: 'kettle' },
+  { id: 'cloud', title: 'A small cloud', intro: 'A cloud has come to visit Aida. It likes fair shares and tidy tens.', rewardId: 'kitten' },
+  { id: 'door', title: 'The painted door', intro: 'The door wants one more chapter of kind magic with Aida before bedtime.', rewardId: 'banner' },
 ];
 
 export function nextReward(earned: string[]): Reward {
@@ -70,5 +70,5 @@ export const DEMO_LINE: Record<string, string> = {
   coordinate: 'Across first, then up. Drag the starflower to that square.',
   angle: 'Turn the wand around the dot until the opening matches the spell.',
   chance: 'Drag marbles into the pouch so the colours match the story.',
-  fallback: 'Read the little example. Then tap the answer that fits the new question.',
+  fallback: 'Read the little example. Then tap the answer that fits the question.',
 };

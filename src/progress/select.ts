@@ -91,6 +91,8 @@ export function planChapter(progress: Progress, now: number, sessionId: string):
     chosen.push({ topic: rescueTopic, focus: false, review: false, rescue: true });
   }
   if (focus) {
+    // Three tries on one idea, so three correct answers can master it.
+    // The questions themselves are de-duplicated when they are generated.
     chosen.push(
       { topic: focus, focus: true, review: false, rescue: fillingGap },
       { topic: focus, focus: true, review: false, rescue: fillingGap },

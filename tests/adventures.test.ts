@@ -4,34 +4,48 @@ import { withWardrobe } from '../src/progress/storage.ts';
 import {
   adventureDate,
   buildAdventure,
+  closingLines,
   deedLine,
   outfitPhrase,
+  visitIntro,
   wordIndexAt,
 } from '../src/stories/adventure.ts';
 import { ADVENTURE_RATE, pickUsVoice } from '../src/speech.ts';
 
+const CHANGELOG_WORDS = /\b(new|version|update|added|fixed)\b/i;
+const PLACES = [
+  'lantern-grove',
+  'potion-cottage',
+  'crystal-cave',
+  'observatory',
+  'lily-pond',
+  'greenhouse',
+  'wizard-tower',
+  'mushroom-ring',
+];
+
 describe("today's adventure", () => {
-  it('turns a solved puzzle into a line about what she did', () => {
+  it('turns a solved puzzle into a story step that names the numbers', () => {
     expect(deedLine('lantern-grove', { template: 'ten-frame', goal: { kind: 'fill-count', count: 7 } })).toBe(
-      'You lit 7 lanterns.',
+      'Aida lit 7 lanterns to wake the sleeping path.',
     );
     expect(deedLine('potion-cottage', { template: 'ten-frame', goal: { kind: 'fill-count', count: 4 } })).toBe(
-      'You poured 4 cups.',
+      'Aida poured 4 cups so the kettle could sing.',
     );
     expect(
       deedLine('lantern-grove', { template: 'ten-frame', goal: { kind: 'mix', counts: { blue: 3, gold: 2 } } }),
-    ).toBe('You lit 3 blue and 2 gold lanterns.');
+    ).toBe('Aida lit 3 blue and 2 gold lanterns to wake the path.');
     expect(
       deedLine('crystal-cave', {
         template: 'sharing',
         goal: { kind: 'zone-counts', counts: { jar0: 4, jar1: 4, jar2: 4 } },
       }),
-    ).toBe('You shared 12 crystals between 3 jars.');
+    ).toBe('To finish the sharing, Aida shared 12 crystals between 3 jars.');
     expect(deedLine('observatory', { template: 'clock', goal: { kind: 'clock', hour: 8, minute: 0 } })).toBe(
-      "You set the garden clock to 8 o'clock.",
+      "Aida set the garden clock to 8 o'clock so the stars would know the hour.",
     );
     expect(deedLine('wizard-tower', { template: 'array', goal: { kind: 'array', rows: 2, cols: 5 } })).toBe(
-      'You planted 10 books in 2 rows of 5.',
+      'Aida planted 10 books in 2 rows of 5.',
     );
   });
 
@@ -43,7 +57,7 @@ describe("today's adventure", () => {
     const story = buildAdventure({
       name: 'Aida',
       placeId: 'lantern-grove',
-      deeds: ['You lit 7 lanterns.', 'You shared 12 crystals between 3 jars.'],
+      deeds: ['Aida lit 7 lanterns to wake the sleeping path.', 'To finish the sharing, Aida shared 12 crystals between 3 jars.'],
       crystals: 4,
       wardrobe,
       creature: 'Nim the moth',
@@ -52,15 +66,55 @@ describe("today's adventure", () => {
     expect(story.title).toBe("Today's adventure");
     expect(story.place).toBe('Lantern Grove');
     expect(story.pages).toHaveLength(4);
+    expect(story.pages[0]).toContain('Aida');
     expect(story.pages[0]).toContain('lantern grove');
     expect(story.pages[0]).toContain('rose petal robe');
     expect(story.pages[0]).toContain('mushroom cap');
-    expect(story.pages.join(' ')).toContain('You lit 7 lanterns.');
-    expect(story.pages.join(' ')).toContain('You shared 12 crystals between 3 jars.');
-    expect(story.pages.join(' ')).toContain('You earned 4 crystals');
+    expect(story.pages.join(' ')).toContain('Aida lit 7 lanterns to wake the sleeping path.');
+    expect(story.pages.join(' ')).toContain('To finish the sharing, Aida shared 12 crystals between 3 jars.');
+    expect(story.pages.join(' ')).toContain("4 crystals settled in Aida's pocket.");
     expect(story.pages[3]).toContain('Nim the moth');
     expect(story.pages[3]).toContain('18 October 2026');
     expect(adventureDate(story.at)).toBe('18 October 2026');
+    expect(story.pages.join(' ')).not.toMatch(CHANGELOG_WORDS);
+  });
+
+  it('tells a different story on the next day and never sounds like a change list', () => {
+    const wardrobe = freshProgress().wardrobe;
+    const deeds = [
+      deedLine('lantern-grove', { template: 'ten-frame', goal: { kind: 'fill-count', count: 7 } }),
+      deedLine('lantern-grove', { template: 'sharing', goal: { kind: 'zone-counts', counts: { jar0: 6, jar1: 6, jar2: 6, jar3: 6 } } }),
+    ];
+    for (const placeId of PLACES) {
+      const first = visitIntro(placeId, wardrobe, 'Pip the cloud cat', 'Aida', Date.UTC(2026, 9, 18));
+      const next = visitIntro(placeId, wardrobe, 'Pip the cloud cat', 'Aida', Date.UTC(2026, 9, 19));
+      expect(first).not.toBe(next);
+      expect(first).toContain('Aida');
+      expect(first).toContain('Pip the cloud cat came along.');
+      const samples = [
+        first,
+        next,
+        ...deeds,
+        deedLine(placeId, { template: 'clock', goal: { kind: 'clock', hour: 3, minute: 30 } }, 'Aida'),
+        ...closingLines({ placeId, crystals: 2, creature: 'Nim the moth', at: Date.UTC(2026, 9, 18), name: 'Aida' }),
+      ];
+      for (let day = 0; day < 6; day += 1) {
+        const story = buildAdventure({
+          name: 'Aida',
+          placeId,
+          deeds,
+          crystals: 2,
+          wardrobe,
+          creature: 'Nim the moth',
+          companion: 'Pip the cloud cat',
+          at: Date.UTC(2026, 9, 18 + day),
+        });
+        expect(story.pages).toHaveLength(4);
+        expect(story.pages[0]).toContain('Aida');
+        samples.push(...story.pages);
+      }
+      for (const line of samples) expect(line).not.toMatch(CHANGELOG_WORDS);
+    }
   });
 
   it('keeps an older save and drops a broken adventure', () => {
@@ -80,7 +134,7 @@ describe("today's adventure", () => {
       { lang: 'en-US', name: 'Ava' },
     ]);
     expect(voice?.name).toBe('Ava');
-    const line = 'You lit 7 lanterns.';
+    const line = 'Aida lit 7 lanterns to wake the sleeping path.';
     expect(wordIndexAt(line, 0)).toBe(0);
     expect(wordIndexAt(line, line.indexOf('lit'))).toBe(1);
     expect(wordIndexAt(line, line.indexOf('lanterns'))).toBe(3);
