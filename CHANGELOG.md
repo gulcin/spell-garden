@@ -19,6 +19,11 @@ Poppy's pet shop is open, and every place has its own quiet tune.
 - Friends can rest on a bed in the witch's house. A friend who walks with her is mentioned in the storybook.
 - Each place has its own quiet music loop, including the shops, the house, the colouring corner, the map, and bedtime. Music dips while someone is speaking. Grown-ups can turn sound and music on or off, and set the music volume.
 
+### Fixed
+
+- The pet shop shows a whole shelf at once, with Cats, Dogs, Creatures, Imaginary, and Fairies as tabs. A card shows the friend, the crystal price or how they are earned, and Buy or Owned.
+- Friends in the witch's house are cat-sized, stand on the floor, and the rest tray stays on the screen. Furniture sits without a white sticker outline, and the lantern hangs from the ceiling.
+
 ### For Aida
 
 - Poppy's shop has cats, dogs, and fairies. You can name a friend and let them walk with you.

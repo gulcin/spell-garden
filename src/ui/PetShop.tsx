@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useLayoutEffect, useState } from 'react';
+import { flushSync } from 'react-dom';
 import {
   PET_GROUPS,
   earnLine,
   petsIn,
-  shopPets,
   type Pet,
   type PetGroup,
 } from '../pets/catalog.ts';
@@ -12,7 +12,19 @@ import type { Progress } from '../progress/types.ts';
 import { CrystalCounter } from './CrystalCounter.tsx';
 import { placeStyle } from './pictures.tsx';
 
-const PAGE = 2;
+function shelfPageSize(): number {
+  if (typeof window === 'undefined') return 8;
+  if (window.innerWidth < 700) return 4;
+  if (window.innerHeight > window.innerWidth) return 6;
+  return 8;
+}
+
+function offerLine(pet: Pet): string {
+  const earned = earnLine(pet).replace(/^They find you /, 'Found ');
+  if (pet.price != null && earned) return `${pet.price} crystals, or ${earned.charAt(0).toLowerCase()}${earned.slice(1)}`;
+  if (pet.price != null) return `${pet.price} crystals`;
+  return earned;
+}
 
 export function PetArt({
   id,
@@ -84,24 +96,25 @@ export function PetShop({
   progress: Progress;
   update: (recipe: (current: Progress) => Progress) => void;
 }) {
-  const [book, setBook] = useState(false);
   const [group, setGroup] = useState<PetGroup>('cats');
   const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(shelfPageSize);
   const [cheer, setCheer] = useState<string | null>(null);
   const base = import.meta.env.BASE_URL;
-  const shelf = book ? petsIn(group) : shopPets();
-  const pageSize = book ? 1 : PAGE;
+  const shelf = petsIn(group);
   const pageCount = Math.max(1, Math.ceil(shelf.length / pageSize));
   const pageIndex = Math.min(page, pageCount - 1);
   const visible = shelf.slice(pageIndex * pageSize, pageIndex * pageSize + pageSize);
-  const groupIndex = PET_GROUPS.findIndex((entry) => entry.id === group);
 
-  function showGroup(next: number) {
-    const entry = PET_GROUPS[(next + PET_GROUPS.length) % PET_GROUPS.length];
-    if (!entry) return;
-    setGroup(entry.id);
-    setPage(0);
-  }
+  useLayoutEffect(() => {
+    const apply = () => {
+      const next = shelfPageSize();
+      flushSync(() => setPageSize(next));
+    };
+    apply();
+    window.addEventListener('resize', apply);
+    return () => window.removeEventListener('resize', apply);
+  }, []);
 
   function buy(pet: Pet) {
     let bought = false;
@@ -121,67 +134,59 @@ export function PetShop({
           <h1>Poppy's friends</h1>
         </div>
         <div className="shop-tools">
-          <button type="button" className={book ? 'btn' : 'btn gold'} data-testid="pet-shelf" onClick={() => { setBook(false); setPage(0); }}>
-            Shop
-          </button>
-          <button type="button" className={book ? 'btn gold' : 'btn'} data-testid="pet-book" aria-label="Collection book" onClick={() => { setBook(true); setPage(0); }}>
-            Book
-          </button>
           <CrystalCounter count={progress.crystals} />
         </div>
       </header>
       <div className="shopkeeper-row">
         <img className="shopkeeper" src={`${base}art/cast/poppy.webp`} srcSet={`${base}art/cast/poppy.webp 1x, ${base}art/cast/poppy@2x.webp 2x`} alt="Poppy, a cream bunny in an apron" />
-        <p>I am Poppy. Most friends can be bought with crystals. A few find you when you have been out in the garden.</p>
+        <p data-testid={cheer ? 'pet-cheer' : undefined}>{cheer ?? 'I am Poppy. Pick a shelf. Buy a friend with crystals, or wait for one to find you.'}</p>
       </div>
-      {cheer ? (
-        <p className="note good shop-cheer" role="status" data-testid="pet-cheer">
-          {cheer}
-        </p>
-      ) : null}
-      {book ? (
-        <div className="pet-tabs">
-          <button type="button" data-testid="pet-group-prev" onClick={() => showGroup(groupIndex - 1)} aria-label="Previous group">
-            ‹
+      <div className="pet-tabs" role="tablist" aria-label="Friend shelves">
+        {PET_GROUPS.map((entry) => (
+          <button
+            key={entry.id}
+            type="button"
+            role="tab"
+            aria-selected={group === entry.id}
+            className={group === entry.id ? 'on' : ''}
+            data-testid={`pet-group-${entry.id}`}
+            onClick={() => {
+              setGroup(entry.id);
+              setPage(0);
+            }}
+          >
+            {entry.label}
           </button>
-          <h2 data-testid="pet-group-name">{PET_GROUPS[groupIndex]?.label}</h2>
-          <button type="button" data-testid="pet-group-next" onClick={() => showGroup(groupIndex + 1)} aria-label="Next group">
-            ›
-          </button>
-        </div>
-      ) : null}
-      <div className="shop-grid" data-testid={book ? 'pet-collection' : 'pet-shelf-grid'}>
+        ))}
+      </div>
+      <div className="shop-grid" data-testid="pet-shelf-grid">
         {visible.map((pet) => {
           const owned = ownedPet(progress.pets, pet.id);
           const walking = progress.pets.companionId === pet.id;
           return (
             <article key={pet.id} className="shop-card" data-testid={`pet-${pet.id}`} data-group={pet.group}>
-              <PetArt id={pet.id} alt="" secret={book && !owned} />
+              <PetArt id={pet.id} alt="" secret={!owned && pet.price == null} />
               <h2>{owned?.name.trim() ? owned.name : pet.name}</h2>
-              <p>{owned ? pet.blurb : pet.price != null && pet.earn ? `${pet.price} crystals, or they find you. ${earnLine(pet)}` : pet.price != null ? `${pet.price} crystals` : earnLine(pet)}</p>
+              <p>{offerLine(pet)}</p>
               {owned ? (
                 <>
-                  {book ? (
-                    <label className="pet-name">
-                      Name
-                      <input
-                        value={owned.name}
-                        maxLength={16}
-                        data-testid={`pet-name-${pet.id}`}
-                        onChange={(event) => update((current) => ({ ...current, pets: draftRename(current.pets, pet.id, event.target.value) }))}
-                        onBlur={(event) => update((current) => ({ ...current, pets: renamePet(current.pets, pet.id, event.target.value) }))}
-                      />
-                    </label>
-                  ) : (
-                    <span>Yours</span>
-                  )}
+                  <label className="pet-name">
+                    <input
+                      value={owned.name}
+                      maxLength={16}
+                      aria-label={`Name for ${pet.name}`}
+                      data-testid={`pet-name-${pet.id}`}
+                      onChange={(event) => update((current) => ({ ...current, pets: draftRename(current.pets, pet.id, event.target.value) }))}
+                      onBlur={(event) => update((current) => ({ ...current, pets: renamePet(current.pets, pet.id, event.target.value) }))}
+                    />
+                  </label>
                   <button
                     type="button"
                     className={walking ? 'btn gold' : 'btn'}
                     data-testid={`walk-pet-${pet.id}`}
                     onClick={() => update((current) => ({ ...current, pets: setCompanion(current.pets, pet.id) }))}
                   >
-                    {walking ? 'Walking with you' : 'Walk with me'}
+                    {walking ? 'Walking' : 'Owned'}
                   </button>
                 </>
               ) : pet.price != null ? (
@@ -194,21 +199,21 @@ export function PetShop({
                 >
                   {progress.crystals < pet.price ? `Need ${pet.price}` : `Buy · ${pet.price}`}
                 </button>
-              ) : (
-                <span className="pet-wait">Not in the shop yet</span>
-              )}
+              ) : null}
             </article>
           );
         })}
       </div>
-      <div className="spell-pager shop-pager">
-        <button type="button" data-testid="pet-prev" disabled={pageIndex === 0} onClick={() => setPage(pageIndex - 1)}>
-          Back
-        </button>
-        <button type="button" data-testid="pet-next" disabled={pageIndex >= pageCount - 1} onClick={() => setPage(pageIndex + 1)}>
-          Next
-        </button>
-      </div>
+      {pageCount > 1 ? (
+        <div className="spell-pager shop-pager">
+          <button type="button" data-testid="pet-prev" disabled={pageIndex === 0} onClick={() => setPage(pageIndex - 1)}>
+            Back
+          </button>
+          <button type="button" data-testid="pet-next" disabled={pageIndex >= pageCount - 1} onClick={() => setPage(pageIndex + 1)}>
+            Next
+          </button>
+        </div>
+      ) : null}
     </section>
   );
 }

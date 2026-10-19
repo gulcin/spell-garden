@@ -183,6 +183,37 @@ export function WitchHouse({
           </button>
         ))}
       </div>
+      {waitingPets.length > 0 ? (
+        <div className="house-pets" data-testid="house-pets">
+          <span className="house-pets-label">Let a friend rest</span>
+          {pageStart > 0 ? (
+            <button type="button" data-testid="pet-rest-prev" onClick={() => setPetPage(pageStart - 1)} aria-label="Previous friends">
+              ‹
+            </button>
+          ) : null}
+          {waitingPets.slice(pageStart, pageStart + 2).map((owned) => {
+            const pet = petById(owned.id);
+            if (!pet) return null;
+            return (
+              <button
+                key={owned.id}
+                type="button"
+                className="house-chip"
+                data-testid={`rest-pet-${owned.id}`}
+                onClick={() => update((current) => ({ ...current, pets: restPet(current.pets, current.house, owned.id) }))}
+              >
+                <PetArt id={owned.id} alt="" />
+                <span>{owned.name.trim() || pet.name}</span>
+              </button>
+            );
+          })}
+          {pageStart + 2 < waitingPets.length ? (
+            <button type="button" data-testid="pet-rest-next" onClick={() => setPetPage(pageStart + 1)} aria-label="More friends">
+              ›
+            </button>
+          ) : null}
+        </div>
+      ) : null}
       <div className="house-stage">
       <div
         className="house-room"
@@ -203,7 +234,7 @@ export function WitchHouse({
             <button
               key={piece.id}
               type="button"
-              className={`house-piece ${item.surface}${piece.flip ? ' flip' : ''}${selected === piece.id ? ' on' : ''}`}
+              className={`house-piece ${item.surface}${item.id === 'wall-lantern' ? ' hang' : ''}${piece.flip ? ' flip' : ''}${selected === piece.id ? ' on' : ''}`}
               style={{ left: `${x}%`, top: `${y}%`, width: `${item.width}%`, zIndex: piece.z }}
               data-testid={`piece-${item.id}`}
               data-x={piece.x}
@@ -234,7 +265,7 @@ export function WitchHouse({
               key={resting.id}
               type="button"
               className={`house-piece floor house-pet${resting.flip ? ' flip' : ''}`}
-              style={{ left: `${resting.x}%`, top: `${resting.y}%`, width: '16%', zIndex: 30 }}
+              style={{ left: `${resting.x}%`, top: `${resting.y}%`, width: '6.5%', zIndex: 30 }}
               data-testid={`home-pet-${resting.id}`}
               aria-label={`Call ${owned?.name ?? pet.name} back`}
               onClick={() => update((current) => ({ ...current, pets: callHome(current.pets, resting.id) }))}
@@ -243,36 +274,6 @@ export function WitchHouse({
             </button>
           );
         })}
-        {waitingPets.length > 0 ? (
-          <div className="house-pets" data-testid="house-pets">
-            {pageStart > 0 ? (
-              <button type="button" data-testid="pet-rest-prev" onClick={() => setPetPage(pageStart - 1)} aria-label="Previous friends">
-                ‹
-              </button>
-            ) : null}
-            {waitingPets.slice(pageStart, pageStart + 2).map((owned) => {
-              const pet = petById(owned.id);
-              if (!pet) return null;
-              return (
-                <button
-                  key={owned.id}
-                  type="button"
-                  className="house-chip"
-                  data-testid={`rest-pet-${owned.id}`}
-                  onClick={() => update((current) => ({ ...current, pets: restPet(current.pets, current.house, owned.id) }))}
-                >
-                  <PetArt id={owned.id} alt="" />
-                  <span>{owned.name.trim() || pet.name}</span>
-                </button>
-              );
-            })}
-            {pageStart + 2 < waitingPets.length ? (
-              <button type="button" data-testid="pet-rest-next" onClick={() => setPetPage(pageStart + 1)} aria-label="More friends">
-                ›
-              </button>
-            ) : null}
-          </div>
-        ) : null}
         <DressedApprentice className="house-girl" alt="Aida standing in her witch's house" />
         {companionHere ? <PetArt id={companionHere} className="house-companion" alt="" /> : null}
         <img className="story-moth house-nim" data-testid="house-nim" src={`${base}art/moth.webp`} alt="" />
