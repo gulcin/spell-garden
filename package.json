@@ -1,7 +1,7 @@
 {
   "name": "prague-spell-garden",
   "private": true,
-  "version": "1.3.2",
+  "version": "1.4.0",
   "description": "A gentle, touch-first wizard-apprentice maths garden for Aida, built on the Marble Skill Taxonomy.",
   "type": "module",
   "scripts": {

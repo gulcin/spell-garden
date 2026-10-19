@@ -94,7 +94,9 @@ function GardenApp() {
       leaving.current = false;
       const state = event.state as HistoryState | null;
       if (state && 'practiceId' in state) setPracticeId(state.practiceId ?? null);
-      setScreen(state?.spellGarden ?? 'home');
+      const nextScreen = state?.spellGarden ?? 'home';
+      if (nextScreen === 'practice') setPlaceId('lantern-grove');
+      setScreen(nextScreen);
     };
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
@@ -109,6 +111,7 @@ function GardenApp() {
   }
 
   function show(next: Screen, extra: Partial<HistoryState> = {}) {
+    if (next === 'practice') setPlaceId('lantern-grove');
     setLive({ screen: next });
     const historyState: HistoryState = { spellGarden: next, practiceId, ...extra };
     if (next === 'home') {

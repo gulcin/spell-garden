@@ -174,6 +174,24 @@ export function companionPhrase(pets: PetState | null | undefined): string {
   return title ? ` ${title} came along.` : '';
 }
 
+/** Start index for the two-chip rest tray. A stale page never lands past the friends still waiting. */
+export function restTrayStart(page: number, waiting: number): number {
+  if (waiting <= 2) return 0;
+  const start = Number.isFinite(page) ? Math.floor(page) : 0;
+  return Math.min(Math.max(0, start), waiting - 2);
+}
+
+/** Floor spots keep going onto a lower row, so a fourth friend never stands on the first. */
+function floorSpot(taken: Set<string>): { x: number; y: number } {
+  for (let row = 0; row < 8; row += 1) {
+    for (let column = 0; column < 4; column += 1) {
+      const spot = { x: 78 - column * 18, y: Math.min(90, 70 + row * 8) };
+      if (!taken.has(`${spot.x}:${spot.y}`)) return spot;
+    }
+  }
+  return { x: 18, y: 90 };
+}
+
 export function restPet(pets: PetState, house: HouseState, id: string): PetState {
   if (!pets.owned.some((pet) => pet.id === id) || pets.home.some((pet) => pet.id === id)) return pets;
   const taken = new Set(pets.home.map((pet) => `${Math.round(pet.x)}:${Math.round(pet.y)}`));
@@ -182,9 +200,7 @@ export function restPet(pets: PetState, house: HouseState, id: string): PetState
     const y = Math.min(90, Math.max(64, piece.y - 8));
     return !taken.has(`${Math.round(piece.x)}:${Math.round(y)}`);
   });
-  const spot = perch
-    ? { x: perch.x, y: Math.min(90, Math.max(64, perch.y - 8)) }
-    : { x: 78 - (pets.home.length % 3) * 18, y: 70 };
+  const spot = perch ? { x: perch.x, y: Math.min(90, Math.max(64, perch.y - 8)) } : floorSpot(taken);
   return { ...pets, home: [...pets.home, { id, x: spot.x, y: spot.y, flip: false }] };
 }
 
