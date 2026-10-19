@@ -105,6 +105,14 @@ function startServer() {
   });
 }
 
+async function greetArrivals(page) {
+  for (let step = 0; step < 12; step += 1) {
+    const hello = page.locator('[data-testid="pet-hello"]');
+    if ((await hello.count()) === 0 || !(await hello.isVisible())) return;
+    await hello.click();
+  }
+}
+
 const progress = {
   format: 'prague.wizard-math.progress.v1',
   taxonomy: 'marble-skill-taxonomy-v1',
@@ -158,6 +166,7 @@ try {
   const standalone = await page.evaluate(() => window.matchMedia('(display-mode: standalone)').matches);
   if (!standalone) throw new Error('the page is not in standalone mode');
   await page.waitForSelector('[data-testid="map-shop"]');
+  await greetArrivals(page);
   const first = await page.locator('meta[name="spell-garden-version"]').getAttribute('content');
   if (first !== '9.0.0') throw new Error(`opened ${first}`);
   // An async waitForFunction predicate returns a Promise, which is always truthy, so it does not wait.
@@ -212,6 +221,7 @@ try {
     throw new Error('the update banner appeared during a grown-ups screen');
   }
   await page.locator('[data-testid="garden-map"]').click();
+  await greetArrivals(page);
   await page.waitForSelector('[data-testid="update-banner"]');
   const banner = (await page.locator('[data-testid="update-banner"]').innerText()).replace(/\s+/g, ' ');
   if (!banner.includes('A new spell is ready!') || !banner.includes('Update')) throw new Error(banner);
@@ -223,6 +233,7 @@ try {
   await page.locator('[data-testid="update-apply"]').click();
   await page.waitForFunction(() => document.querySelector('meta[name="spell-garden-version"]')?.getAttribute('content') === '9.0.1');
   await page.waitForSelector('[data-testid="map-shop"]');
+  await greetArrivals(page);
   if ((await page.locator('[data-testid="update-banner"]').count()) !== 0) throw new Error('the banner stayed after the update');
   const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('prague.wizard-math.progress.v1') ?? '{}'));
   if (saved.crystals !== 17 || saved.learnerName !== 'Aida' || !saved.visitedPlaces?.includes('lantern-grove')) {
@@ -241,6 +252,7 @@ try {
     });
   });
   if (!art || art.strokes?.[0] !== 'kept') throw new Error(`colouring was lost: ${JSON.stringify(art)}`);
+  await greetArrivals(page);
   const news = page.locator('[data-testid="garden-news"]');
   if (await news.count()) {
     if (!(await news.innerText()).includes('New in the garden!')) throw new Error('the update note lost its hello');
