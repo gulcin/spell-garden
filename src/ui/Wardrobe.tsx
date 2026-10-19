@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { Progress } from '../progress/types.ts';
-import { SHOP_ITEMS, itemById } from '../wardrobe/catalog.ts';
+import { SHOP_ITEMS, itemById, itemPreview } from '../wardrobe/catalog.ts';
 import { equipItem, unequipSlot } from '../wardrobe/economy.ts';
 import { speak } from '../speech.ts';
 import { CrystalCounter } from './CrystalCounter.tsx';
@@ -52,7 +52,7 @@ export function WardrobeMirror({
         <div className="shop-grid">
           {owned.map((item) => {
             const wearing = progress.wardrobe.equipped[item.slot] === item.id;
-            const base = `${import.meta.env.BASE_URL}art/wear/${item.id}`;
+            const base = `${import.meta.env.BASE_URL}art/wear/${itemPreview(item.id)}`;
             return (
               <button
                 key={item.id}

@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { deviceContext, reportMailto, saveReport, type Report, type ReportKind } from '../feedback/reports.ts';
 import { useReportLive } from '../feedback/live.tsx';
 import { speak } from '../speech.ts';
@@ -17,16 +18,19 @@ type SpeechCtor = new () => {
 };
 
 export function TellUsButton({ onOpen }: { onOpen: () => void }) {
+  const spoken = useRef(0);
+  function open(event: { preventDefault: () => void; stopPropagation: () => void; pointerType?: string; button?: number }) {
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    event.preventDefault();
+    event.stopPropagation();
+    onOpen();
+    const now = performance.now();
+    if (now - spoken.current < 400) return;
+    spoken.current = now;
+    speak('Tell us');
+  }
   return (
-    <button
-      type="button"
-      className="tell-us"
-      data-testid="tell-us"
-      onClick={() => {
-        speak('Tell us');
-        onOpen();
-      }}
-    >
+    <button type="button" className="tell-us" data-testid="tell-us" onPointerUp={open} onClick={open}>
       Tell us
     </button>
   );
@@ -38,10 +42,18 @@ export function TellSheet({ onClose }: { onClose: () => void }) {
   const [text, setText] = useState('');
   const [kept, setKept] = useState<Report | null>(null);
   const [heard, setHeard] = useState<string | null>(null);
+  const [armed, setArmed] = useState(false);
+  const saving = useRef(false);
+  const host = typeof document === 'undefined' ? null : document.body;
+
+  useEffect(() => {
+    const id = window.setTimeout(() => setArmed(true), 450);
+    return () => window.clearTimeout(id);
+  }, []);
 
   function dictate() {
-    const host = window as Window & { SpeechRecognition?: SpeechCtor; webkitSpeechRecognition?: SpeechCtor };
-    const Ctor = host.SpeechRecognition ?? host.webkitSpeechRecognition;
+    const win = window as Window & { SpeechRecognition?: SpeechCtor; webkitSpeechRecognition?: SpeechCtor };
+    const Ctor = win.SpeechRecognition ?? win.webkitSpeechRecognition;
     if (!Ctor) {
       setHeard('This iPad can still use the keyboard. A grown-up can turn on dictation in Settings.');
       return;
@@ -62,7 +74,8 @@ export function TellSheet({ onClose }: { onClose: () => void }) {
   }
 
   function keep() {
-    if (!kind) return;
+    if (!kind || kept || saving.current) return;
+    saving.current = true;
     const report: Report = {
       id: `note-${Date.now()}`,
       kind,
@@ -73,19 +86,33 @@ export function TellSheet({ onClose }: { onClose: () => void }) {
     try {
       saveReport(report);
     } catch {
-      /* The note is still shown. A grown-up can send the letter. */
+      /* The note stays on screen. A grown-up can still send the letter. */
     }
     setKept(report);
     speak('Kept. You can send it to Mum.');
   }
 
-  return (
-    <div className="tell-backdrop" role="presentation" onClick={onClose}>
+  function requestClose() {
+    if (!armed) return;
+    onClose();
+  }
+
+  if (!host) return null;
+
+  return createPortal(
+    <div
+      className="tell-backdrop"
+      role="presentation"
+      onPointerDown={(event) => event.stopPropagation()}
+      onClick={requestClose}
+    >
       <section
         className="tell-sheet"
         role="dialog"
+        aria-modal="true"
         aria-labelledby="tell-title"
         data-testid="tell-sheet"
+        onPointerDown={(event) => event.stopPropagation()}
         onClick={(event) => event.stopPropagation()}
       >
         <p className="kicker">A note for the garden</p>
@@ -98,7 +125,16 @@ export function TellSheet({ onClose }: { onClose: () => void }) {
               className={kind === choice.id ? 'on' : ''}
               data-testid={`tell-${choice.id}`}
               aria-pressed={kind === choice.id}
-              onClick={() => setKind(choice.id)}
+              onPointerUp={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                setKind(choice.id);
+              }}
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                setKind(choice.id);
+              }}
             >
               {choice.label}
             </button>
@@ -129,7 +165,22 @@ export function TellSheet({ onClose }: { onClose: () => void }) {
             </a>
           </>
         ) : (
-          <button type="button" className="btn gold xl" data-testid="tell-keep" disabled={!kind} onClick={keep}>
+          <button
+            type="button"
+            className="btn gold xl"
+            data-testid="tell-keep"
+            disabled={!kind}
+            onPointerUp={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              keep();
+            }}
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              keep();
+            }}
+          >
             Keep this note
           </button>
         )}
@@ -137,6 +188,7 @@ export function TellSheet({ onClose }: { onClose: () => void }) {
           Close
         </button>
       </section>
-    </div>
+    </div>,
+    host,
   );
 }

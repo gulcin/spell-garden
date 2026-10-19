@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { askHer } from '../curriculum/ask.ts';
 import { TEMPLATE_LABEL, classify } from '../curriculum/classify.ts';
 import { allPrereqs, allTopics, clustersFor, domains } from '../curriculum/data.ts';
@@ -6,7 +6,7 @@ import { markMastered, masteredIds, statusOf } from '../progress/mastery.ts';
 import { applyStartAge, gradeLabel, startAgeChoices } from '../progress/placement.ts';
 import { PROGRESS_KEY, freshProgress, type Progress, type Status } from '../progress/types.ts';
 import { parseProgress } from '../progress/storage.ts';
-import { flushReportQueue, loadReports, mumMailto, type Report } from '../feedback/reports.ts';
+import { flushReportQueue, hydrateReports, loadReports, mumMailto, type Report } from '../feedback/reports.ts';
 import { checkForUpdates } from '../swUpdates.ts';
 import { versionLabel } from '../version.ts';
 import { PageBanner, Prop } from './pictures.tsx';
@@ -88,6 +88,15 @@ export function Parent({
 
 function ReportList() {
   const [reports, setReports] = useState<Report[]>(() => loadReports());
+  useEffect(() => {
+    let live = true;
+    void hydrateReports().then((rows) => {
+      if (live) setReports(rows);
+    });
+    return () => {
+      live = false;
+    };
+  }, []);
   const [note, setNote] = useState<string | null>(null);
   const [updateNote, setUpdateNote] = useState('');
   const [checking, setChecking] = useState(false);

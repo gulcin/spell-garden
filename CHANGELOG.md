@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.3] - 2026-10-18
+
+Outfits are painted on Aida, and Tell us keeps a note from an iPad tap.
+
+### Fixed
+
+- Each robe is the whole apprentice in that cloth, and each hat is painted with her, so the purple robe and hat never show through a paper cutout.
+- Brooms and little extras sit on her as their own pieces, after the outfit.
+- Put it on and Take it off toggle in the shop and at the mirror, and the piece she is wearing is marked.
+- Tell us opens from a tap, the choices tap, the note stays on the iPad even if storage is full, it shows in the grown-ups’ list, and Send to Mum opens the letter.
+
 ## [1.1.2] - 2026-10-18
 
 The shapes list is Aida's, and every spell on it can be played.
@@ -45,6 +56,7 @@ Outfits, notes, puzzles, and the spell beds fit the way Aida uses them, and a ne
 - An update note that waits until she is on the garden map, and Check for updates for grown-ups.
 - The app version on every bug report.
 
+[1.1.3]: https://github.com/gulcin/spell-garden/releases/tag/v1.1.3
 [1.1.2]: https://github.com/gulcin/spell-garden/releases/tag/v1.1.2
 [1.1.1]: https://github.com/gulcin/spell-garden/releases/tag/v1.1.1
 [1.1.0]: https://github.com/gulcin/spell-garden/releases/tag/v1.1.0

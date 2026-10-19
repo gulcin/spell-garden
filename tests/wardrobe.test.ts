@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { freshProgress, type Progress } from '../src/progress/types.ts';
 import { withWardrobe } from '../src/progress/storage.ts';
-import { crystalGain } from '../src/wardrobe/catalog.ts';
+import { crystalGain, itemPreview, paintedLook } from '../src/wardrobe/catalog.ts';
 import { awardCrystals, buyItem, unequipSlot } from '../src/wardrobe/economy.ts';
 import { breakInto, paymentSpeech, purseTotal, rewardSpeech, tenderSpeech } from '../src/wardrobe/purse.ts';
 
@@ -103,6 +103,21 @@ describe('crystal shop', () => {
     const folded = withWardrobe(counted);
     expect(folded.crystals).toBe(6);
     expect(folded.purse).toEqual({ gold: 0, blue: 0, yellow: 1, pink: 1 });
+  });
+
+  it('paints each robe and each hat as the whole apprentice', () => {
+    expect(paintedLook('robe-moon')).toBe('look-robe-moon');
+    expect(paintedLook('robe-rose', 'hat-mushroom')).toBe('look-robe-rose--hat-mushroom');
+    expect(paintedLook(undefined, 'hat-tall')).toBe('look-apprentice--hat-tall');
+    expect(paintedLook()).toBeNull();
+    expect(itemPreview('robe-midnight')).toBe('look-robe-midnight');
+    expect(itemPreview('hat-night')).toBe('look-apprentice--hat-night');
+    expect(itemPreview('broom-twig')).toBe('broom-twig');
+    const robes = ['robe-moon', 'robe-rose', 'robe-moss', 'robe-midnight'];
+    const hats = ['hat-night', 'hat-mushroom', 'hat-crescent', 'hat-tall'];
+    for (const robe of robes) {
+      for (const hat of hats) expect(paintedLook(robe, hat)).toBe(`look-${robe}--${hat}`);
+    }
   });
 
   it('lets the mirror take a hat off without forgetting she owns it', () => {

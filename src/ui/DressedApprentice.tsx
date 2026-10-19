@@ -1,6 +1,6 @@
 import { createContext, useContext, type CSSProperties, type ReactNode } from 'react';
 import { emptyWardrobe } from '../wardrobe/economy.ts';
-import { WEAR_SLOTS, itemById, wearStyle } from '../wardrobe/catalog.ts';
+import { OVERLAY_ORDER, itemById, paintedLook, wearStyle } from '../wardrobe/catalog.ts';
 import type { WardrobeState } from '../progress/types.ts';
 import { Prop } from './pictures.tsx';
 
@@ -14,44 +14,44 @@ function useWardrobe(): WardrobeState {
   return useContext(WardrobeContext);
 }
 
-/** Full painted apprentice for each robe, so the old purple robe never shows through. */
-const ROBE_LOOK: Record<string, string> = {
-  'robe-moon': 'look-robe-moon',
-  'robe-rose': 'look-robe-rose',
-  'robe-moss': 'look-robe-moss',
-  'robe-midnight': 'look-robe-midnight',
-};
+function art(file: string): { src: string; srcSet: string } {
+  const base = `${import.meta.env.BASE_URL}art/wear/${file}`;
+  return {
+    src: `${base}.webp`,
+    srcSet: `${base}.webp 1x, ${base}@2x.webp 2x`,
+  };
+}
 
-/** The apprentice, plus any robes, hats, extras, and broom she is wearing. */
+/**
+ * Body first (the whole apprentice in her robe and hat), then a necklace, bag,
+ * wand, crown, and kitten, then the broom. Robes and hats are full paintings,
+ * so the purple cloth never peeks out from under a cutout.
+ */
 export function DressedApprentice({ className, alt = '' }: { className?: string; alt?: string }) {
   const { equipped } = useWardrobe();
-  const look = equipped.dress ? ROBE_LOOK[equipped.dress] : undefined;
-  const layers = WEAR_SLOTS.map((slot) => equipped[slot]).filter((id): id is string => Boolean(id));
+  const look = paintedLook(equipped.dress, equipped.hat);
+  const picture = look ? art(look) : null;
   return (
     <span className={className ? `dressed ${className}` : 'dressed'}>
-      {look ? (
-        <img
-          className="look"
-          src={`${import.meta.env.BASE_URL}art/wear/${look}.webp`}
-          srcSet={`${import.meta.env.BASE_URL}art/wear/${look}.webp 1x, ${import.meta.env.BASE_URL}art/wear/${look}@2x.webp 2x`}
-          alt={alt}
-          draggable={false}
-        />
+      {picture ? (
+        <img className="look" src={picture.src} srcSet={picture.srcSet} alt={alt} draggable={false} />
       ) : (
         <Prop name="apprentice" alt={alt} />
       )}
-      {layers.map((id) => {
+      {OVERLAY_ORDER.map((slot) => {
+        const id = equipped[slot];
+        if (!id) return null;
         const item = itemById(id);
-        if (!item || (look && item.slot === 'dress')) return null;
-        const box = wearStyle(id, item.slot);
+        if (!item || item.slot !== slot) return null;
+        const box = wearStyle(id, slot);
         const style: CSSProperties = { left: box.left, top: box.top, width: box.width, zIndex: box.z };
-        const base = `${import.meta.env.BASE_URL}art/wear/${id}`;
+        const piece = art(id);
         return (
           <img
             key={id}
-            className="wear"
-            src={`${base}.webp`}
-            srcSet={`${base}.webp 1x, ${base}@2x.webp 2x`}
+            className={`wear wear-${slot}`}
+            src={piece.src}
+            srcSet={piece.srcSet}
             alt=""
             style={style}
             draggable={false}

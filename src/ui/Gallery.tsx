@@ -5,9 +5,9 @@ import { isSolved } from '../activities/logic.ts';
 import type { Item } from '../activities/types.ts';
 import { classify, TEMPLATE_LABEL, type TemplateId } from '../curriculum/classify.ts';
 import { allTopics } from '../curriculum/data.ts';
-import { freshProgress, type Progress } from '../progress/types.ts';
+import { freshProgress, type Progress, type WardrobeState } from '../progress/types.ts';
 import { REWARDS } from '../story.ts';
-import type { ShopCategory } from '../wardrobe/catalog.ts';
+import { SHOP_ITEMS, itemById, type ShopCategory } from '../wardrobe/catalog.ts';
 import { buyFurniture } from '../house/buy.ts';
 import { breakInto } from '../wardrobe/purse.ts';
 import { ReportLiveProvider } from '../feedback/live.tsx';
@@ -92,6 +92,22 @@ function previewProgress(screen: string, dressed: boolean): Progress {
   return progress;
 }
 
+function wardrobePreview(params: URLSearchParams): WardrobeState {
+  const equipped: WardrobeState['equipped'] = {};
+  const dress = params.get('robe') ?? '';
+  const hat = params.get('hat') ?? '';
+  const broom = params.get('broom') ?? '';
+  const extra = params.get('extra') ?? '';
+  if (dress) equipped.dress = dress;
+  if (hat) equipped.hat = hat;
+  if (broom) equipped.broom = broom;
+  if (extra) {
+    const item = itemById(extra);
+    if (item) equipped[item.slot] = extra;
+  }
+  return { owned: SHOP_ITEMS.map((item) => item.id), equipped };
+}
+
 const PLACE_OF: Record<TemplateId, (typeof PLACES)[number]['id']> = {
   'ten-frame': 'lantern-grove',
   pattern: 'lantern-grove',
@@ -123,7 +139,11 @@ export function Gallery() {
   const place = PLACE_OF[template] ?? 'lantern-grove';
   const category = (params.get('category') ?? 'dress') as ShopCategory | 'home';
   const dressed = params.get('dressed') === '1' || screen === 'wardrobe';
-  const [progress, setProgress] = useState<Progress>(() => previewProgress(screen, dressed));
+  const [progress, setProgress] = useState<Progress>(() => {
+    const next = previewProgress(screen, dressed);
+    if (screen === 'wardrobe') next.wardrobe = wardrobePreview(params);
+    return next;
+  });
   const [telling, setTelling] = useState(params.get('tell') === '1');
   const away = screen !== 'home';
   function update(recipe: (current: Progress) => Progress) {

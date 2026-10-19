@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { buyFurniture } from '../house/buy.ts';
 import { furnitureById, shopFurniture } from '../house/catalog.ts';
 import type { Progress } from '../progress/types.ts';
-import { SHOP_CATEGORIES, SHOP_ITEMS, itemById, type ShopCategory } from '../wardrobe/catalog.ts';
-import { buyItem, equipItem } from '../wardrobe/economy.ts';
+import { SHOP_CATEGORIES, SHOP_ITEMS, itemById, itemPreview, type ShopCategory } from '../wardrobe/catalog.ts';
+import { buyItem, equipItem, unequipSlot } from '../wardrobe/economy.ts';
 import { paymentSpeech, tenderSpeech, type Purse } from '../wardrobe/purse.ts';
 import { speak } from '../speech.ts';
 import { CrystalCounter } from './CrystalCounter.tsx';
@@ -86,8 +86,9 @@ export function CrystalShop({
   function wear(id: string) {
     const item = itemById(id);
     if (!item) return;
-    update((current) => equipItem(current, id));
-    const line = `She puts on the ${item.name.toLowerCase()}.`;
+    const wearing = progress.wardrobe.equipped[item.slot] === id;
+    update((current) => (wearing ? unequipSlot(current, item.slot) : equipItem(current, id)));
+    const line = wearing ? `The ${item.name.toLowerCase()} rests on the hook.` : `She puts on the ${item.name.toLowerCase()}.`;
     setCheer(line);
     speak(line);
   }
@@ -193,15 +194,21 @@ export function CrystalShop({
           const owned = progress.wardrobe.owned.includes(item.id);
           const wearing = progress.wardrobe.equipped[item.slot] === item.id;
           const short = Math.max(0, item.price - progress.crystals);
-          const base = `${import.meta.env.BASE_URL}art/wear/${item.id}`;
+          const base = `${import.meta.env.BASE_URL}art/wear/${itemPreview(item.id)}`;
           return (
-            <article key={item.id} className="shop-card" data-testid={`item-${item.id}`}>
+            <article key={item.id} className={wearing ? 'shop-card on' : 'shop-card'} data-testid={`item-${item.id}`}>
               <img src={`${base}.webp`} alt="" />
               <h2>{item.name}</h2>
               <p>{item.line}</p>
               {owned ? (
-                <button type="button" className="btn gold" disabled={wearing} onClick={() => wear(item.id)}>
-                  {wearing ? 'Wearing' : 'Wear this'}
+                <button
+                  type="button"
+                  className={wearing ? 'btn gold on' : 'btn gold'}
+                  data-testid={`wear-${item.id}`}
+                  aria-pressed={wearing}
+                  onClick={() => wear(item.id)}
+                >
+                  {wearing ? 'Take it off' : 'Put it on'}
                 </button>
               ) : (
                 <button

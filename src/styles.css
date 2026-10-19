@@ -121,6 +121,7 @@ code { font-size: 0.86em; background: #fff; padding: 0.1em 0.35em; border-radius
 }
 .tell-us {
   min-height: 56px;
+  touch-action: manipulation;
   padding: 0 18px;
   border: 2px solid rgba(255, 255, 255, 0.9);
   border-radius: 999px;
@@ -132,7 +133,7 @@ code { font-size: 0.86em; background: #fff; padding: 0.1em 0.35em; border-radius
 .tell-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 40;
+  z-index: 200;
   background: rgba(58, 45, 74, 0.28);
   display: grid;
   place-items: center;
@@ -154,6 +155,7 @@ code { font-size: 0.86em; background: #fff; padding: 0.1em 0.35em; border-radius
 .tell-choices { display: grid; gap: 10px; margin: 8px 0 14px; }
 .tell-choices button {
   min-height: 64px;
+  touch-action: manipulation;
   border-radius: 20px;
   border: 2px solid white;
   background: rgba(255, 255, 255, 0.88);
@@ -283,6 +285,7 @@ code { font-size: 0.86em; background: #fff; padding: 0.1em 0.35em; border-radius
 .dressed { position: relative; display: inline-block; line-height: 0; }
 .dressed > picture { display: block; width: 100%; }
 .dressed .wear { position: absolute; height: auto; pointer-events: none; }
+.dressed .wear-wand { transform: scaleX(-1); transform-origin: 80% 85%; }
 .quest .panel.story, .quest .panel.demo, .quest .panel.walk { flex: 1 1 auto; min-height: 0; overflow: auto; width: min(640px, 100%); margin-inline: auto; }
 .quest .panel.story { flex: 0 1 auto; align-self: center; margin-top: 4px; }
 .guide-small { width: min(120px, 28vw); }
@@ -1305,8 +1308,9 @@ code { font-size: 0.86em; background: #fff; padding: 0.1em 0.35em; border-radius
 .shop-card h2 { font-size: 1.15rem; margin: 6px 0 0; }
 .shop-card p, .shop-card span { color: var(--muted); margin: 0 0 6px; }
 .shop-card .btn { width: 100%; margin-top: auto; }
-.wear-card { font: inherit; color: inherit; cursor: pointer; min-height: 64px; }
-.wear-card.on { outline: 3px solid var(--gold-deep); }
+.wear-card { font: inherit; color: inherit; cursor: pointer; min-height: 64px; touch-action: manipulation; }
+.wear-card.on, .shop-card.on { outline: 3px solid var(--gold-deep); background: #fff4dc; }
+.wear-card.on span, .shop-card.on .btn { color: var(--violet-deep); }
 .shop-mirror-preview, .mirror-stage {
   display: flex;
   align-items: flex-end;
@@ -1316,7 +1320,8 @@ code { font-size: 0.86em; background: #fff; padding: 0.1em 0.35em; border-radius
   border-radius: 24px;
   padding: 12px;
 }
-.mirror-figure { width: min(280px, 72vw); }
+.mirror-figure { width: min(240px, 46vw); }
+.wardrobe .shop-grid { overflow: auto; }
 .mirror-empty {
   background: rgba(255, 248, 241, 0.96);
   border-radius: 20px;
@@ -1807,7 +1812,6 @@ code { font-size: 0.86em; background: #fff; padding: 0.1em 0.35em; border-radius
 .ten { padding: 6px; gap: 4px; }
 .board-base-ten .tray { max-height: 22%; }
 .garden { position: relative; z-index: 1; }
-.corner-tools { z-index: 4; }
 .spell-row, .spell-pager button {
   width: 100%;
   text-align: left;
@@ -1856,6 +1860,9 @@ code { font-size: 0.86em; background: #fff; padding: 0.1em 0.35em; border-radius
 .home-nav button { min-height: 40px; }
 .garden-map { padding: 8px 10px 10px; }
 @media (max-height: 900px) {
+  .mirror-figure { width: min(200px, 34vw); }
+  .wardrobe .shop-card { padding: 8px; }
+  .wardrobe .shop-card img { height: 64px; }
   .page-banner { height: 56px; }
   .banner-guide { width: 52px; }
   h1 { font-size: 1.4rem; }

@@ -56,13 +56,13 @@ export function crystalGain(placeId: string): number {
 /** Where each painted piece sits on the apprentice cutout. Tuned against her pose. */
 export const WEAR_BOX: Record<WearSlot, { left: string; top: string; width: string; z: number }> = {
   dress: { left: '4%', top: '31%', width: '74%', z: 2 },
-  hat: { left: '4%', top: '-30%', width: '60%', z: 5 },
-  crown: { left: '16%', top: '-12%', width: '64%', z: 6 },
-  necklace: { left: '38%', top: '38%', width: '20%', z: 4 },
-  bag: { left: '44%', top: '44%', width: '26%', z: 4 },
-  wand: { left: '64%', top: '2%', width: '34%', z: 5 },
-  familiar: { left: '-2%', top: '72%', width: '28%', z: 7 },
-  broom: { left: '68%', top: '32%', width: '28%', z: 3 },
+  hat: { left: '18%', top: '0%', width: '64%', z: 5 },
+  crown: { left: '18%', top: '-6%', width: '46%', z: 6 },
+  necklace: { left: '44%', top: '40%', width: '10%', z: 4 },
+  bag: { left: '33%', top: '46%', width: '28%', z: 5 },
+  wand: { left: '58%', top: '1%', width: '36%', z: 6 },
+  familiar: { left: '2%', top: '78%', width: '20%', z: 7 },
+  broom: { left: '76%', top: '42%', width: '24%', z: 8 },
 };
 
 /** A few pieces need their own seat. The floppy nightcap and the wide mushroom do. */
@@ -74,3 +74,30 @@ export const WEAR_NUDGE: Partial<Record<string, { left: string; top: string; wid
 export function wearStyle(id: string, slot: WearSlot): { left: string; top: string; width: string; z: number } {
   return { ...WEAR_BOX[slot], ...WEAR_NUDGE[id] };
 }
+
+const ROBE_IDS = new Set(['robe-moon', 'robe-rose', 'robe-moss', 'robe-midnight']);
+const HAT_IDS = new Set(['hat-night', 'hat-mushroom', 'hat-crescent', 'hat-tall']);
+
+/**
+ * A robe or hat is a full painting of the apprentice in that outfit.
+ * Hats are not pasted on afterwards, because the purple hat would show through.
+ */
+export function paintedLook(dress?: string, hat?: string): string | null {
+  const robeOn = !!dress && ROBE_IDS.has(dress);
+  const hatOn = !!hat && HAT_IDS.has(hat);
+  if (robeOn && hatOn) return `look-${dress}--${hat}`;
+  if (hatOn) return `look-apprentice--${hat}`;
+  if (robeOn) return `look-${dress}`;
+  return null;
+}
+
+/** Shop and mirror thumbnails. Robes and hats show her wearing them, not a flat cutout. */
+export function itemPreview(id: string): string {
+  const item = itemById(id);
+  if (!item) return id;
+  if (item.slot === 'dress' || item.slot === 'hat') return paintedLook(item.slot === 'dress' ? id : undefined, item.slot === 'hat' ? id : undefined) ?? id;
+  return id;
+}
+
+/** Props drawn after the painted body. Hat and robe are already in that painting. */
+export const OVERLAY_ORDER: WearSlot[] = ['necklace', 'bag', 'wand', 'crown', 'familiar', 'broom'];

@@ -10,6 +10,8 @@ import {
   postReports,
   reportMailto,
   REPORTS_QUEUE_KEY,
+  loadReports,
+  resetReportStore,
   saveReport,
   type Report,
 } from '../src/feedback/reports.ts';
@@ -99,6 +101,7 @@ describe('feedback endpoint', () => {
   const posts: { url: string; body: string }[] = [];
 
   beforeEach(() => {
+    resetReportStore();
     bag.clear();
     posts.length = 0;
     online = true;
@@ -128,6 +131,22 @@ describe('feedback endpoint', () => {
     expect(posts[0]?.url).toBe('https://lumi-api.gulcin-lumi.workers.dev/feedback');
     expect(JSON.parse(posts[0]?.body ?? '')).toMatchObject({ id: sample.id, kind: 'broken', text: sample.text });
     expect(JSON.parse(memory.getItem(REPORTS_QUEUE_KEY) ?? '[]')).toEqual([]);
+  });
+
+  it('keeps the note when the iPad refuses to store it', () => {
+    vi.stubGlobal('localStorage', {
+      getItem: () => null,
+      setItem: () => {
+        throw new Error('QuotaExceededError');
+      },
+      removeItem: () => undefined,
+      clear: () => undefined,
+      key: () => null,
+      length: 0,
+    });
+    const saved = saveReport({ ...sample, id: 'note-full' });
+    expect(saved.map((item) => item.id)).toEqual(['note-full']);
+    expect(loadReports().map((item) => item.text)).toContain(sample.text);
   });
 
   it('keeps a report queued while offline and sends it once the iPad is back', async () => {

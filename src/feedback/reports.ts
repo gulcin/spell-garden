@@ -31,7 +31,21 @@ export type Report = {
 
 const KINDS = new Set<ReportKind>(['love', 'broken', 'idea']);
 
-export function loadReports(): Report[] {
+const IDB_NAME = 'spell-garden-reports';
+const IDB_STORE = 'notes';
+
+/** In-memory copy for this visit, used when the iPad refuses localStorage. */
+let memory: Report[] = [];
+let memoryQueue: string[] = [];
+let localWriteFailed = false;
+
+export function resetReportStore(): void {
+  memory = [];
+  memoryQueue = [];
+  localWriteFailed = false;
+}
+
+function readLocal(): Report[] | null {
   try {
     const raw = localStorage.getItem(REPORTS_KEY);
     if (!raw) return [];
@@ -39,17 +53,99 @@ export function loadReports(): Report[] {
     if (!Array.isArray(parsed)) return [];
     return parsed.filter(isReport).slice(-40);
   } catch {
-    return [];
+    return null;
+  }
+}
+
+export function loadReports(): Report[] {
+  const stored = readLocal();
+  if (stored == null) {
+    localWriteFailed = true;
+    return memory.slice(-40);
+  }
+  if (localWriteFailed && memory.length) return memory.slice(-40);
+  memory = stored;
+  return stored;
+}
+
+function openReportDb(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    if (typeof indexedDB === 'undefined') {
+      reject(new Error('no indexedDB'));
+      return;
+    }
+    const request = indexedDB.open(IDB_NAME, 1);
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE);
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error ?? new Error('indexedDB'));
+  });
+}
+
+function writeIdb(reports: Report[]): void {
+  void openReportDb()
+    .then(
+      (db) =>
+        new Promise<void>((resolve, reject) => {
+          const tx = db.transaction(IDB_STORE, 'readwrite');
+          tx.objectStore(IDB_STORE).put(reports, 'saved');
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => reject(tx.error);
+        }),
+    )
+    .catch(() => {
+      /* Both stores can refuse a private-mode iPad. The note still sits in memory. */
+    });
+}
+
+function readIdb(): Promise<Report[]> {
+  return openReportDb().then(
+    (db) =>
+      new Promise((resolve, reject) => {
+        const tx = db.transaction(IDB_STORE, 'readonly');
+        const request = tx.objectStore(IDB_STORE).get('saved');
+        request.onsuccess = () => {
+          const parsed: unknown = request.result;
+          resolve(Array.isArray(parsed) ? parsed.filter(isReport).slice(-40) : []);
+        };
+        request.onerror = () => reject(request.error);
+      }),
+  );
+}
+
+/** Loads notes saved when localStorage was full or blocked. */
+export function hydrateReports(): Promise<Report[]> {
+  const ready = loadReports();
+  if (ready.length || !localWriteFailed) return Promise.resolve(ready);
+  return readIdb()
+    .then((rows) => {
+      if (rows.length) memory = rows;
+      return memory.slice(-40);
+    })
+    .catch(() => memory.slice(-40));
+}
+
+function persistReports(next: Report[], queue: string[]): void {
+  memory = next;
+  memoryQueue = queue;
+  try {
+    localStorage.setItem(REPORTS_KEY, JSON.stringify(next));
+    localStorage.setItem(REPORTS_QUEUE_KEY, JSON.stringify(queue));
+    localWriteFailed = false;
+  } catch {
+    localWriteFailed = true;
+    writeIdb(next);
   }
 }
 
 export function saveReport(report: Report): Report[] {
   const next = [...loadReports(), report].slice(-40);
-  localStorage.setItem(REPORTS_KEY, JSON.stringify(next));
   const kept = new Set(next.map((item) => item.id));
   const waiting = loadQueue().filter((id) => kept.has(id));
   if (!waiting.includes(report.id)) waiting.push(report.id);
-  saveQueue(waiting);
+  persistReports(next, waiting);
   void postReport(report);
   return next;
 }
@@ -98,7 +194,9 @@ export function formatReport(report: Report): string {
 }
 
 function clipBody(body: string): string {
-  return body.length > 1800 ? body.slice(0, 1800) : body;
+  let text = body.length > 700 ? body.slice(0, 700) : body;
+  while (encodeURIComponent(text).length > 900 && text.length > 80) text = text.slice(0, Math.floor(text.length * 0.75));
+  return text;
 }
 
 function kindWord(kind: ReportKind): string {
@@ -143,17 +241,25 @@ function browserOnline(): boolean {
 function loadQueue(): string[] {
   try {
     const raw = localStorage.getItem(REPORTS_QUEUE_KEY);
-    if (!raw) return [];
+    if (!raw) return localWriteFailed ? memoryQueue.slice(-40) : [];
     const parsed: unknown = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
-    return parsed.filter((id): id is string => typeof id === 'string').slice(-40);
+    const ids = parsed.filter((id): id is string => typeof id === 'string').slice(-40);
+    if (!localWriteFailed) memoryQueue = ids;
+    return localWriteFailed && memoryQueue.length ? memoryQueue.slice(-40) : ids;
   } catch {
-    return [];
+    return memoryQueue.slice(-40);
   }
 }
 
 function saveQueue(ids: string[]): void {
-  localStorage.setItem(REPORTS_QUEUE_KEY, JSON.stringify(ids.slice(-40)));
+  memoryQueue = ids.slice(-40);
+  try {
+    localStorage.setItem(REPORTS_QUEUE_KEY, JSON.stringify(memoryQueue));
+  } catch {
+    localWriteFailed = true;
+    writeIdb(memory);
+  }
 }
 
 /** POSTs one report as JSON. Queues it when the iPad is offline or the post does not land. */
