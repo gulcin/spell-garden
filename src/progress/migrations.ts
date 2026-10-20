@@ -1,5 +1,6 @@
 import { COLOURING_DB } from '../colouring/store.ts';
 import { REPORTS_DB, REPORTS_KEY, REPORTS_QUEUE_KEY } from '../feedback/reports.ts';
+import { normalizePets } from '../pets/state.ts';
 import { UPDATE_DEFERRED_KEY } from '../updates.ts';
 import { SEEN_VERSION_KEY } from '../version.ts';
 import { PROGRESS_KEY, PROGRESS_SCHEMA, type Progress } from './types.ts';
@@ -31,6 +32,11 @@ export function progressMigrations(fill: (progress: Progress) => Progress): Prog
       to: 1,
       name: 'fill-purse-wardrobe-stories-house',
       run: fill,
+    },
+    {
+      to: 2,
+      name: 'remember-pet-growth',
+      run: (progress) => ({ ...progress, pets: normalizePets(progress.pets) }),
     },
   ];
 }

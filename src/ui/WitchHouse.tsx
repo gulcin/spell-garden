@@ -12,6 +12,7 @@ import {
   type PlacedItem,
 } from '../house/layout.ts';
 import { petById } from '../pets/catalog.ts';
+import { stageOf } from '../pets/growth.ts';
 import { callHome, ownedPet, restPet, restTrayStart } from '../pets/state.ts';
 import type { Progress } from '../progress/types.ts';
 import { CrystalCounter } from './CrystalCounter.tsx';
@@ -202,7 +203,7 @@ export function WitchHouse({
                 data-testid={`rest-pet-${owned.id}`}
                 onClick={() => update((current) => ({ ...current, pets: restPet(current.pets, current.house, owned.id) }))}
               >
-                <PetArt id={owned.id} alt="" />
+                <PetArt id={owned.id} stage={stageOf(progress.pets, owned.id)} alt="" />
                 <span>{owned.name.trim() || pet.name}</span>
               </button>
             );
@@ -270,12 +271,12 @@ export function WitchHouse({
               aria-label={`Call ${owned?.name ?? pet.name} back`}
               onClick={() => update((current) => ({ ...current, pets: callHome(current.pets, resting.id) }))}
             >
-              <PetArt id={resting.id} alt="" />
+              <PetArt id={resting.id} stage={stageOf(progress.pets, resting.id)} alt="" />
             </button>
           );
         })}
         <DressedApprentice className="house-girl" alt="Aida standing in her witch's house" />
-        {companionHere ? <PetArt id={companionHere} className="house-companion" alt="" /> : null}
+        {companionHere ? <PetArt id={companionHere} stage={stageOf(progress.pets, companionHere)} className="house-companion" alt="" /> : null}
         <img className="story-moth house-nim" data-testid="house-nim" src={`${base}art/moth.webp`} alt="" />
         {drag?.kind === 'new' && drag.moved ? (
           <img

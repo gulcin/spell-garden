@@ -106,6 +106,8 @@ export type PetRecord = {
   name: string;
   at: number;
   how: PetHow;
+  /** Correct spells while this friend was the one walking beside her. */
+  solved: number;
 };
 
 export type RestingPet = {

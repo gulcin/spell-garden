@@ -8,7 +8,7 @@ import { emptyPurse, type Purse } from '../wardrobe/purse.ts';
 export const PROGRESS_KEY = 'prague.wizard-math.progress.v1';
 export const PROGRESS_FORMAT = 'prague.wizard-math.progress.v1' as const;
 /** Newest save shape. Older saves stay on PROGRESS_KEY and step through PROGRESS_MIGRATIONS. */
-export const PROGRESS_SCHEMA = 1;
+export const PROGRESS_SCHEMA = 2;
 
 /** The child this garden is for. Saved progress named Prague is migrated here. */
 export const DEFAULT_LEARNER_NAME = 'Aida';

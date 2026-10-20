@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-10-19
+
+A friend who walks with her grows as they do spells together.
+
+### Added
+
+- Each pet keeps a quiet count of correct spells solved while that friend is the one walking beside her. After 4 spells they are growing. After 10 they are grown. The walking friend's card says how many more spells until they grow.
+- Once the baby dragon is grown, stories call them the dragon.
+- The baby dragon, the cloud cat, and the unicorn foal have painted grown forms. The baby dragon also has a painted growing form. Other friends grow a little inside the same frame.
+- An older garden opens as before. Crystals, outfits, pets, and house things stay. A pet from an older save starts little.
+
+### For Aida
+
+- A friend who walks with you grows as you do spells together.
+- The baby dragon can grow into a big dragon.
+
 ## [1.4.3] - 2026-10-19
 
 Today's adventure is a story you can read aloud, and the words match the picture.
@@ -232,6 +248,7 @@ The garden as Aida first played it: painted places, a way home, a shop, and a no
 
 - The garden is painted, the shop is open, and you can tell us what you think.
 
+[1.5.0]: https://github.com/gulcin/spell-garden/releases/tag/v1.5.0
 [1.4.3]: https://github.com/gulcin/spell-garden/releases/tag/v1.4.3
 [1.4.2]: https://github.com/gulcin/spell-garden/releases/tag/v1.4.2
 [1.4.1]: https://github.com/gulcin/spell-garden/releases/tag/v1.4.1

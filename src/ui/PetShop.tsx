@@ -7,6 +7,7 @@ import {
   type Pet,
   type PetGroup,
 } from '../pets/catalog.ts';
+import { growthCaption, petArtFile, petStage, solvedCount, stageOf } from '../pets/growth.ts';
 import { buyPet, draftRename, markSeen, ownedPet, renamePet, setCompanion, unseenArrivals } from '../pets/state.ts';
 import type { Progress } from '../progress/types.ts';
 import { CrystalCounter } from './CrystalCounter.tsx';
@@ -31,21 +32,27 @@ export function PetArt({
   className,
   alt = '',
   secret = false,
+  stage = 0,
 }: {
   id: string;
   className?: string;
   alt?: string;
   secret?: boolean;
+  stage?: number;
 }) {
-  const base = `${import.meta.env.BASE_URL}art/pets/${id}`;
+  const art = petArtFile(id, stage);
+  const base = `${import.meta.env.BASE_URL}art/pets/${art.file}`;
+  const scale = art.painted ? '' : stage === 1 ? 'pet-grow-scale' : stage === 2 ? 'pet-grown-scale' : '';
   return (
-    <img
-      className={secret ? `pet-secret ${className ?? ''}`.trim() : className}
-      src={`${base}.webp`}
-      srcSet={`${base}.webp 1x, ${base}@2x.webp 2x`}
-      alt={alt}
-      draggable={false}
-    />
+    <span className={['pet-art', className].filter(Boolean).join(' ')} data-pet={id} data-stage={stage}>
+      <img
+        className={['pet-art-img', secret ? 'pet-secret' : '', scale].filter(Boolean).join(' ')}
+        src={`${base}.webp`}
+        srcSet={`${base}.webp 1x, ${base}@2x.webp 2x`}
+        alt={alt}
+        draggable={false}
+      />
+    </span>
   );
 }
 
@@ -73,7 +80,7 @@ export function PetReveal({
     <div className="pet-reveal" role="dialog" aria-modal="true" aria-label={`${pet.name} found you`} data-testid="pet-reveal">
       <article>
         <p className="kicker">{pet.group === 'fairies' ? 'A fairy found you' : 'A friend found you'}</p>
-        <PetArt id={pet.id} alt="" />
+        <PetArt id={pet.id} stage={stageOf(progress.pets, pet.id)} alt="" />
         <h2>{owned?.name ?? pet.name}</h2>
         <p>{pet.blurb}</p>
         <button type="button" className="btn gold xl" data-testid="pet-hello" onClick={greet}>
@@ -163,11 +170,15 @@ export function PetShop({
         {visible.map((pet) => {
           const owned = ownedPet(progress.pets, pet.id);
           const walking = progress.pets.companionId === pet.id;
+          const solved = solvedCount(owned?.solved);
+          const stage = petStage(solved);
           return (
             <article key={pet.id} className="shop-card" data-testid={`pet-${pet.id}`} data-group={pet.group}>
-              <PetArt id={pet.id} alt="" secret={!owned && pet.price == null} />
+              <PetArt id={pet.id} stage={owned ? stage : 0} alt="" secret={!owned && pet.price == null} />
               <h2>{owned?.name.trim() ? owned.name : pet.name}</h2>
-              <p>{offerLine(pet)}</p>
+              <p className={owned ? 'pet-state' : undefined} data-testid={owned ? `pet-stage-${pet.id}` : undefined} data-stage={owned ? stage : undefined}>
+                {owned ? growthCaption(solved, walking) : offerLine(pet)}
+              </p>
               {owned ? (
                 <>
                   <label className="pet-name">

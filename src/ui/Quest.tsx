@@ -19,6 +19,7 @@ import { CrystalCounter } from './CrystalCounter.tsx';
 import { TalkDock } from './TalkDock.tsx';
 import { DressedApprentice } from './DressedApprentice.tsx';
 import { PLACES, placeStyle, Prop } from './pictures.tsx';
+import { growNearby } from '../pets/growth.ts';
 import { companionTitle } from '../pets/state.ts';
 import { deedLine, visitIntro } from '../stories/adventure.ts';
 import { appendPuzzlePage } from '../stories/books.ts';
@@ -245,7 +246,7 @@ export function Quest({
     speak(item!.prompt);
   }
 
-  function record(ok: boolean, currentItem: Item) {
+  function record(ok: boolean, currentItem: Item): string | null {
     setAsked((value) => value + 1);
     const at = Date.now();
     const deed = ok ? deedLine(placeId, currentItem) : '';
@@ -254,6 +255,7 @@ export function Quest({
       setCorrect((value) => value + 1);
       deeds.current = [...deeds.current, deed];
     }
+    const speech = ok ? growNearby(progressRef.current).speech : null;
     update((current) => {
       const prev = current.topics[currentItem.topicId];
       const nextTopic = recordAttempt(prev, ok, sessionId.current, currentItem.template, at);
@@ -271,9 +273,10 @@ export function Quest({
       const bumped = ok ? bumpPlaceQuests(next, placeId) : next;
       const awarded = ok ? awardCrystals(bumped, crystalGain(placeId)) : bumped;
       if (!ok) return awarded;
+      const grown = growNearby(awarded).progress;
       return {
-        ...awarded,
-        books: appendPuzzlePage(awarded.books, {
+        ...grown,
+        books: appendPuzzlePage(grown.books, {
           placeId,
           chapterId: chapterId.current,
           at,
@@ -285,6 +288,7 @@ export function Quest({
         }),
       };
     });
+    return speech;
   }
 
   function cast() {
@@ -292,12 +296,13 @@ export function Quest({
     const board = api.current?.getState();
     if (!board) return;
     if (isSolved(item, board)) {
-      record(true, item);
+      const speech = record(true, item);
       const praise = `${PRAISE[correct % PRAISE.length] ?? PRAISE[0]} ${rewardSpeech(progress.crystals, crystalGain(placeId))}`;
+      const line = speech ? `${praise} ${speech}` : praise;
       setLive({ lastAnswer: `Correct. ${describeBoard(item, board)}` });
-      setNote(praise);
+      setNote(line);
       setPhase('ok');
-      speak(praise);
+      speak(line);
       return;
     }
     const fizzle = 'That spell fizzled softly. Nothing is hurt. Change one thing and try again.';

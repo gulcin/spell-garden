@@ -1,6 +1,7 @@
 import type { HouseState } from '../house/layout.ts';
 import type { Progress } from '../progress/types.ts';
 import { spendCrystals } from '../wardrobe/economy.ts';
+import { solvedCount, stageOf } from './growth.ts';
 import {
   PETS,
   freshPets,
@@ -38,6 +39,7 @@ export function normalizePets(value: unknown): PetState {
         name: cleanPetName(typeof (row as Partial<PetRecord>).name === 'string' ? (row as PetRecord).name : '', pet.name),
         at: typeof at === 'number' && Number.isFinite(at) ? at : 0,
         how,
+        solved: solvedCount((row as Partial<PetRecord>).solved),
       });
     }
   }
@@ -92,7 +94,7 @@ export function grantEarned(
     ...safe,
     owned: [
       ...safe.owned,
-      ...arriving.map((pet) => ({ id: pet.id, name: pet.name, at, how: 'earned' as const })),
+      ...arriving.map((pet) => ({ id: pet.id, name: pet.name, at, how: 'earned' as const, solved: 0 })),
     ],
   };
 }
@@ -108,7 +110,7 @@ export function buyPet(progress: Progress, id: string, at = Date.now()): Progres
   if (!pet || pet.price == null || progress.pets.owned.some((owned) => owned.id === id)) return progress;
   const spent = spendCrystals(progress, pet.price);
   if (!spent) return progress;
-  const owned = [...spent.pets.owned, { id: pet.id, name: pet.name, at, how: 'bought' as const }];
+  const owned = [...spent.pets.owned, { id: pet.id, name: pet.name, at, how: 'bought' as const, solved: 0 }];
   return {
     ...spent,
     pets: {
@@ -167,13 +169,16 @@ export function ownedPet(pets: PetState, id: string): PetRecord | undefined {
   return pets.owned.find((pet) => pet.id === id);
 }
 
-/** "Pip the cloud cat" when she has chosen a name, otherwise the kind of friend. */
+/** "Pip the cloud cat" when she has chosen a name, otherwise the kind of friend. A grown baby dragon is just the dragon. */
 export function companionTitle(pets: PetState): string | null {
   if (!pets.companionId) return null;
   const pet = petById(pets.companionId);
   const owned = ownedPet(pets, pets.companionId);
   if (!pet || !owned) return null;
-  if (!owned.name.trim() || owned.name.trim().toLowerCase() === pet.name.toLowerCase()) return pet.name;
+  const grownDragon = pet.id === 'baby-dragon' && stageOf(pets, pet.id) === 2;
+  const named = owned.name.trim() && owned.name.trim().toLowerCase() !== pet.name.toLowerCase();
+  if (grownDragon) return named ? `${owned.name.trim()} the dragon` : 'your grown dragon';
+  if (!named) return pet.name;
   return `${owned.name.trim()} the ${pet.name.toLowerCase()}`;
 }
 
