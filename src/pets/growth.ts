@@ -38,13 +38,19 @@ export function petArtFile(id: string, stage: number): { file: string; painted: 
   return painted ? { file: painted, painted: true } : { file: id, painted: false };
 }
 
+function spellsToGrow(solved: number): string {
+  const count = solvedCount(solved);
+  const goal = petStage(count) === 0 ? GROWING_AT : GROWN_AT;
+  const left = Math.max(1, goal - count);
+  return left === 1 ? '1 more spell to grow' : `${left} more spells to grow`;
+}
+
 export function growthCaption(solved: number, walking: boolean): string {
   const stage = petStage(solved);
   const word = STAGE_WORD[stage];
   if (!walking) return `${word}. Bring them along.`;
   if (stage === 2) return 'Grown';
-  if (solvedCount(solved) === 0) return word;
-  return `${word} · ${solvedCount(solved)} together`;
+  return `${word} · ${spellsToGrow(solved)}`;
 }
 
 export function growthSpeech(name: string, before: number, after: number): string | null {

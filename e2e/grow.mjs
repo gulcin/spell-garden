@@ -137,7 +137,62 @@ async function layout(page) {
   });
 }
 
+async function loadedDetail(page) {
+  return page.evaluate(() =>
+    [...document.querySelectorAll('img')]
+      .filter((img) => !(img.complete && img.naturalWidth > 0))
+      .map((img) => `${(img.currentSrc || img.src || 'img').split('/').pop()} natural=${img.naturalWidth}`)
+      .slice(0, 6)
+      .join('; '),
+  );
+}
+
+/** Every picture on the open screen has actually decoded. A 404 check is not enough. */
+async function assertPictures(page, label) {
+  try {
+    await page.waitForFunction(
+      () => {
+        const imgs = [...document.querySelectorAll('img')];
+        return imgs.length > 0 && imgs.every((img) => img.complete && img.naturalWidth > 0);
+      },
+      { timeout: 8000 },
+    );
+    record(`${label} pictures`, 'pass');
+    return true;
+  } catch {
+    record(`${label} pictures`, 'fail', (await loadedDetail(page)) || 'no images');
+    return false;
+  }
+}
+
+/** Pet cards after a stage change. The walking dragon can be cached from the map while the shelf is still blank. */
+async function assertPetCards(page, label) {
+  try {
+    await page.waitForFunction(
+      () => {
+        const imgs = [...document.querySelectorAll('.pet-shop .shop-card img')];
+        return imgs.length >= 4 && imgs.every((img) => img.complete && img.naturalWidth > 0 && img.clientWidth > 0);
+      },
+      { timeout: 8000 },
+    );
+    record(`${label} pet pictures`, 'pass');
+    return true;
+  } catch {
+    const detail = await page.evaluate(() =>
+      [...document.querySelectorAll('.pet-shop .shop-card img')]
+        .map((img) => {
+          const pet = img.closest('[data-pet]')?.getAttribute('data-pet') || 'pet';
+          return `${pet} natural=${img.naturalWidth} client=${img.clientWidth}`;
+        })
+        .join('; '),
+    );
+    record(`${label} pet pictures`, 'fail', detail.slice(0, 320) || 'no pet cards');
+    return false;
+  }
+}
+
 async function shot(page, name) {
+  await assertPictures(page, name);
   await page.screenshot({ path: `${shotDir}/${name}.png` });
 }
 
@@ -230,6 +285,11 @@ async function applySolution(page) {
 
 async function solveBoard(page) {
   await page.waitForSelector('[data-testid="activity"]');
+  const activityLabel = await page.evaluate(() => {
+    const activity = document.querySelector('[data-testid="activity"]');
+    return `activity ${activity?.getAttribute('data-template') || 'board'} ${window.innerWidth}x${window.innerHeight}`;
+  });
+  await assertPictures(page, activityLabel);
   const before = await page.locator('[data-testid="crystal-count"]').first().innerText();
   let note = '';
   for (let attempt = 0; attempt < 2; attempt += 1) {
@@ -330,10 +390,28 @@ async function main() {
     if (stage !== '0' || !src?.endsWith('/baby-dragon.webp') || !/Little/.test(caption)) {
       record(`little shop ${viewport.name}`, 'fail', `stage ${stage} ${src} ${caption}`);
     } else record(`little shop ${viewport.name}`, 'pass', caption);
+    await assertPetCards(page, `little shop ${viewport.name}`);
     await checkFit(page, `little shop fit ${viewport.name}`);
     await shot(page, `little-shop-${viewport.name}`);
     await home(page);
   }
+
+  async function shootHouse(label) {
+    const expected = label === 'little' ? '0' : label === 'growing' ? '1' : '2';
+    for (const viewport of VIEWPORTS) {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await home(page);
+      await page.locator('[data-testid="map-house"]').click();
+      await page.waitForSelector('[data-testid="witch-house"]');
+      const stage = await page.locator('.house-companion').getAttribute('data-stage');
+      if (stage !== expected) record(`${label} house stage ${viewport.name}`, 'fail', `stage ${stage}`);
+      else record(`${label} house stage ${viewport.name}`, 'pass');
+      await checkFit(page, `${label} house fit ${viewport.name}`);
+      await shot(page, `${label}-house-${viewport.name}`);
+    }
+  }
+  await shootHouse('little');
+  await page.setViewportSize(VIEWPORTS[0]);
 
   await page.setViewportSize(VIEWPORTS[0]);
   const beforeMiss = await dragonSolved(page);
@@ -397,12 +475,19 @@ async function main() {
         await openPets(page);
         const cardStage = await page.locator('[data-testid="pet-stage-baby-dragon"]').getAttribute('data-stage');
         const cardSrc = await page.locator('[data-pet="baby-dragon"] img').first().getAttribute('src');
+        const hint = await page.locator('[data-testid="pet-stage-baby-dragon"]').innerText();
         if (cardStage !== String(solved === 4 ? 1 : 2) || !cardSrc?.includes(file)) {
           record(`${label} shop ${viewport.name}`, 'fail', `stage ${cardStage} ${cardSrc}`);
-        } else record(`${label} shop ${viewport.name}`, 'pass');
+        } else if (solved === 4 && !/more spells to grow/.test(hint)) {
+          record(`${label} shop ${viewport.name}`, 'fail', hint);
+        } else if (solved === 10 && !/^Grown$/.test(hint.trim())) {
+          record(`${label} shop ${viewport.name}`, 'fail', hint);
+        } else record(`${label} shop ${viewport.name}`, 'pass', hint.replace(/\s+/g, ' '));
+        await assertPetCards(page, `${label} shop ${viewport.name}`);
         await checkFit(page, `${label} shop fit ${viewport.name}`);
         await shot(page, `${label}-shop-${viewport.name}`);
       }
+      await shootHouse(label);
       await page.setViewportSize(VIEWPORTS[0]);
     }
   }
@@ -483,6 +568,11 @@ async function main() {
     if ((await page.locator('[data-testid="story-reader"]').count()) === 0) {
       record(`cave story ${viewport.name}`, 'fail', 'story did not open');
     } else {
+      const storyText = await page.locator('[data-testid="story-reader"]').innerText();
+      const storyLine = storyText.replace(/\s+/g, ' ').slice(0, 200);
+      if (/baby dragon/i.test(storyText)) record(`grown story ${viewport.name}`, 'fail', storyLine);
+      else if (!/the dragon|your grown dragon/i.test(storyText)) record(`grown story ${viewport.name}`, 'fail', storyLine);
+      else record(`grown story ${viewport.name}`, 'pass');
       await checkFit(page, `story fit ${viewport.name}`);
       await shot(page, `story-${viewport.name}`);
       for (let pageNo = 0; pageNo < 8; pageNo += 1) {
@@ -509,6 +599,7 @@ async function main() {
     await page.waitForSelector('[data-testid="shelf-book-crystal-cave"]');
     await page.locator('[data-testid="shelf-book-crystal-cave"]').click();
     await page.waitForSelector('[data-testid="story-page"]');
+    await assertPictures(page, `story shelf ${viewport.name}`);
     await checkFit(page, `story shelf ${viewport.name}`);
     await page.locator('[data-testid="story-close"]').click();
     await home(page);

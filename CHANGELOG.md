@@ -13,7 +13,8 @@ A friend who walks with her grows as they do spells together.
 
 ### Added
 
-- Each pet keeps a quiet count of correct spells solved while that friend is the one walking beside her. After 4 spells they are growing. After 10 they are grown.
+- Each pet keeps a quiet count of correct spells solved while that friend is the one walking beside her. After 4 spells they are growing. After 10 they are grown. The walking friend's card says how many more spells until they grow.
+- Once the baby dragon is grown, stories call them the dragon.
 - The baby dragon, the cloud cat, and the unicorn foal have painted grown forms. The baby dragon also has a painted growing form. Other friends grow a little inside the same frame.
 - An older garden opens as before. Crystals, outfits, pets, and house things stay. A pet from an older save starts little.
 

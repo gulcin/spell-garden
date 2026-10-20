@@ -1,7 +1,7 @@
 import type { HouseState } from '../house/layout.ts';
 import type { Progress } from '../progress/types.ts';
 import { spendCrystals } from '../wardrobe/economy.ts';
-import { solvedCount } from './growth.ts';
+import { solvedCount, stageOf } from './growth.ts';
 import {
   PETS,
   freshPets,
@@ -169,13 +169,16 @@ export function ownedPet(pets: PetState, id: string): PetRecord | undefined {
   return pets.owned.find((pet) => pet.id === id);
 }
 
-/** "Pip the cloud cat" when she has chosen a name, otherwise the kind of friend. */
+/** "Pip the cloud cat" when she has chosen a name, otherwise the kind of friend. A grown baby dragon is just the dragon. */
 export function companionTitle(pets: PetState): string | null {
   if (!pets.companionId) return null;
   const pet = petById(pets.companionId);
   const owned = ownedPet(pets, pets.companionId);
   if (!pet || !owned) return null;
-  if (!owned.name.trim() || owned.name.trim().toLowerCase() === pet.name.toLowerCase()) return pet.name;
+  const grownDragon = pet.id === 'baby-dragon' && stageOf(pets, pet.id) === 2;
+  const named = owned.name.trim() && owned.name.trim().toLowerCase() !== pet.name.toLowerCase();
+  if (grownDragon) return named ? `${owned.name.trim()} the dragon` : 'your grown dragon';
+  if (!named) return pet.name;
   return `${owned.name.trim()} the ${pet.name.toLowerCase()}`;
 }
 

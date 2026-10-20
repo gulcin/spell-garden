@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { freshHouse } from '../src/house/layout.ts';
 import { GROWING_AT, GROWN_AT, growthCaption, growthSpeech, growNearby, petArtFile, petStage, solvedCount } from '../src/pets/growth.ts';
-import { buyPet, normalizePets } from '../src/pets/state.ts';
+import { buyPet, companionTitle, normalizePets } from '../src/pets/state.ts';
 import { migrateStoredProgress } from '../src/progress/migrations.ts';
 import { freshProgress, PROGRESS_SCHEMA } from '../src/progress/types.ts';
 import { withWardrobe } from '../src/progress/storage.ts';
@@ -30,11 +30,20 @@ describe('pet growth', () => {
     expect(speeches.filter(Boolean)).toEqual(['Pip is growing.', 'Pip grew up.']);
     expect(progress.pets.owned.find((pet) => pet.id === 'baby-dragon')?.solved).toBe(GROWN_AT);
     expect(petStage(GROWN_AT)).toBe(2);
-    expect(growthCaption(0, true)).toBe('Little');
-    expect(growthCaption(2, true)).toBe('Little · 2 together');
-    expect(growthCaption(6, true)).toBe('Growing · 6 together');
+    expect(growthCaption(0, true)).toBe('Little · 4 more spells to grow');
+    expect(growthCaption(1, true)).toBe('Little · 3 more spells to grow');
+    expect(growthCaption(3, true)).toBe('Little · 1 more spell to grow');
+    expect(growthCaption(6, true)).toBe('Growing · 4 more spells to grow');
+    expect(growthCaption(9, true)).toBe('Growing · 1 more spell to grow');
     expect(growthCaption(10, true)).toBe('Grown');
     expect(growthCaption(1, false)).toBe('Little. Bring them along.');
+    const grown = {
+      ...progress.pets,
+      owned: progress.pets.owned.map((pet) => (pet.id === 'baby-dragon' ? { ...pet, solved: GROWN_AT } : pet)),
+    };
+    expect(companionTitle(grown)).toBe('Pip the dragon');
+    expect(companionTitle({ ...grown, owned: grown.owned.map((pet) => ({ ...pet, solved: 6 })) })).toBe('Pip the baby dragon');
+    expect(companionTitle({ ...grown, owned: grown.owned.map((pet) => ({ ...pet, name: 'Baby dragon' })) })).toBe('your grown dragon');
     expect(growthSpeech('Pip', 3, 4)).toBe('Pip is growing.');
     expect(growthSpeech('Pip', 9, 10)).toBe('Pip grew up.');
     expect(growthSpeech('Pip', 5, 6)).toBeNull();
